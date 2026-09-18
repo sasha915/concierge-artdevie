@@ -27,6 +27,8 @@ function Page() {
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
+    if (greetingInitialized) return;
+    greetingInitialized = true;
     const hasVisited = localStorage.getItem("adv-visited");
     if (hasVisited) {
       const variants = ["Bon retour", "Heureux de vous revoir", "Ravi de vous retrouver"];
