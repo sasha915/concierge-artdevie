@@ -2,10 +2,12 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Bell, Plus } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import logoBeige from "@/assets/logo-beige.svg";
+import logoViolet from "@/assets/logo-violet.svg";
 import { BookmarkIcon, HomeIcon, InboxIcon, UserIcon } from "./icons";
 
 export function Logo({ inverse = false }: { inverse?: boolean }) {
-  return <div className={inverse ? "text-primary-foreground" : "text-primary"}><div className="font-display text-[22px] leading-none">Art de Vie</div><div className="mt-1 text-[8px] uppercase tracking-[0.24em]">Conciergerie privée</div></div>;
+  return <img src={inverse ? logoBeige : logoViolet} alt="Art de Vie" className="h-8 w-auto" />;
 }
 
 const nav = [
