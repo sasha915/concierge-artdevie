@@ -43,6 +43,7 @@ export type Profile = {
   phone: string | null;
   plan: string;
   role_label: string;
+  concierge_referent: string | null;
   member_number: string;
   member_since: string;
   valid_until: string;

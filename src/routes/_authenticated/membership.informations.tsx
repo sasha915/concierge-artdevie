@@ -45,6 +45,7 @@ function Page() {
           <div className="py-4"><span className="eyebrow">Email</span><p className="mt-1 text-sm font-medium">{profile?.email || "—"}</p></div>
           <div className="py-4"><span className="eyebrow">Téléphone</span><p className="mt-1 text-sm font-medium">{profile?.phone || "—"}</p></div>
           <div className="py-4 last:pb-0"><span className="eyebrow">Rôle</span><p className="mt-1 text-sm font-medium">{profile?.role_label ?? "Membre"}</p></div>
+          {profile?.plan === "Signature" && profile.concierge_referent && <div className="py-4 last:pb-0"><span className="eyebrow">Concierge référent</span><p className="mt-1 text-sm font-medium">{profile.concierge_referent}</p></div>}
         </div>
         <Button className="mt-7 w-full" size="lg" onClick={() => setEditing(true)}>Modifier mes informations</Button>
       </>}

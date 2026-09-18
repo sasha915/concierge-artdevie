@@ -6,4 +6,4 @@
 - [x] Desktop and mobile visual verification
 - [x] Accounts: sign-up, sign-in, password reset, protected screens
 - [x] Real data: profile, requests, offers, invoices in the database
-- [ ] Membership formulas: dedicated concierge and commitment details
+- [x] Membership formulas: dedicated concierge and commitment details
