@@ -1,6 +1,6 @@
 # Art de Vie roadmap
-- [ ] Design system and shared shell
-- [ ] Ten screens and static content
-- [ ] Navigation and interactive filters/forms
-- [ ] Metadata for every content route
-- [ ] Desktop and mobile visual verification
+- [x] Design system and shared shell
+- [x] Ten screens and static content
+- [x] Navigation and interactive filters/forms
+- [x] Metadata for every content route
+- [x] Desktop and mobile visual verification

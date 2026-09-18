@@ -10,12 +10,20 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ConnexionRouteImport } from './routes/connexion'
 import { Route as DemandesRouteImport } from './routes/demandes'
 import { Route as OffresRouteImport } from './routes/offres'
+import { Route as DemandesRequestIdRouteImport } from './routes/demandes.$requestId'
+import { Route as DemandesNouvelleRouteImport } from './routes/demandes.nouvelle'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConnexionRoute = ConnexionRouteImport.update({
+  id: '/connexion',
+  path: '/connexion',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemandesRoute = DemandesRouteImport.update({
@@ -28,34 +36,73 @@ const OffresRoute = OffresRouteImport.update({
   path: '/offres',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemandesRequestIdRoute = DemandesRequestIdRouteImport.update({
+  id: '/$requestId',
+  path: '/$requestId',
+  getParentRoute: () => DemandesRoute,
+} as any)
+const DemandesNouvelleRoute = DemandesNouvelleRouteImport.update({
+  id: '/nouvelle',
+  path: '/nouvelle',
+  getParentRoute: () => DemandesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/demandes': typeof DemandesRoute
+  '/connexion': typeof ConnexionRoute
+  '/demandes': typeof DemandesRouteWithChildren
   '/offres': typeof OffresRoute
+  '/demandes/$requestId': typeof DemandesRequestIdRoute
+  '/demandes/nouvelle': typeof DemandesNouvelleRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/demandes': typeof DemandesRoute
+  '/connexion': typeof ConnexionRoute
+  '/demandes': typeof DemandesRouteWithChildren
   '/offres': typeof OffresRoute
+  '/demandes/$requestId': typeof DemandesRequestIdRoute
+  '/demandes/nouvelle': typeof DemandesNouvelleRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/demandes': typeof DemandesRoute
+  '/connexion': typeof ConnexionRoute
+  '/demandes': typeof DemandesRouteWithChildren
   '/offres': typeof OffresRoute
+  '/demandes/$requestId': typeof DemandesRequestIdRoute
+  '/demandes/nouvelle': typeof DemandesNouvelleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/demandes' | '/offres'
+  fullPaths:
+    | '/'
+    | '/connexion'
+    | '/demandes'
+    | '/offres'
+    | '/demandes/$requestId'
+    | '/demandes/nouvelle'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/demandes' | '/offres'
-  id: '__root__' | '/' | '/demandes' | '/offres'
+  to:
+    | '/'
+    | '/connexion'
+    | '/demandes'
+    | '/offres'
+    | '/demandes/$requestId'
+    | '/demandes/nouvelle'
+  id:
+    | '__root__'
+    | '/'
+    | '/connexion'
+    | '/demandes'
+    | '/offres'
+    | '/demandes/$requestId'
+    | '/demandes/nouvelle'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DemandesRoute: typeof DemandesRoute
+  ConnexionRoute: typeof ConnexionRoute
+  DemandesRoute: typeof DemandesRouteWithChildren
   OffresRoute: typeof OffresRoute
 }
 
@@ -66,6 +113,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connexion': {
+      id: '/connexion'
+      path: '/connexion'
+      fullPath: '/connexion'
+      preLoaderRoute: typeof ConnexionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demandes': {
@@ -82,12 +136,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OffresRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demandes/$requestId': {
+      id: '/demandes/$requestId'
+      path: '/$requestId'
+      fullPath: '/demandes/$requestId'
+      preLoaderRoute: typeof DemandesRequestIdRouteImport
+      parentRoute: typeof DemandesRoute
+    }
+    '/demandes/nouvelle': {
+      id: '/demandes/nouvelle'
+      path: '/nouvelle'
+      fullPath: '/demandes/nouvelle'
+      preLoaderRoute: typeof DemandesNouvelleRouteImport
+      parentRoute: typeof DemandesRoute
+    }
   }
 }
 
+interface DemandesRouteChildren {
+  DemandesRequestIdRoute: typeof DemandesRequestIdRoute
+  DemandesNouvelleRoute: typeof DemandesNouvelleRoute
+}
+
+const DemandesRouteChildren: DemandesRouteChildren = {
+  DemandesRequestIdRoute: DemandesRequestIdRoute,
+  DemandesNouvelleRoute: DemandesNouvelleRoute,
+}
+
+const DemandesRouteWithChildren = DemandesRoute._addFileChildren(
+  DemandesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DemandesRoute: DemandesRoute,
+  ConnexionRoute: ConnexionRoute,
+  DemandesRoute: DemandesRouteWithChildren,
   OffresRoute: OffresRoute,
 }
 export const routeTree = rootRouteImport
