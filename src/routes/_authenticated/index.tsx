@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Bell, Clock3, Inbox, Sparkles } from "lucide-react";
+import { ArrowRight, Bell, ChevronRight, Clock3, Inbox, Sparkles } from "lucide-react";
 import { AppShell, Logo } from "@/components/art-de-vie/app-shell";
 import { EmptyState, OfferCard, RequestCard } from "@/components/art-de-vie/cards";
 import { Button } from "@/components/ui/button";
