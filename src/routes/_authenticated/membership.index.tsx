@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, CircleUserRound, FileText, Gift, History, LogOut } from "lucide-react";
-import { AppShell, TopBar } from "@/components/art-de-vie/app-shell";
+import { AppShell, Logo } from "@/components/art-de-vie/app-shell";
 import { MemberCard } from "@/components/art-de-vie/member-card";
 import { supabase } from "@/integrations/supabase/client";
 import { profileQuery } from "@/lib/adv-queries";
@@ -22,7 +22,7 @@ function Page() {
     navigate({ to: "/connexion", replace: true });
   }
 
-  return <AppShell><TopBar title="Ma carte de membre"/><div className="mx-auto max-w-[620px]"><MemberCard profile={profile}/>
+  return <AppShell><div className="mb-6 flex justify-center"><Logo className="h-[19px] w-auto" /></div><div className="mb-8"><h1 className="font-display text-[32px] font-semibold leading-tight text-primary">Ma carte de membre</h1><p className="mt-2 text-[13px] text-muted-foreground">Votre carte d'accès virtuelle aux privilèges Art de Vie.</p></div><div className="mx-auto max-w-[620px]"><MemberCard profile={profile}/>
     <div className="mt-10 overflow-hidden rounded-card bg-card">
       <Link to="/membership/informations" className={row}><CircleUserRound className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Vos informations</span><ChevronRight className="size-4 text-muted-foreground"/></Link>
       <Link to="/membership/factures" className={row}><FileText className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Mes factures</span><ChevronRight className="size-4 text-muted-foreground"/></Link>
