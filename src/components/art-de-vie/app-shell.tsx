@@ -6,8 +6,8 @@ import logoBeige from "@/assets/logo-beige.svg";
 import logoViolet from "@/assets/logo-violet.svg";
 import { BookmarkIcon, HomeIcon, InboxIcon, UserIcon } from "./icons";
 
-export function Logo({ inverse = false }: { inverse?: boolean }) {
-  return <img src={inverse ? logoBeige : logoViolet} alt="Art de Vie" className="h-8 w-auto" />;
+export function Logo({ inverse = false, className = "h-8 w-auto" }: { inverse?: boolean; className?: string }) {
+  return <img src={inverse ? logoBeige : logoViolet} alt="Art de Vie" className={className} />;
 }
 
 const nav = [
