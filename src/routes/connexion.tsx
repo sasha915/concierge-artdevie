@@ -24,6 +24,16 @@ function Page() {
   const [greeting, setGreeting] = useState("Bienvenue");
   const [notice, setNotice] = useState<string | null>(null);
 
+  useEffect(() => {
+    const hasVisited = localStorage.getItem("adv-visited");
+    if (hasVisited) {
+      const variants = ["Bon retour", "Heureux de vous revoir", "Ravi de vous retrouver"];
+      setGreeting(variants[Math.floor(Math.random() * variants.length)]);
+    } else {
+      localStorage.setItem("adv-visited", "true");
+    }
+  }, []);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true); setError(null); setNotice(null);
