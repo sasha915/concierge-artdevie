@@ -30,6 +30,6 @@ function Page() {
       <button type="button" className={row + " w-full text-left"}><Gift className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Parrainer un membre</span><ChevronRight className="size-4 text-muted-foreground"/></button>
       <button type="button" onClick={signOut} className={row + " w-full text-left"}><LogOut className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Se déconnecter</span><ChevronRight className="size-4 text-muted-foreground"/></button>
     </div>
-    <blockquote className="mx-auto my-12 max-w-sm text-center font-display text-xl italic leading-8 text-primary">« Le luxe véritable, c’est le temps rendu à l’essentiel. »</blockquote>
+    <blockquote className="mx-auto mt-12 max-w-sm text-center font-display text-xl italic leading-8 text-primary">« Le luxe véritable, c’est le temps rendu à l’essentiel. »</blockquote>
   </div></AppShell>;
 }
