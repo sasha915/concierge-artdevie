@@ -1,9 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { AppShell, Logo, NewRequestButton } from "@/components/art-de-vie/app-shell";
-import { Bell } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { AppShell, NewRequestButton, PageHeader } from "@/components/art-de-vie/app-shell";
 import { EmptyState, Filters, RequestCard } from "@/components/art-de-vie/cards";
 import { requestsQuery } from "@/lib/adv-queries";
 
@@ -16,13 +14,7 @@ function Page() {
   const { data: requests = [], isLoading } = useQuery(requestsQuery);
   const list = active === "Toutes" ? requests : requests.filter((r) => r.status === active);
   return <AppShell>
-    <header className="mb-6 flex items-center justify-between">
-      <div className="w-11" />
-      <Logo className="h-[19px] w-auto" />
-      <Button aria-label="Notifications" variant="icon" size="icon"><Bell /></Button>
-    </header>
-    <h1 className="font-display text-[32px] font-semibold leading-tight text-primary">Mes demandes</h1>
-    <p className="mt-2 text-[13px] text-muted-foreground">Suivez l'avancement de chaque demande en temps réel.</p>
+    <PageHeader title="Mes demandes" subtitle="Suivez l'avancement de chaque demande en temps réel." />
     <div className="mt-4 mb-8"><NewRequestButton className="w-full" /></div>
     <Filters values={filters} active={active} onChange={setActive}/>
     <div className="mt-6 grid gap-4 md:grid-cols-2">{list.map((r) => <RequestCard key={r.id} item={r}/>)}</div>

@@ -30,11 +30,19 @@ export function BottomNav() {
 }
 
 export function AppShell({ children, nav = true }: { children: ReactNode; nav?: boolean }) {
-  return <main className={nav ? "mx-auto min-h-screen max-w-[1120px] px-5 pb-28 pt-6 sm:px-8 lg:px-10" : "min-h-screen"}>{children}{nav && <BottomNav />}</main>;
+  return <main className={nav ? "mx-auto min-h-screen max-w-[1120px] px-5 pb-28 pt-6 sm:px-8 lg:px-10" : "mx-auto min-h-screen max-w-[1120px] px-5 pb-10 pt-6 sm:px-8 lg:px-10"}>{children}{nav && <BottomNav />}</main>;
 }
 
 export function TopBar({ title, action }: { title?: string; action?: ReactNode }) {
   return <header className="mb-8 flex items-center justify-between"><div>{title ? <h1 className="font-display text-[32px] font-semibold leading-tight text-primary">{title}</h1> : <Logo />}</div>{action ?? <Button aria-label="Notifications" variant="icon" size="icon"><Bell /></Button>}</header>;
+}
+
+export function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  return <>
+    <div className="mb-6 flex items-center justify-between"><div className="w-11" /><Logo className="h-[19px] w-auto" /><Button aria-label="Notifications" variant="icon" size="icon"><Bell /></Button></div>
+    <h1 className="font-display text-[32px] font-semibold leading-tight text-primary">{title}</h1>
+    {subtitle && <p className="mt-2 mb-6 text-[13px] text-muted-foreground">{subtitle}</p>}
+  </>;
 }
 
 export function NewRequestButton({ className }: { className?: string }) {
