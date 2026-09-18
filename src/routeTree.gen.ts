@@ -10,33 +10,149 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ConnexionRouteImport } from './routes/connexion'
+import { Route as DemandesRouteImport } from './routes/demandes'
+import { Route as MembershipRouteImport } from './routes/membership'
+import { Route as OffresRouteImport } from './routes/offres'
+import { Route as DemandesRequestIdRouteImport } from './routes/demandes.$requestId'
+import { Route as DemandesNouvelleRouteImport } from './routes/demandes.nouvelle'
+import { Route as MembershipFacturesRouteImport } from './routes/membership.factures'
+import { Route as MembershipHistoriqueRouteImport } from './routes/membership.historique'
+import { Route as MembershipInformationsRouteImport } from './routes/membership.informations'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConnexionRoute = ConnexionRouteImport.update({
+  id: '/connexion',
+  path: '/connexion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemandesRoute = DemandesRouteImport.update({
+  id: '/demandes',
+  path: '/demandes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MembershipRoute = MembershipRouteImport.update({
+  id: '/membership',
+  path: '/membership',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OffresRoute = OffresRouteImport.update({
+  id: '/offres',
+  path: '/offres',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemandesRequestIdRoute = DemandesRequestIdRouteImport.update({
+  id: '/$requestId',
+  path: '/$requestId',
+  getParentRoute: () => DemandesRoute,
+} as any)
+const DemandesNouvelleRoute = DemandesNouvelleRouteImport.update({
+  id: '/nouvelle',
+  path: '/nouvelle',
+  getParentRoute: () => DemandesRoute,
+} as any)
+const MembershipFacturesRoute = MembershipFacturesRouteImport.update({
+  id: '/factures',
+  path: '/factures',
+  getParentRoute: () => MembershipRoute,
+} as any)
+const MembershipHistoriqueRoute = MembershipHistoriqueRouteImport.update({
+  id: '/historique',
+  path: '/historique',
+  getParentRoute: () => MembershipRoute,
+} as any)
+const MembershipInformationsRoute = MembershipInformationsRouteImport.update({
+  id: '/informations',
+  path: '/informations',
+  getParentRoute: () => MembershipRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/connexion': typeof ConnexionRoute
+  '/demandes': typeof DemandesRouteWithChildren
+  '/membership': typeof MembershipRouteWithChildren
+  '/offres': typeof OffresRoute
+  '/demandes/$requestId': typeof DemandesRequestIdRoute
+  '/demandes/nouvelle': typeof DemandesNouvelleRoute
+  '/membership/factures': typeof MembershipFacturesRoute
+  '/membership/historique': typeof MembershipHistoriqueRoute
+  '/membership/informations': typeof MembershipInformationsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/connexion': typeof ConnexionRoute
+  '/demandes': typeof DemandesRouteWithChildren
+  '/membership': typeof MembershipRouteWithChildren
+  '/offres': typeof OffresRoute
+  '/demandes/$requestId': typeof DemandesRequestIdRoute
+  '/demandes/nouvelle': typeof DemandesNouvelleRoute
+  '/membership/factures': typeof MembershipFacturesRoute
+  '/membership/historique': typeof MembershipHistoriqueRoute
+  '/membership/informations': typeof MembershipInformationsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/connexion': typeof ConnexionRoute
+  '/demandes': typeof DemandesRouteWithChildren
+  '/membership': typeof MembershipRouteWithChildren
+  '/offres': typeof OffresRoute
+  '/demandes/$requestId': typeof DemandesRequestIdRoute
+  '/demandes/nouvelle': typeof DemandesNouvelleRoute
+  '/membership/factures': typeof MembershipFacturesRoute
+  '/membership/historique': typeof MembershipHistoriqueRoute
+  '/membership/informations': typeof MembershipInformationsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/connexion'
+    | '/demandes'
+    | '/membership'
+    | '/offres'
+    | '/demandes/$requestId'
+    | '/demandes/nouvelle'
+    | '/membership/factures'
+    | '/membership/historique'
+    | '/membership/informations'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/connexion'
+    | '/demandes'
+    | '/membership'
+    | '/offres'
+    | '/demandes/$requestId'
+    | '/demandes/nouvelle'
+    | '/membership/factures'
+    | '/membership/historique'
+    | '/membership/informations'
+  id:
+    | '__root__'
+    | '/'
+    | '/connexion'
+    | '/demandes'
+    | '/membership'
+    | '/offres'
+    | '/demandes/$requestId'
+    | '/demandes/nouvelle'
+    | '/membership/factures'
+    | '/membership/historique'
+    | '/membership/informations'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ConnexionRoute: typeof ConnexionRoute
+  DemandesRoute: typeof DemandesRouteWithChildren
+  MembershipRoute: typeof MembershipRouteWithChildren
+  OffresRoute: typeof OffresRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +164,108 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/connexion': {
+      id: '/connexion'
+      path: '/connexion'
+      fullPath: '/connexion'
+      preLoaderRoute: typeof ConnexionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demandes': {
+      id: '/demandes'
+      path: '/demandes'
+      fullPath: '/demandes'
+      preLoaderRoute: typeof DemandesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/membership': {
+      id: '/membership'
+      path: '/membership'
+      fullPath: '/membership'
+      preLoaderRoute: typeof MembershipRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/offres': {
+      id: '/offres'
+      path: '/offres'
+      fullPath: '/offres'
+      preLoaderRoute: typeof OffresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demandes/$requestId': {
+      id: '/demandes/$requestId'
+      path: '/$requestId'
+      fullPath: '/demandes/$requestId'
+      preLoaderRoute: typeof DemandesRequestIdRouteImport
+      parentRoute: typeof DemandesRoute
+    }
+    '/demandes/nouvelle': {
+      id: '/demandes/nouvelle'
+      path: '/nouvelle'
+      fullPath: '/demandes/nouvelle'
+      preLoaderRoute: typeof DemandesNouvelleRouteImport
+      parentRoute: typeof DemandesRoute
+    }
+    '/membership/factures': {
+      id: '/membership/factures'
+      path: '/factures'
+      fullPath: '/membership/factures'
+      preLoaderRoute: typeof MembershipFacturesRouteImport
+      parentRoute: typeof MembershipRoute
+    }
+    '/membership/historique': {
+      id: '/membership/historique'
+      path: '/historique'
+      fullPath: '/membership/historique'
+      preLoaderRoute: typeof MembershipHistoriqueRouteImport
+      parentRoute: typeof MembershipRoute
+    }
+    '/membership/informations': {
+      id: '/membership/informations'
+      path: '/informations'
+      fullPath: '/membership/informations'
+      preLoaderRoute: typeof MembershipInformationsRouteImport
+      parentRoute: typeof MembershipRoute
+    }
   }
 }
 
+interface DemandesRouteChildren {
+  DemandesRequestIdRoute: typeof DemandesRequestIdRoute
+  DemandesNouvelleRoute: typeof DemandesNouvelleRoute
+}
+
+const DemandesRouteChildren: DemandesRouteChildren = {
+  DemandesRequestIdRoute: DemandesRequestIdRoute,
+  DemandesNouvelleRoute: DemandesNouvelleRoute,
+}
+
+const DemandesRouteWithChildren = DemandesRoute._addFileChildren(
+  DemandesRouteChildren,
+)
+
+interface MembershipRouteChildren {
+  MembershipFacturesRoute: typeof MembershipFacturesRoute
+  MembershipHistoriqueRoute: typeof MembershipHistoriqueRoute
+  MembershipInformationsRoute: typeof MembershipInformationsRoute
+}
+
+const MembershipRouteChildren: MembershipRouteChildren = {
+  MembershipFacturesRoute: MembershipFacturesRoute,
+  MembershipHistoriqueRoute: MembershipHistoriqueRoute,
+  MembershipInformationsRoute: MembershipInformationsRoute,
+}
+
+const MembershipRouteWithChildren = MembershipRoute._addFileChildren(
+  MembershipRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ConnexionRoute: ConnexionRoute,
+  DemandesRoute: DemandesRouteWithChildren,
+  MembershipRoute: MembershipRouteWithChildren,
+  OffresRoute: OffresRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
