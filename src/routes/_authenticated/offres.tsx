@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { AppShell, TopBar } from "@/components/art-de-vie/app-shell";
+import { AppShell, Logo } from "@/components/art-de-vie/app-shell";
+import { Bell } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { EmptyState, Filters, OfferCard } from "@/components/art-de-vie/cards";
 import { offersQuery } from "@/lib/adv-queries";
 
