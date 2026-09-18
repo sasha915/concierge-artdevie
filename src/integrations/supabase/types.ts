@@ -91,6 +91,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          concierge_referent: string | null
           created_at: string
           email: string | null
           full_name: string
@@ -106,6 +107,7 @@ export type Database = {
           valid_until: string
         }
         Insert: {
+          concierge_referent?: string | null
           created_at?: string
           email?: string | null
           full_name?: string
@@ -121,6 +123,7 @@ export type Database = {
           valid_until?: string
         }
         Update: {
+          concierge_referent?: string | null
           created_at?: string
           email?: string | null
           full_name?: string

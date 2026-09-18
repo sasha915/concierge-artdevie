@@ -16,13 +16,14 @@ function Page() {
   const list = active === "Toutes" ? invoices : invoices.filter((i) => i.kind === active);
   const essentiel = profile?.plan === "Essentiel";
   const next = new Date();
-  next.setMonth(next.getMonth() + 1);
+  if (essentiel) next.setFullYear(next.getFullYear() + 1);
+  else next.setMonth(next.getMonth() + 1);
   return <AppShell nav={false}><div className="mx-auto max-w-2xl"><SubHeader title="Mes factures"/>
     <section className="rounded-card bg-linear-to-br from-primary to-primary-deep p-6 text-primary-foreground">
       <span className="text-[11px] uppercase tracking-[0.13em]">Formule {profile?.plan ?? "Signature"}</span>
       <div className="mt-6 flex items-end justify-between gap-5">
         <div><strong className="font-display text-[40px] font-normal">{essentiel ? "890 €" : "1 490 €"}</strong><span className="text-sm">{essentiel ? " / an" : " / mois"}</span></div>
-        <span className="text-right text-[10px] leading-4 opacity-80">Prochain prélèvement<br/>{next.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</span>
+        <div className="text-right text-[10px] leading-4 opacity-80"><p>Prochain prélèvement<br/>{next.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</p>{!essentiel && <p className="mt-2">Engagement minimum<br/>12 mois</p>}</div>
       </div>
       {essentiel && <p className="mt-4 text-[10px] leading-4 opacity-80">+ 10 % de commission sur les prestations</p>}
     </section>
