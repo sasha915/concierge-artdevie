@@ -8,7 +8,7 @@ export function MemberCard({ profile }: { profile: Profile | null }) {
   function move(e: MouseEvent<HTMLDivElement>) { const r = e.currentTarget.getBoundingClientRect(); setTilt({ x: ((e.clientY-r.top)/r.height-.5)*-8, y: ((e.clientX-r.left)/r.width-.5)*10 }); }
   const name = profile?.full_name?.trim() || "Membre Art de Vie";
   return <div className="perspective-distant" onMouseMove={move} onMouseLeave={() => setTilt({ x: 4, y: -4 })}>
-    <div className="member-grain relative aspect-[1.586/1] w-full overflow-hidden rounded-[22px] border border-gold bg-linear-to-br from-primary via-primary-light to-primary-deep p-6 text-primary-foreground shadow-member transition-transform duration-300 motion-reduce:transform-none sm:p-8" style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)` }}>
+    <div className="member-grain relative aspect-[1.4/1] w-full overflow-hidden rounded-[22px] border border-gold bg-linear-to-br from-primary via-primary-light to-primary-deep p-5 text-primary-foreground shadow-member transition-transform duration-300 motion-reduce:transform-none sm:p-7" style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)` }}>
       <div className="pointer-events-none absolute -top-[50px] -right-[40px] z-10 size-[200px] rounded-full bg-[radial-gradient(circle,rgba(238,237,227,0.14)_0%,transparent_70%)]" />
       <div className="pointer-events-none absolute inset-[-20%] z-20 bg-[linear-gradient(115deg,transparent_42%,rgba(238,237,227,0.16)_50%,transparent_58%)]" />
       <div className="relative z-30 flex h-full flex-col justify-between">
