@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Bell, ChevronRight, Clock3, Inbox, Sparkles } from "lucide-react";
+import { ArrowRight, Bell, ChevronRight } from "lucide-react";
 import { AppShell, Logo } from "@/components/art-de-vie/app-shell";
 import { EmptyState, OfferCard, RequestCard } from "@/components/art-de-vie/cards";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,20 @@ const greeting = new Date().getHours() < 18 ? "Bonjour" : "Bonsoir";
 
   return <AppShell><header className="mb-6 flex items-center justify-between"><Logo/><Button aria-label="Notifications" variant="icon" size="icon"><Bell/></Button></header>
     <section className="relative mb-20 overflow-visible rounded-card bg-linear-to-br from-primary to-primary-deep px-6 pb-8 pt-7 text-primary-foreground sm:px-10"><p className="mb-[10px] text-[11px] font-semibold uppercase tracking-[0.14em] text-[rgba(238,237,227,0.7)]">{greeting} {firstName}</p><p className="max-w-[480px] font-display text-[38px] font-normal leading-[1.15] sm:text-[46px]">Votre conciergerie,<br/><em>à votre rythme.</em></p><p className="mt-3 max-w-[220px] text-[13px] leading-[19px] text-[rgba(238,237,227,0.75)]">Suivez vos demandes et vos privilèges, ou contactez votre concierge en un geste.</p><div className="mt-8 flex flex-wrap gap-3"><Button asChild variant="light"><Link to="/demandes/nouvelle">Nouvelle demande</Link></Button><Button asChild variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"><Link to="/offres">Voir les offres</Link></Button></div><div className="absolute -bottom-8 right-5 w-[108px] rotate-[-3deg] rounded-[14px] border border-gold bg-primary-light p-3 shadow-member"><div className="flex items-start justify-between"><Logo inverse className="h-3 w-auto" /><span className="flex size-4 items-center justify-center rounded-full border border-gold text-[7px]">{initials(name)}</span></div><p className="mt-[10px] font-display text-[13px] font-medium">{profile?.plan ?? "Signature"}</p></div></section>
-    <section className="grid grid-cols-3 gap-2 sm:gap-4"><div className="rounded-card bg-card p-4 sm:p-5"><Inbox className="mb-4 size-4 text-primary"/><strong className="font-display text-2xl font-normal text-primary">{upcoming.length}</strong><p className="mt-1 text-[10px] leading-4 text-muted-foreground sm:text-xs">Demandes actives</p></div><div className="rounded-card bg-card p-4 sm:p-5"><Sparkles className="mb-4 size-4 text-primary"/><strong className="font-display text-2xl font-normal text-primary">{offers.length}</strong><p className="mt-1 text-[10px] leading-4 text-muted-foreground sm:text-xs">Offres vedettes</p></div><div className="rounded-card bg-card p-4 sm:p-5"><Clock3 className="mb-4 size-4 text-primary"/><strong className="font-display text-2xl font-normal text-primary">12 min</strong><p className="mt-1 text-[10px] leading-4 text-muted-foreground sm:text-xs">Réponse moyenne</p></div></section>
+    <section className="grid grid-cols-3 gap-2">
+      <div className="rounded-[16px] bg-card py-[14px] px-3 text-center">
+        <p className="font-display text-[22px] font-medium text-primary">{upcoming.length}</p>
+        <p className="mt-1 text-[11px] text-muted-foreground">Demandes actives</p>
+      </div>
+      <div className="rounded-[16px] bg-card py-[14px] px-3 text-center">
+        <p className="font-display text-[22px] font-medium text-primary">{offers.length}</p>
+        <p className="mt-1 text-[11px] text-muted-foreground">Offres vedettes</p>
+      </div>
+      <div className="rounded-[16px] bg-card py-[14px] px-3 text-center">
+        <p className="font-display text-[22px] font-medium text-primary">12 min</p>
+        <p className="mt-1 text-[11px] text-muted-foreground">Réponse moyenne</p>
+      </div>
+    </section>
     <section className="mt-10">
       {nextRequest ? (
         <section className="mt-1 flex items-center gap-4 rounded-card bg-card p-6">
