@@ -1,24 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowRight, Bell, Clock3, Inbox, Sparkles } from "lucide-react";
+import { AppShell, Logo } from "@/components/art-de-vie/app-shell";
+import { OfferCard, RequestCard } from "@/components/art-de-vie/cards";
+import { Button } from "@/components/ui/button";
+import { offers, requests } from "@/data/art-de-vie";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
-export const Route = createFileRoute("/")({
-  component: Index,
-});
-
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
+export const Route = createFileRoute("/")({ head: () => ({ meta: [{ title: "Accueil — Art de Vie" }, { name: "description", content: "Votre conciergerie privée, demandes et privilèges." }, { property: "og:title", content: "Accueil — Art de Vie" }, { property: "og:description", content: "Votre conciergerie privée, demandes et privilèges." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Home });
+function Home() { return <AppShell><header className="mb-6 flex items-center justify-between"><Logo/><Button aria-label="Notifications" variant="icon" size="icon"><Bell/></Button></header>
+  <section className="relative mb-20 overflow-visible rounded-card bg-linear-to-br from-primary to-primary-deep px-6 pb-24 pt-10 text-primary-foreground sm:px-10"><p className="max-w-[480px] font-display text-[38px] font-normal leading-[1.15] sm:text-[46px]">Votre conciergerie,<br/><em>à votre rythme.</em></p><div className="mt-8 flex flex-wrap gap-3"><Button asChild variant="light"><Link to="/demandes/nouvelle">Nouvelle demande</Link></Button><Button asChild variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"><Link to="/offres">Voir les offres</Link></Button></div><div className="absolute -bottom-12 right-5 w-[210px] rotate-[-3deg] rounded-2xl border border-gold bg-primary-light p-5 shadow-member"><div className="flex justify-between"><span className="font-display text-lg">Art de Vie</span><span className="flex size-8 items-center justify-center rounded-full border border-gold text-xs">SA</span></div><p className="mt-8 font-display text-lg">Signature</p><p className="text-[9px] tracking-[0.13em]">SASHA ALLIO</p></div></section>
+  <section className="grid grid-cols-3 gap-2 sm:gap-4">{[["2","Demandes actives",Inbox],["4","Offres vedettes",Sparkles],["12 min","Réponse moyenne",Clock3]].map(([n,l,I]) => <div key={String(l)} className="rounded-card bg-card p-4 sm:p-5"><I className="mb-4 size-4 text-primary"/><strong className="font-display text-2xl font-normal text-primary">{String(n)}</strong><p className="mt-1 text-[10px] leading-4 text-muted-foreground sm:text-xs">{String(l)}</p></div>)}</section>
+  <section className="mt-10"><div className="mb-4 flex items-end justify-between"><div><span className="eyebrow">À venir</span><h2 className="mt-2 font-display text-2xl text-primary">Prochaine demande</h2></div><Link to="/demandes" className="text-xs font-semibold text-primary">Tout voir</Link></div><RequestCard item={requests[0]}/></section>
+  <section className="mt-10"><div className="mb-4 flex items-center justify-between"><h2 className="font-display text-2xl text-primary">Offres en vedette</h2><Link to="/offres" aria-label="Toutes les offres" className="text-primary"><ArrowRight/></Link></div><div className="no-scrollbar -mx-5 flex gap-4 overflow-x-auto px-5 sm:mx-0 sm:grid sm:grid-cols-3 sm:px-0">{offers.slice(0,3).map(o=><OfferCard key={o.id} offer={o} compact/>)}</div></section>
+</AppShell>; }
