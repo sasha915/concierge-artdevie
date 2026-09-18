@@ -1,0 +1,20 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { AppShell, NewRequestButton, TopBar } from "@/components/art-de-vie/app-shell";
+import { EmptyState, Filters, RequestCard } from "@/components/art-de-vie/cards";
+import { requestsQuery } from "@/lib/adv-queries";
+
+const filters = ["Toutes", "Nouvelle", "En cours", "Confirmée", "Terminée", "Annulée"];
+
+export const Route = createFileRoute("/_authenticated/demandes/")({ head: () => ({ meta: [{ title: "Mes demandes — Art de Vie" }, { name: "description", content: "Suivez toutes vos demandes de conciergerie." }, { property: "og:title", content: "Mes demandes — Art de Vie" }, { property: "og:description", content: "Suivez toutes vos demandes de conciergerie." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
+
+function Page() {
+  const [active, setActive] = useState("Toutes");
+  const { data: requests = [], isLoading } = useQuery(requestsQuery);
+  const list = active === "Toutes" ? requests : requests.filter((r) => r.status === active);
+  return <AppShell><TopBar title="Mes demandes" action={<NewRequestButton/>}/><Filters values={filters} active={active} onChange={setActive}/>
+    <div className="mt-6 grid gap-4 md:grid-cols-2">{list.map((r) => <RequestCard key={r.id} item={r}/>)}</div>
+    {!isLoading && list.length === 0 && <div className="mt-6"><EmptyState>Aucune demande dans cette catégorie.</EmptyState></div>}
+  </AppShell>;
+}
