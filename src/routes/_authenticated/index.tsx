@@ -4,7 +4,7 @@ import { ArrowRight, Bell, ChevronRight, Clock3, Inbox, Sparkles } from "lucide-
 import { AppShell, Logo } from "@/components/art-de-vie/app-shell";
 import { EmptyState, OfferCard, RequestCard } from "@/components/art-de-vie/cards";
 import { Button } from "@/components/ui/button";
-import { initials } from "@/data/art-de-vie";
+import { formatShortDate, initials } from "@/data/art-de-vie";
 import { offersQuery, profileQuery, requestsQuery } from "@/lib/adv-queries";
 
 export const Route = createFileRoute("/_authenticated/")({ head: () => ({ meta: [{ title: "Accueil — Art de Vie" }, { name: "description", content: "Votre conciergerie privée, demandes et privilèges." }, { property: "og:title", content: "Accueil — Art de Vie" }, { property: "og:description", content: "Votre conciergerie privée, demandes et privilèges." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Home });
