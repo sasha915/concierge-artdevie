@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, CircleUserRound, FileText, Gift, History, LogOut } from "lucide-react";
-import { AppShell, TopBar } from "@/components/art-de-vie/app-shell";
+import { AppShell, Logo } from "@/components/art-de-vie/app-shell";
 import { MemberCard } from "@/components/art-de-vie/member-card";
 import { supabase } from "@/integrations/supabase/client";
 import { profileQuery } from "@/lib/adv-queries";
