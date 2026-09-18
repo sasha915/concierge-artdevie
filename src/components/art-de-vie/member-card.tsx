@@ -1,4 +1,5 @@
 import { Logo } from "@/components/art-de-vie/app-shell";
+import { Star } from "lucide-react";
 import { useState, type MouseEvent } from "react";
 import { formatMonth, initials, type Profile } from "@/data/art-de-vie";
 
