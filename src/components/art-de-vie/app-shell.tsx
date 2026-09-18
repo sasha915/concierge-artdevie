@@ -30,7 +30,7 @@ export function BottomNav() {
 }
 
 export function AppShell({ children, nav = true }: { children: ReactNode; nav?: boolean }) {
-  return <main className={nav ? "mx-auto min-h-screen max-w-[1120px] px-5 pb-28 pt-6 sm:px-8 lg:px-10" : "min-h-screen"}>{children}{nav && <BottomNav />}</main>;
+  return <main className={nav ? "mx-auto min-h-screen max-w-[1120px] px-5 pb-28 pt-6 sm:px-8 lg:px-10" : "mx-auto min-h-screen max-w-[1120px] px-5 pb-10 pt-6 sm:px-8 lg:px-10"}>{children}{nav && <BottomNav />}</main>;
 }
 
 export function TopBar({ title, action }: { title?: string; action?: ReactNode }) {
