@@ -37,6 +37,6 @@ export function TopBar({ title, action }: { title?: string; action?: ReactNode }
   return <header className="mb-8 flex items-center justify-between"><div>{title ? <h1 className="font-display text-[32px] font-semibold leading-tight text-primary">{title}</h1> : <Logo />}</div>{action ?? <Button aria-label="Notifications" variant="icon" size="icon"><Bell /></Button>}</header>;
 }
 
-export function NewRequestButton() {
-  return <Button asChild variant="primary" size="lg"><Link to="/demandes/nouvelle"><Plus />Nouvelle demande</Link></Button>;
+export function NewRequestButton({ className }: { className?: string }) {
+  return <Button asChild variant="primary" size="lg" className={className}><Link to="/demandes/nouvelle"><Plus />Nouvelle demande</Link></Button>;
 }
