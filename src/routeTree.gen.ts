@@ -9,20 +9,21 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as ConnexionRouteImport } from './routes/connexion'
-import { Route as DemandesRouteImport } from './routes/demandes'
-import { Route as MembershipRouteImport } from './routes/membership'
-import { Route as OffresRouteImport } from './routes/offres'
-import { Route as DemandesRequestIdRouteImport } from './routes/demandes.$requestId'
-import { Route as DemandesNouvelleRouteImport } from './routes/demandes.nouvelle'
-import { Route as MembershipFacturesRouteImport } from './routes/membership.factures'
-import { Route as MembershipHistoriqueRouteImport } from './routes/membership.historique'
-import { Route as MembershipInformationsRouteImport } from './routes/membership.informations'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedOffresRouteImport } from './routes/_authenticated/offres'
+import { Route as AuthenticatedDemandesIndexRouteImport } from './routes/_authenticated/demandes.index'
+import { Route as AuthenticatedDemandesRequestIdRouteImport } from './routes/_authenticated/demandes.$requestId'
+import { Route as AuthenticatedDemandesNouvelleRouteImport } from './routes/_authenticated/demandes.nouvelle'
+import { Route as AuthenticatedMembershipIndexRouteImport } from './routes/_authenticated/membership.index'
+import { Route as AuthenticatedMembershipFacturesRouteImport } from './routes/_authenticated/membership.factures'
+import { Route as AuthenticatedMembershipHistoriqueRouteImport } from './routes/_authenticated/membership.historique'
+import { Route as AuthenticatedMembershipInformationsRouteImport } from './routes/_authenticated/membership.informations'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConnexionRoute = ConnexionRouteImport.update({
@@ -30,138 +31,161 @@ const ConnexionRoute = ConnexionRouteImport.update({
   path: '/connexion',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemandesRoute = DemandesRouteImport.update({
-  id: '/demandes',
-  path: '/demandes',
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MembershipRoute = MembershipRouteImport.update({
-  id: '/membership',
-  path: '/membership',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const OffresRoute = OffresRouteImport.update({
+const AuthenticatedOffresRoute = AuthenticatedOffresRouteImport.update({
   id: '/offres',
   path: '/offres',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const DemandesRequestIdRoute = DemandesRequestIdRouteImport.update({
-  id: '/$requestId',
-  path: '/$requestId',
-  getParentRoute: () => DemandesRoute,
-} as any)
-const DemandesNouvelleRoute = DemandesNouvelleRouteImport.update({
-  id: '/nouvelle',
-  path: '/nouvelle',
-  getParentRoute: () => DemandesRoute,
-} as any)
-const MembershipFacturesRoute = MembershipFacturesRouteImport.update({
-  id: '/factures',
-  path: '/factures',
-  getParentRoute: () => MembershipRoute,
-} as any)
-const MembershipHistoriqueRoute = MembershipHistoriqueRouteImport.update({
-  id: '/historique',
-  path: '/historique',
-  getParentRoute: () => MembershipRoute,
-} as any)
-const MembershipInformationsRoute = MembershipInformationsRouteImport.update({
-  id: '/informations',
-  path: '/informations',
-  getParentRoute: () => MembershipRoute,
-} as any)
+const AuthenticatedDemandesIndexRoute =
+  AuthenticatedDemandesIndexRouteImport.update({
+    id: '/demandes/',
+    path: '/demandes/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDemandesRequestIdRoute =
+  AuthenticatedDemandesRequestIdRouteImport.update({
+    id: '/demandes/$requestId',
+    path: '/demandes/$requestId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDemandesNouvelleRoute =
+  AuthenticatedDemandesNouvelleRouteImport.update({
+    id: '/demandes/nouvelle',
+    path: '/demandes/nouvelle',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedMembershipIndexRoute =
+  AuthenticatedMembershipIndexRouteImport.update({
+    id: '/membership/',
+    path: '/membership/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedMembershipFacturesRoute =
+  AuthenticatedMembershipFacturesRouteImport.update({
+    id: '/membership/factures',
+    path: '/membership/factures',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedMembershipHistoriqueRoute =
+  AuthenticatedMembershipHistoriqueRouteImport.update({
+    id: '/membership/historique',
+    path: '/membership/historique',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedMembershipInformationsRoute =
+  AuthenticatedMembershipInformationsRouteImport.update({
+    id: '/membership/informations',
+    path: '/membership/informations',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AuthenticatedIndexRoute
   '/connexion': typeof ConnexionRoute
-  '/demandes': typeof DemandesRouteWithChildren
-  '/membership': typeof MembershipRouteWithChildren
-  '/offres': typeof OffresRoute
-  '/demandes/$requestId': typeof DemandesRequestIdRoute
-  '/demandes/nouvelle': typeof DemandesNouvelleRoute
-  '/membership/factures': typeof MembershipFacturesRoute
-  '/membership/historique': typeof MembershipHistoriqueRoute
-  '/membership/informations': typeof MembershipInformationsRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/offres': typeof AuthenticatedOffresRoute
+  '/demandes/$requestId': typeof AuthenticatedDemandesRequestIdRoute
+  '/demandes/nouvelle': typeof AuthenticatedDemandesNouvelleRoute
+  '/membership/factures': typeof AuthenticatedMembershipFacturesRoute
+  '/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
+  '/membership/informations': typeof AuthenticatedMembershipInformationsRoute
+  '/demandes/': typeof AuthenticatedDemandesIndexRoute
+  '/membership/': typeof AuthenticatedMembershipIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/connexion': typeof ConnexionRoute
-  '/demandes': typeof DemandesRouteWithChildren
-  '/membership': typeof MembershipRouteWithChildren
-  '/offres': typeof OffresRoute
-  '/demandes/$requestId': typeof DemandesRequestIdRoute
-  '/demandes/nouvelle': typeof DemandesNouvelleRoute
-  '/membership/factures': typeof MembershipFacturesRoute
-  '/membership/historique': typeof MembershipHistoriqueRoute
-  '/membership/informations': typeof MembershipInformationsRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/offres': typeof AuthenticatedOffresRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/demandes/$requestId': typeof AuthenticatedDemandesRequestIdRoute
+  '/demandes/nouvelle': typeof AuthenticatedDemandesNouvelleRoute
+  '/membership/factures': typeof AuthenticatedMembershipFacturesRoute
+  '/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
+  '/membership/informations': typeof AuthenticatedMembershipInformationsRoute
+  '/demandes': typeof AuthenticatedDemandesIndexRoute
+  '/membership': typeof AuthenticatedMembershipIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/connexion': typeof ConnexionRoute
-  '/demandes': typeof DemandesRouteWithChildren
-  '/membership': typeof MembershipRouteWithChildren
-  '/offres': typeof OffresRoute
-  '/demandes/$requestId': typeof DemandesRequestIdRoute
-  '/demandes/nouvelle': typeof DemandesNouvelleRoute
-  '/membership/factures': typeof MembershipFacturesRoute
-  '/membership/historique': typeof MembershipHistoriqueRoute
-  '/membership/informations': typeof MembershipInformationsRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/_authenticated/offres': typeof AuthenticatedOffresRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/demandes/$requestId': typeof AuthenticatedDemandesRequestIdRoute
+  '/_authenticated/demandes/nouvelle': typeof AuthenticatedDemandesNouvelleRoute
+  '/_authenticated/membership/factures': typeof AuthenticatedMembershipFacturesRoute
+  '/_authenticated/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
+  '/_authenticated/membership/informations': typeof AuthenticatedMembershipInformationsRoute
+  '/_authenticated/demandes/': typeof AuthenticatedDemandesIndexRoute
+  '/_authenticated/membership/': typeof AuthenticatedMembershipIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/connexion'
-    | '/demandes'
-    | '/membership'
+    | '/reset-password'
     | '/offres'
     | '/demandes/$requestId'
     | '/demandes/nouvelle'
     | '/membership/factures'
     | '/membership/historique'
     | '/membership/informations'
+    | '/demandes/'
+    | '/membership/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/connexion'
-    | '/demandes'
-    | '/membership'
+    | '/reset-password'
     | '/offres'
+    | '/'
     | '/demandes/$requestId'
     | '/demandes/nouvelle'
     | '/membership/factures'
     | '/membership/historique'
     | '/membership/informations'
+    | '/demandes'
+    | '/membership'
   id:
     | '__root__'
-    | '/'
+    | '/_authenticated'
     | '/connexion'
-    | '/demandes'
-    | '/membership'
-    | '/offres'
-    | '/demandes/$requestId'
-    | '/demandes/nouvelle'
-    | '/membership/factures'
-    | '/membership/historique'
-    | '/membership/informations'
+    | '/reset-password'
+    | '/_authenticated/offres'
+    | '/_authenticated/'
+    | '/_authenticated/demandes/$requestId'
+    | '/_authenticated/demandes/nouvelle'
+    | '/_authenticated/membership/factures'
+    | '/_authenticated/membership/historique'
+    | '/_authenticated/membership/informations'
+    | '/_authenticated/demandes/'
+    | '/_authenticated/membership/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   ConnexionRoute: typeof ConnexionRoute
-  DemandesRoute: typeof DemandesRouteWithChildren
-  MembershipRoute: typeof MembershipRouteWithChildren
-  OffresRoute: typeof OffresRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/connexion': {
@@ -171,101 +195,112 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConnexionRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demandes': {
-      id: '/demandes'
-      path: '/demandes'
-      fullPath: '/demandes'
-      preLoaderRoute: typeof DemandesRouteImport
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/membership': {
-      id: '/membership'
-      path: '/membership'
-      fullPath: '/membership'
-      preLoaderRoute: typeof MembershipRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authenticated/': {
+      id: '/_authenticated/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/offres': {
-      id: '/offres'
+    '/_authenticated/offres': {
+      id: '/_authenticated/offres'
       path: '/offres'
       fullPath: '/offres'
-      preLoaderRoute: typeof OffresRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedOffresRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/demandes/$requestId': {
-      id: '/demandes/$requestId'
-      path: '/$requestId'
+    '/_authenticated/demandes/': {
+      id: '/_authenticated/demandes/'
+      path: '/demandes'
+      fullPath: '/demandes/'
+      preLoaderRoute: typeof AuthenticatedDemandesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/demandes/$requestId': {
+      id: '/_authenticated/demandes/$requestId'
+      path: '/demandes/$requestId'
       fullPath: '/demandes/$requestId'
-      preLoaderRoute: typeof DemandesRequestIdRouteImport
-      parentRoute: typeof DemandesRoute
+      preLoaderRoute: typeof AuthenticatedDemandesRequestIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/demandes/nouvelle': {
-      id: '/demandes/nouvelle'
-      path: '/nouvelle'
+    '/_authenticated/demandes/nouvelle': {
+      id: '/_authenticated/demandes/nouvelle'
+      path: '/demandes/nouvelle'
       fullPath: '/demandes/nouvelle'
-      preLoaderRoute: typeof DemandesNouvelleRouteImport
-      parentRoute: typeof DemandesRoute
+      preLoaderRoute: typeof AuthenticatedDemandesNouvelleRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/membership/factures': {
-      id: '/membership/factures'
-      path: '/factures'
+    '/_authenticated/membership/': {
+      id: '/_authenticated/membership/'
+      path: '/membership'
+      fullPath: '/membership/'
+      preLoaderRoute: typeof AuthenticatedMembershipIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/membership/factures': {
+      id: '/_authenticated/membership/factures'
+      path: '/membership/factures'
       fullPath: '/membership/factures'
-      preLoaderRoute: typeof MembershipFacturesRouteImport
-      parentRoute: typeof MembershipRoute
+      preLoaderRoute: typeof AuthenticatedMembershipFacturesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/membership/historique': {
-      id: '/membership/historique'
-      path: '/historique'
+    '/_authenticated/membership/historique': {
+      id: '/_authenticated/membership/historique'
+      path: '/membership/historique'
       fullPath: '/membership/historique'
-      preLoaderRoute: typeof MembershipHistoriqueRouteImport
-      parentRoute: typeof MembershipRoute
+      preLoaderRoute: typeof AuthenticatedMembershipHistoriqueRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/membership/informations': {
-      id: '/membership/informations'
-      path: '/informations'
+    '/_authenticated/membership/informations': {
+      id: '/_authenticated/membership/informations'
+      path: '/membership/informations'
       fullPath: '/membership/informations'
-      preLoaderRoute: typeof MembershipInformationsRouteImport
-      parentRoute: typeof MembershipRoute
+      preLoaderRoute: typeof AuthenticatedMembershipInformationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
-interface DemandesRouteChildren {
-  DemandesRequestIdRoute: typeof DemandesRequestIdRoute
-  DemandesNouvelleRoute: typeof DemandesNouvelleRoute
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedOffresRoute: typeof AuthenticatedOffresRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedDemandesRequestIdRoute: typeof AuthenticatedDemandesRequestIdRoute
+  AuthenticatedDemandesNouvelleRoute: typeof AuthenticatedDemandesNouvelleRoute
+  AuthenticatedMembershipFacturesRoute: typeof AuthenticatedMembershipFacturesRoute
+  AuthenticatedMembershipHistoriqueRoute: typeof AuthenticatedMembershipHistoriqueRoute
+  AuthenticatedMembershipInformationsRoute: typeof AuthenticatedMembershipInformationsRoute
+  AuthenticatedDemandesIndexRoute: typeof AuthenticatedDemandesIndexRoute
+  AuthenticatedMembershipIndexRoute: typeof AuthenticatedMembershipIndexRoute
 }
 
-const DemandesRouteChildren: DemandesRouteChildren = {
-  DemandesRequestIdRoute: DemandesRequestIdRoute,
-  DemandesNouvelleRoute: DemandesNouvelleRoute,
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedOffresRoute: AuthenticatedOffresRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedDemandesRequestIdRoute: AuthenticatedDemandesRequestIdRoute,
+  AuthenticatedDemandesNouvelleRoute: AuthenticatedDemandesNouvelleRoute,
+  AuthenticatedMembershipFacturesRoute: AuthenticatedMembershipFacturesRoute,
+  AuthenticatedMembershipHistoriqueRoute:
+    AuthenticatedMembershipHistoriqueRoute,
+  AuthenticatedMembershipInformationsRoute:
+    AuthenticatedMembershipInformationsRoute,
+  AuthenticatedDemandesIndexRoute: AuthenticatedDemandesIndexRoute,
+  AuthenticatedMembershipIndexRoute: AuthenticatedMembershipIndexRoute,
 }
 
-const DemandesRouteWithChildren = DemandesRoute._addFileChildren(
-  DemandesRouteChildren,
-)
-
-interface MembershipRouteChildren {
-  MembershipFacturesRoute: typeof MembershipFacturesRoute
-  MembershipHistoriqueRoute: typeof MembershipHistoriqueRoute
-  MembershipInformationsRoute: typeof MembershipInformationsRoute
-}
-
-const MembershipRouteChildren: MembershipRouteChildren = {
-  MembershipFacturesRoute: MembershipFacturesRoute,
-  MembershipHistoriqueRoute: MembershipHistoriqueRoute,
-  MembershipInformationsRoute: MembershipInformationsRoute,
-}
-
-const MembershipRouteWithChildren = MembershipRoute._addFileChildren(
-  MembershipRouteChildren,
-)
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   ConnexionRoute: ConnexionRoute,
-  DemandesRoute: DemandesRouteWithChildren,
-  MembershipRoute: MembershipRouteWithChildren,
-  OffresRoute: OffresRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
