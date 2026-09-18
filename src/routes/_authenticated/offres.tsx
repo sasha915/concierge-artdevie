@@ -15,7 +15,15 @@ function Page() {
   const [active, setActive] = useState("Toutes");
   const { data: offers = [], isLoading } = useQuery(offersQuery);
   const list = active === "Toutes" ? offers : offers.filter((o) => o.category === active);
-  return <AppShell><TopBar title="Offres"/><p className="-mt-5 mb-7 max-w-md text-sm leading-6 text-muted-foreground">Des privilèges négociés auprès de maisons que nous choisissons avec soin.</p><Filters values={cats} active={active} onChange={setActive}/>
+  return <AppShell>
+    <header className="mb-6 flex items-center justify-between">
+      <div className="w-11" />
+      <Logo className="h-[19px] w-auto" />
+      <Button aria-label="Notifications" variant="icon" size="icon"><Bell /></Button>
+    </header>
+    <h1 className="font-display text-[32px] font-semibold leading-tight text-primary">Offres</h1>
+    <p className="mt-2 mb-6 text-[13px] text-muted-foreground">Privilèges négociés par votre conciergerie.</p>
+    <Filters values={cats} active={active} onChange={setActive}/>
     <div className="mt-6 grid gap-5 sm:grid-cols-2">{list.map((o) => <OfferCard key={o.id} offer={o}/>)}</div>
     {!isLoading && list.length === 0 && <div className="mt-6"><EmptyState>Aucune offre dans cette catégorie pour le moment.</EmptyState></div>}
   </AppShell>;
