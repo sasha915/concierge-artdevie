@@ -70,8 +70,8 @@ function Page() {
   }
 
   return <AppShell nav={false}><div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
-    <div className="mb-14 text-center"><Logo /></div>
-    <h1 className="text-center font-display text-[38px] font-semibold text-primary">{mode === "login" ? "Bon retour" : "Rejoignez-nous"}</h1>
+    <div className="mb-14 flex justify-center"><Logo /></div>
+    <h1 className="text-center font-display text-[38px] font-semibold text-primary">{mode === "login" ? greeting : "Rejoignez-nous"}</h1>
     <p className="mt-3 text-center text-sm text-muted-foreground">{mode === "login" ? "Votre concierge vous attend." : "Créez votre compte membre en quelques instants."}</p>
     <form className="mt-10 space-y-5" onSubmit={submit}>
       {mode === "signup" && <>
