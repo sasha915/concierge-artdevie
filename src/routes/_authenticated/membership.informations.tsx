@@ -21,7 +21,7 @@ function Page() {
 
   useEffect(() => { setFullName(profile?.full_name ?? ""); setPhone(profile?.phone ?? ""); }, [profile]);
 
-  async function update(values: Record<string, string | boolean | null>) {
+  async function update(values: { full_name?: string; phone?: string | null; notify_requests?: boolean; notify_offers?: boolean; notify_messages?: boolean }) {
     if (!profile) return;
     await supabase.from("profiles").update(values).eq("id", profile.id);
     await queryClient.invalidateQueries({ queryKey: ["profile"] });
