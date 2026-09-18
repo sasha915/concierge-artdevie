@@ -39,7 +39,14 @@ function Page() {
       options: { emailRedirectTo: window.location.origin, data: { full_name: fullName, phone } },
     });
     setBusy(false);
-    if (error) { setError(error.message === "User already registered" ? "Un compte existe déjà avec cet email." : "La création du compte a échoué. Réessayez."); return; }
+    if (error) {
+      const code = (error as { code?: string }).code ?? "";
+      if (code === "user_already_exists" || error.message.includes("already registered")) setError("Un compte existe déjà avec cet email.");
+      else if (code === "weak_password") setError("Ce mot de passe est trop courant. Choisissez-en un plus personnel et plus long.");
+      else if (code === "email_address_invalid") setError("Cette adresse email n’est pas acceptée. Utilisez votre adresse habituelle.");
+      else setError("La création du compte a échoué. Réessayez.");
+      return;
+    }
     if (data.session) { navigate({ to: "/", replace: true }); return; }
     setNotice("Votre compte est créé. Confirmez votre email en cliquant sur le lien que nous venons de vous envoyer.");
   }
