@@ -27,7 +27,7 @@ function Page() {
   useEffect(() => {
     const hasVisited = localStorage.getItem("adv-visited");
     if (hasVisited) {
-      const variants = ["Bon retour", "Heureux de vous revoir", "Ravi de vous retrouver"];
+      const variants = ["Bon retour", "Heureux de vous revoir", "Ravi de vous retrouver"] as const;
       setGreeting(variants[Math.floor(Math.random() * variants.length)]);
     } else {
       localStorage.setItem("adv-visited", "true");
