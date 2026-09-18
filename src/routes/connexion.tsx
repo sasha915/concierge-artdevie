@@ -21,6 +21,7 @@ function Page() {
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [greeting, setGreeting] = useState("Bienvenue");
   const [notice, setNotice] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent) {
