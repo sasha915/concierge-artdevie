@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell, Logo } from "@/components/art-de-vie/app-shell";
+
+let greetingInitialized = false;
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +23,20 @@ function Page() {
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [greeting, setGreeting] = useState("Bienvenue");
   const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (greetingInitialized) return;
+    greetingInitialized = true;
+    const hasVisited = localStorage.getItem("adv-visited");
+    if (hasVisited) {
+      const variants = ["Bon retour", "Heureux de vous revoir", "Ravi de vous retrouver"];
+      setGreeting(variants[Math.floor(Math.random() * variants.length)] ?? "Bon retour");
+    } else {
+      localStorage.setItem("adv-visited", "true");
+    }
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -59,8 +74,8 @@ function Page() {
   }
 
   return <AppShell nav={false}><div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
-    <div className="mb-14 text-center"><Logo /></div>
-    <h1 className="text-center font-display text-[38px] font-semibold text-primary">{mode === "login" ? "Bon retour" : "Rejoignez-nous"}</h1>
+    <div className="mb-14 flex justify-center"><Logo /></div>
+    <h1 className="text-center font-display text-[38px] font-semibold text-primary">{mode === "login" ? greeting : "Rejoignez-nous"}</h1>
     <p className="mt-3 text-center text-sm text-muted-foreground">{mode === "login" ? "Votre concierge vous attend." : "Créez votre compte membre en quelques instants."}</p>
     <form className="mt-10 space-y-5" onSubmit={submit}>
       {mode === "signup" && <>
