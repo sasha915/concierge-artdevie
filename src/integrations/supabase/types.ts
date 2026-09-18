@@ -14,7 +14,174 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      invoices: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          id: string
+          issued_on: string
+          kind: string
+          number: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents?: number
+          created_at?: string
+          id?: string
+          issued_on?: string
+          kind?: string
+          number: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          id?: string
+          issued_on?: string
+          kind?: string
+          number?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      offers: {
+        Row: {
+          category: string
+          created_at: string
+          featured: boolean
+          id: string
+          image_key: string
+          partner: string
+          place: string
+          promo: string
+          sort_order: number
+          title: string
+          validity: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          featured?: boolean
+          id?: string
+          image_key?: string
+          partner: string
+          place: string
+          promo: string
+          sort_order?: number
+          title: string
+          validity: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          featured?: boolean
+          id?: string
+          image_key?: string
+          partner?: string
+          place?: string
+          promo?: string
+          sort_order?: number
+          title?: string
+          validity?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          member_number: string
+          member_since: string
+          notify_messages: boolean
+          notify_offers: boolean
+          notify_requests: boolean
+          phone: string | null
+          plan: string
+          role_label: string
+          valid_until: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id: string
+          member_number?: string
+          member_since?: string
+          notify_messages?: boolean
+          notify_offers?: boolean
+          notify_requests?: boolean
+          phone?: string | null
+          plan?: string
+          role_label?: string
+          valid_until?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          member_number?: string
+          member_since?: string
+          notify_messages?: boolean
+          notify_offers?: boolean
+          notify_requests?: boolean
+          phone?: string | null
+          plan?: string
+          role_label?: string
+          valid_until?: string
+        }
+        Relationships: []
+      }
+      requests: {
+        Row: {
+          category: string
+          concierge: string
+          created_at: string
+          description: string
+          guests: number | null
+          id: string
+          image_key: string
+          scheduled_date: string | null
+          scheduled_time: string | null
+          status: Database["public"]["Enums"]["request_status"]
+          title: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          concierge?: string
+          created_at?: string
+          description?: string
+          guests?: number | null
+          id?: string
+          image_key?: string
+          scheduled_date?: string | null
+          scheduled_time?: string | null
+          status?: Database["public"]["Enums"]["request_status"]
+          title: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          concierge?: string
+          created_at?: string
+          description?: string
+          guests?: number | null
+          id?: string
+          image_key?: string
+          scheduled_date?: string | null
+          scheduled_time?: string | null
+          status?: Database["public"]["Enums"]["request_status"]
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +190,12 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      request_status:
+        | "Nouvelle"
+        | "En cours"
+        | "Confirmée"
+        | "Terminée"
+        | "Annulée"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +322,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      request_status: [
+        "Nouvelle",
+        "En cours",
+        "Confirmée",
+        "Terminée",
+        "Annulée",
+      ],
+    },
   },
 } as const
