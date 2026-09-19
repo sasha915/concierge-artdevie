@@ -63,7 +63,7 @@ function Page() {
             <div key={r.id} className="flex items-center gap-4 border-b border-primary/10 p-5 last:border-0">
               <div className="min-w-0 flex-1">
                 <p className="truncate font-display text-[18px] font-medium text-primary">{r.full_name}</p>
-                <p className="mt-1 truncate text-[12px] text-muted-foreground">{r.email} · {formatShortDate(r.created_at)}</p>
+                <p className="mt-1 truncate text-[12px] text-muted-foreground">{r.email} · {formatShortDate(r.created_at.slice(0, 10))}</p>
               </div>
               <span className="shrink-0 rounded-full bg-primary/10 px-[13px] py-[5px] text-[12px] font-medium text-primary">{r.status}</span>
             </div>
