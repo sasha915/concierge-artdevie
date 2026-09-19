@@ -42,3 +42,9 @@ export const memberDetailQuery = (id: string) =>
     queryFn: async (): Promise<{ profile: AdminMember | null; requests: RequestItem[]; invoices: Invoice[] }> =>
       (await getMemberDetail({ data: { id } })) as { profile: AdminMember | null; requests: RequestItem[]; invoices: Invoice[] },
   });
+
+export const memberPaymentsQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["admin", "member", id, "payments"],
+    queryFn: async () => (await import("@/lib/admin.functions")).listMemberPayments({ data: { id } }),
+  });

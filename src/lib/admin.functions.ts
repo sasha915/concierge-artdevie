@@ -127,3 +127,42 @@ export const sendMemberInvite = createServerFn({ method: "POST" })
     if (error) return { ok: false as const, reason: "L’email n’a pas pu être envoyé." };
     return { ok: true as const };
   });
+
+export type AdminPayment = {
+  id: string;
+  date: string;
+  description: string;
+  amountCents: number;
+  currency: string;
+  status: string;
+  method: string | null;
+  recurring: boolean;
+};
+
+export const listMemberPayments = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("mollie_customer_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!mollieKey()) return { configured: false as const, payments: [] as AdminPayment[] };
+    if (!profile?.mollie_customer_id) return { configured: true as const, payments: [] as AdminPayment[] };
+    const res = await mollie<{ _embedded?: { payments?: MolliePayment[] } }>(
+      `/customers/${profile.mollie_customer_id}/payments?limit=50`,
+    );
+    const payments: AdminPayment[] = (res._embedded?.payments ?? []).map((p) => ({
+      id: p.id,
+      date: (p.createdAt ?? "").slice(0, 10),
+      description: p.description ?? "Paiement",
+      amountCents: Math.round(parseFloat(p.amount.value) * 100),
+      currency: p.amount.currency,
+      status: statusLabel[p.status] ?? p.status,
+      method: p.method ?? null,
+      recurring: !!p.subscriptionId,
+    }));
+    return { configured: true as const, payments };
+  });
