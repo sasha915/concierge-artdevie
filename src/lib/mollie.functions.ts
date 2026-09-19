@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getRequest } from "@tanstack/react-start/server";
-import { euro, mollie, mollieKey, publicBase, type MolliePayment } from "./mollie.server";
+import { euro, mollie, mollieKey, publicBase, webhookBase, type MolliePayment } from "./mollie.server";
 
 export const billingStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

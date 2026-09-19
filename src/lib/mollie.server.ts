@@ -37,6 +37,13 @@ export function publicBase(request: Request): string {
   return request.headers.get("origin") ?? new URL(request.url).origin;
 }
 
+// Mollie doit pouvoir joindre le webhook : en local, on pointe vers l'URL publique stable du projet.
+const DEV_WEBHOOK_BASE = "https://project--41b1075b-2b17-4a5b-8120-aca5edc05f47-dev.lovable.app";
+export function webhookBase(request: Request): string {
+  const base = publicBase(request);
+  return /^https?:\/\/(localhost|127\.0\.0\.1)/.test(base) ? DEV_WEBHOOK_BASE : base;
+}
+
 // Statuts Mollie → libellé affiché en facturation
 export const statusLabel: Record<string, string> = {
   paid: "Payée",
