@@ -16,7 +16,7 @@ function Page() {
   return <AppShell>
     <PageHeader title="Offres" subtitle="Privilèges négociés par votre conciergerie." />
     <Filters values={cats} active={active} onChange={setActive}/>
-    <div className="mt-6 grid gap-5 sm:grid-cols-2">{list.map((o) => <OfferCard key={o.id} offer={o}/>)}</div>
+    <div className="mt-4 grid gap-[22px] sm:grid-cols-2">{list.map((o) => <OfferCard key={o.id} offer={o}/>)}</div>
     {!isLoading && list.length === 0 && <div className="mt-6"><EmptyState>Aucune offre dans cette catégorie pour le moment.</EmptyState></div>}
   </AppShell>;
 }

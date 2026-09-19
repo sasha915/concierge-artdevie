@@ -27,7 +27,7 @@ function Page() {
       </div>
       {essentiel && <p className="mt-4 text-[10px] leading-4 opacity-80">+ 10 % de commission sur les prestations</p>}
     </section>
-    <div className="mt-8"><Filters values={["Toutes", "Abonnement", "Prestations"]} active={active} onChange={setActive}/></div>
+    <div className="mt-5"><Filters values={["Toutes", "Abonnement", "Prestations"]} active={active} onChange={setActive}/></div>
     <div className="mt-5 overflow-hidden rounded-card bg-card">{list.map((i) => <div key={i.id} className="flex items-center gap-4 border-b border-primary/10 p-5 last:border-0">
       <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{i.number}</p><p className="mt-1 text-xs text-muted-foreground">{formatShortDate(i.issued_on)} · {i.kind}</p></div>
       <div className="text-right"><p className="font-display text-lg text-primary">{formatAmount(i.amount_cents)}</p><span className="mt-1 inline-block rounded-full bg-primary px-2.5 py-1 text-[9px] font-semibold text-primary-foreground">{i.status}</span></div>
