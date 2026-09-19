@@ -34,7 +34,7 @@ function Page() {
       <h1 className="font-display text-[32px] font-semibold leading-tight text-primary">Ma carte de membre</h1>
       <p className="mt-2 text-[13px] text-muted-foreground">Votre carte d'accès virtuelle aux privilèges Art de Vie.</p>
     </header>
-    <div className="mx-auto max-w-[620px] lg:grid lg:max-w-none lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)] xl:gap-10">
+    <div className="mx-auto max-w-[620px] lg:grid lg:max-w-none lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-8 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)] xl:gap-10">
       <div className="min-w-0">
         <MemberCard profile={profile}/>
         {showConcierge ? (
@@ -44,15 +44,15 @@ function Page() {
         ) : null}
       </div>
       <div className="min-w-0">
-        <div className="mt-6 overflow-hidden rounded-card bg-card lg:mt-0">
+        <div className="mt-6 flex h-full flex-col justify-center overflow-hidden rounded-card bg-card lg:mt-0">
           <Link to="/membership/informations" className={row}><CircleUserRound className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Vos informations</span><ChevronRight className="size-4 text-muted-foreground"/></Link>
           <Link to="/membership/factures" className={row}><FileText className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Mes factures</span><ChevronRight className="size-4 text-muted-foreground"/></Link>
           <Link to="/membership/historique" className={row}><History className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Historique des demandes</span><ChevronRight className="size-4 text-muted-foreground"/></Link>
           <button type="button" className={row + " w-full text-left"}><Gift className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Parrainer un membre</span><ChevronRight className="size-4 text-muted-foreground"/></button>
           <button type="button" onClick={signOut} className={row + " w-full text-left"}><LogOut className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Se déconnecter</span><ChevronRight className="size-4 text-muted-foreground"/></button>
         </div>
-        <blockquote className="mx-auto mt-12 max-w-sm text-center font-display text-xl italic leading-8 text-primary">« Le luxe véritable, c’est le temps rendu à l’essentiel. »</blockquote>
       </div>
     </div>
+    <blockquote className="mx-auto mt-12 max-w-sm text-center font-display text-xl italic leading-8 text-primary">« Le luxe véritable, c’est le temps rendu à l’essentiel. »</blockquote>
   </AppShell>;
 }
