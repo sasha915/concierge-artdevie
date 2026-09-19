@@ -7,3 +7,4 @@
 - [x] Accounts: sign-up, sign-in, password reset, protected screens
 - [x] Real data: profile, requests, offers, invoices in the database
 - [x] Membership formulas: dedicated concierge and commitment details
+- [x] Responsive desktop shell and home dashboard
