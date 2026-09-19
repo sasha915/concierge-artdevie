@@ -70,8 +70,7 @@ function Page() {
     await queryClient.invalidateQueries({ queryKey: ["admin"] });
   }
 
-  return <AppShell nav={false}>
-    <div className="mb-6 flex items-center justify-between"><div className="w-11" /><Logo className="h-[19px] w-auto" /><div className="w-11" /></div>
+  return <AdminShell>
     <header className="mb-7 flex items-center gap-4">
       <Button asChild variant="icon" size="icon" aria-label="Retour"><Link to="/admin"><ChevronLeft /></Link></Button>
       <h1 className="min-w-0 flex-1 truncate font-display text-[32px] font-semibold leading-tight text-primary">{profile?.full_name || (isLoading ? "Chargement…" : "Membre introuvable")}</h1>
