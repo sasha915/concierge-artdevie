@@ -25,6 +25,7 @@ import { Route as AuthenticatedMembershipFacturesRouteImport } from './routes/_a
 import { Route as AuthenticatedMembershipHistoriqueRouteImport } from './routes/_authenticated/membership.historique'
 import { Route as AuthenticatedMembershipInformationsRouteImport } from './routes/_authenticated/membership.informations'
 import { Route as AuthenticatedMembershipParrainerRouteImport } from './routes/_authenticated/membership.parrainer'
+import { Route as ApiPublicNotifyConciergeRouteImport } from './routes/api/public/notify-concierge'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -114,6 +115,12 @@ const AuthenticatedMembershipParrainerRoute =
     path: '/membership/parrainer',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicNotifyConciergeRoute =
+  ApiPublicNotifyConciergeRouteImport.update({
+    id: '/api/public/notify-concierge',
+    path: '/api/public/notify-concierge',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -128,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
   '/membership/informations': typeof AuthenticatedMembershipInformationsRoute
   '/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
+  '/api/public/notify-concierge': typeof ApiPublicNotifyConciergeRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/demandes/': typeof AuthenticatedDemandesIndexRoute
   '/membership/': typeof AuthenticatedMembershipIndexRoute
@@ -144,6 +152,7 @@ export interface FileRoutesByTo {
   '/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
   '/membership/informations': typeof AuthenticatedMembershipInformationsRoute
   '/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
+  '/api/public/notify-concierge': typeof ApiPublicNotifyConciergeRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/demandes': typeof AuthenticatedDemandesIndexRoute
   '/membership': typeof AuthenticatedMembershipIndexRoute
@@ -163,6 +172,7 @@ export interface FileRoutesById {
   '/_authenticated/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
   '/_authenticated/membership/informations': typeof AuthenticatedMembershipInformationsRoute
   '/_authenticated/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
+  '/api/public/notify-concierge': typeof ApiPublicNotifyConciergeRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/demandes/': typeof AuthenticatedDemandesIndexRoute
   '/_authenticated/membership/': typeof AuthenticatedMembershipIndexRoute
@@ -182,6 +192,7 @@ export interface FileRouteTypes {
     | '/membership/historique'
     | '/membership/informations'
     | '/membership/parrainer'
+    | '/api/public/notify-concierge'
     | '/admin/'
     | '/demandes/'
     | '/membership/'
@@ -198,6 +209,7 @@ export interface FileRouteTypes {
     | '/membership/historique'
     | '/membership/informations'
     | '/membership/parrainer'
+    | '/api/public/notify-concierge'
     | '/admin'
     | '/demandes'
     | '/membership'
@@ -216,6 +228,7 @@ export interface FileRouteTypes {
     | '/_authenticated/membership/historique'
     | '/_authenticated/membership/informations'
     | '/_authenticated/membership/parrainer'
+    | '/api/public/notify-concierge'
     | '/_authenticated/admin/'
     | '/_authenticated/demandes/'
     | '/_authenticated/membership/'
@@ -225,6 +238,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   ConnexionRoute: typeof ConnexionRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicNotifyConciergeRoute: typeof ApiPublicNotifyConciergeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -341,6 +355,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMembershipParrainerRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/notify-concierge': {
+      id: '/api/public/notify-concierge'
+      path: '/api/public/notify-concierge'
+      fullPath: '/api/public/notify-concierge'
+      preLoaderRoute: typeof ApiPublicNotifyConciergeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -394,6 +415,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   ConnexionRoute: ConnexionRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicNotifyConciergeRoute: ApiPublicNotifyConciergeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
