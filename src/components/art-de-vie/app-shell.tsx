@@ -65,7 +65,8 @@ function DesktopSidebar() {
 }
 
 export function AppShell({ children, nav = true }: { children: ReactNode; nav?: boolean }) {
-  return <>{nav && <DesktopSidebar />}<main className={nav ? "mx-auto min-h-screen max-w-[1120px] px-5 pb-28 pt-6 sm:px-8 lg:ml-[264px] lg:max-w-[calc(100%-264px)] lg:px-10 lg:pb-10 lg:pt-8 xl:px-12" : "mx-auto min-h-screen max-w-[1120px] px-5 pb-10 pt-6 sm:px-8 lg:px-10"}>{children}{nav && <BottomNav />}</main></>;
+  const baseMain = "mx-auto min-h-screen max-w-[1120px] px-5 pt-6 sm:px-8 lg:ml-[264px] lg:max-w-[calc(100%-264px)] lg:px-10 lg:pb-10 lg:pt-8 xl:px-12";
+  return <><DesktopSidebar /><main className={`${baseMain} ${nav ? "pb-28 lg:pb-10" : "pb-10"}`}>{children}{nav && <BottomNav />}</main></>;
 }
 
 export function TopBar({ title, action }: { title?: string; action?: ReactNode }) {
