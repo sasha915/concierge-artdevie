@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { listMembers, getMemberDetail } from "@/lib/admin.functions";
+import { listMembers, getMemberDetail, listMemberPayments } from "@/lib/admin.functions";
 import type { Invoice, RequestItem } from "@/data/art-de-vie";
 
 export type AdminMember = {
