@@ -15,6 +15,9 @@ function Page() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: profile = null } = useQuery(profileQuery);
+  const conciergeFirstName = profile?.concierge_referent?.split(/\s+/)[0] ?? null;
+  const mailto = `mailto:concierge@artdevie.fr?subject=${encodeURIComponent(`Message de ${profile?.full_name ?? "membre"}`)}`;
+
 
   async function signOut() {
     await queryClient.cancelQueries();
