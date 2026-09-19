@@ -16,7 +16,9 @@ function Page() {
   const queryClient = useQueryClient();
   const { data: profile = null } = useQuery(profileQuery);
   const conciergeFirstName = profile?.concierge_referent?.split(/\s+/)[0] ?? null;
-  const mailto = `mailto:concierge@artdevie.fr?subject=${encodeURIComponent(`Message de ${profile?.full_name ?? "membre"}`)}`;
+  const whatsappDigits = profile?.concierge_whatsapp?.replace(/[^0-9]/g, "") ?? "";
+  const whatsappUrl = `https://wa.me/${whatsappDigits}?text=${encodeURIComponent(`Bonjour ${conciergeFirstName ?? ""}, j'aimerais échanger avec vous.`)}`;
+  const showConcierge = profile?.plan === "Signature" && Boolean(conciergeFirstName) && whatsappDigits.length > 0;
 
 
   async function signOut() {
