@@ -13,7 +13,9 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as ConnexionRouteImport } from './routes/connexion'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedOffresRouteImport } from './routes/_authenticated/offres'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedDemandesIndexRouteImport } from './routes/_authenticated/demandes.index'
 import { Route as AuthenticatedDemandesRequestIdRouteImport } from './routes/_authenticated/demandes.$requestId'
 import { Route as AuthenticatedDemandesNouvelleRouteImport } from './routes/_authenticated/demandes.nouvelle'
@@ -42,10 +44,20 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedOffresRoute = AuthenticatedOffresRouteImport.update({
   id: '/offres',
   path: '/offres',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
 const AuthenticatedDemandesIndexRoute =
   AuthenticatedDemandesIndexRouteImport.update({
@@ -100,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/connexion': typeof ConnexionRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/offres': typeof AuthenticatedOffresRoute
   '/demandes/$requestId': typeof AuthenticatedDemandesRequestIdRoute
   '/demandes/nouvelle': typeof AuthenticatedDemandesNouvelleRoute
@@ -107,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
   '/membership/informations': typeof AuthenticatedMembershipInformationsRoute
   '/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
   '/demandes/': typeof AuthenticatedDemandesIndexRoute
   '/membership/': typeof AuthenticatedMembershipIndexRoute
 }
@@ -121,6 +135,7 @@ export interface FileRoutesByTo {
   '/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
   '/membership/informations': typeof AuthenticatedMembershipInformationsRoute
   '/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
   '/demandes': typeof AuthenticatedDemandesIndexRoute
   '/membership': typeof AuthenticatedMembershipIndexRoute
 }
@@ -129,6 +144,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/connexion': typeof ConnexionRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/offres': typeof AuthenticatedOffresRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/demandes/$requestId': typeof AuthenticatedDemandesRequestIdRoute
@@ -137,6 +153,7 @@ export interface FileRoutesById {
   '/_authenticated/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
   '/_authenticated/membership/informations': typeof AuthenticatedMembershipInformationsRoute
   '/_authenticated/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/demandes/': typeof AuthenticatedDemandesIndexRoute
   '/_authenticated/membership/': typeof AuthenticatedMembershipIndexRoute
 }
@@ -146,6 +163,7 @@ export interface FileRouteTypes {
     | '/'
     | '/connexion'
     | '/reset-password'
+    | '/admin'
     | '/offres'
     | '/demandes/$requestId'
     | '/demandes/nouvelle'
@@ -153,6 +171,7 @@ export interface FileRouteTypes {
     | '/membership/historique'
     | '/membership/informations'
     | '/membership/parrainer'
+    | '/admin/'
     | '/demandes/'
     | '/membership/'
   fileRoutesByTo: FileRoutesByTo
@@ -167,6 +186,7 @@ export interface FileRouteTypes {
     | '/membership/historique'
     | '/membership/informations'
     | '/membership/parrainer'
+    | '/admin'
     | '/demandes'
     | '/membership'
   id:
@@ -174,6 +194,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/connexion'
     | '/reset-password'
+    | '/_authenticated/admin'
     | '/_authenticated/offres'
     | '/_authenticated/'
     | '/_authenticated/demandes/$requestId'
@@ -182,6 +203,7 @@ export interface FileRouteTypes {
     | '/_authenticated/membership/historique'
     | '/_authenticated/membership/informations'
     | '/_authenticated/membership/parrainer'
+    | '/_authenticated/admin/'
     | '/_authenticated/demandes/'
     | '/_authenticated/membership/'
   fileRoutesById: FileRoutesById
@@ -222,12 +244,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/offres': {
       id: '/_authenticated/offres'
       path: '/offres'
       fullPath: '/offres'
       preLoaderRoute: typeof AuthenticatedOffresRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/demandes/': {
       id: '/_authenticated/demandes/'
@@ -288,7 +324,19 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+}
+
+const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+}
+
+const AuthenticatedAdminRouteWithChildren =
+  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
+
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedOffresRoute: typeof AuthenticatedOffresRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedDemandesRequestIdRoute: typeof AuthenticatedDemandesRequestIdRoute
@@ -302,6 +350,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedOffresRoute: AuthenticatedOffresRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedDemandesRequestIdRoute: AuthenticatedDemandesRequestIdRoute,
