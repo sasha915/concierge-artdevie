@@ -36,6 +36,13 @@
       "when": 1789779108334,
       "tag": "0004_create_referrals",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789779360830,
+      "tag": "0005_admin_roles_and_member_management",
+      "breakpoints": true
     }
   ]
 }
