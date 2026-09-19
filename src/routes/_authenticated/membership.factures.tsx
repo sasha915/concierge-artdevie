@@ -36,18 +36,24 @@ function Page() {
 
   async function pay(invoiceId: string) {
     setBusy(true);
-    const res = await payInvoice({ data: { invoiceId } });
-    setBusy(false);
-    if (res.ok) { window.location.href = res.checkoutUrl; return; }
-    toast.error(res.reason === "mollie_not_configured" ? "Le paiement en ligne n'est pas encore activé." : "Impossible de préparer ce paiement.");
+    try {
+      const res = await payInvoice({ data: { invoiceId } });
+      if (res.ok) { window.location.href = res.checkoutUrl; return; }
+      toast.error(res.reason === "mollie_not_configured" ? "Le paiement en ligne n'est pas encore activé." : "Impossible de préparer ce paiement.");
+    } catch {
+      toast.error("Impossible de préparer ce paiement.");
+    } finally { setBusy(false); }
   }
 
   async function subscribe() {
     setBusy(true);
-    const res = await activateAutoDebit();
-    setBusy(false);
-    if (res.ok) { window.location.href = res.checkoutUrl; return; }
-    toast.error(res.reason === "mollie_not_configured" ? "Le prélèvement automatique n'est pas encore activé." : "Impossible de préparer le prélèvement.");
+    try {
+      const res = await activateAutoDebit();
+      if (res.ok) { window.location.href = res.checkoutUrl; return; }
+      toast.error(res.reason === "mollie_not_configured" ? "Le prélèvement automatique n'est pas encore activé." : "Impossible de préparer le prélèvement.");
+    } catch {
+      toast.error("Impossible de préparer le prélèvement.");
+    } finally { setBusy(false); }
   }
 
   return <AppShell nav={false}><div className="mx-auto max-w-2xl"><SubHeader title="Mes factures"/>
