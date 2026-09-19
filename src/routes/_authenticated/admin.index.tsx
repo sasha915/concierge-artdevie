@@ -69,6 +69,14 @@ function Page() {
     await queryClient.invalidateQueries({ queryKey: ["admin", "members"] });
   }
 
+  async function lockSession() {
+    await lock({});
+    queryClient.removeQueries({ queryKey: ["admin"] });
+    await navigate({ to: "/admin-connexion", replace: true });
+  }
+
+
+
   return <AppShell>
     <div className="lg:hidden"><PageHeader title="Administration" subtitle="Gérez les membres invités, leurs demandes et leurs factures." /></div>
     <header className="mb-[22px] hidden items-end justify-between gap-6 lg:flex">
