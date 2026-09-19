@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { euro, mollie, mollieKey, statusLabel, type MolliePayment } from "@/lib/mollie.server";
+import { mollie, mollieKey, statusLabel, type MolliePayment } from "@/lib/mollie.server";
 
 export const Route = createFileRoute("/api/public/mollie-webhook")({
   server: {
@@ -88,7 +88,6 @@ export const Route = createFileRoute("/api/public/mollie-webhook")({
             });
           }
         }
-        void euro; // helper conservé pour les montants en centimes côté fonctions
         return new Response(null, { status: 200 });
       },
     },

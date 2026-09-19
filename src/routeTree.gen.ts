@@ -25,6 +25,7 @@ import { Route as AuthenticatedMembershipFacturesRouteImport } from './routes/_a
 import { Route as AuthenticatedMembershipHistoriqueRouteImport } from './routes/_authenticated/membership.historique'
 import { Route as AuthenticatedMembershipInformationsRouteImport } from './routes/_authenticated/membership.informations'
 import { Route as AuthenticatedMembershipParrainerRouteImport } from './routes/_authenticated/membership.parrainer'
+import { Route as ApiPublicMollieWebhookRouteImport } from './routes/api/public/mollie-webhook'
 import { Route as ApiPublicNotifyConciergeRouteImport } from './routes/api/public/notify-concierge'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -115,6 +116,11 @@ const AuthenticatedMembershipParrainerRoute =
     path: '/membership/parrainer',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicMollieWebhookRoute = ApiPublicMollieWebhookRouteImport.update({
+  id: '/api/public/mollie-webhook',
+  path: '/api/public/mollie-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicNotifyConciergeRoute =
   ApiPublicNotifyConciergeRouteImport.update({
     id: '/api/public/notify-concierge',
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
   '/membership/informations': typeof AuthenticatedMembershipInformationsRoute
   '/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
+  '/api/public/mollie-webhook': typeof ApiPublicMollieWebhookRoute
   '/api/public/notify-concierge': typeof ApiPublicNotifyConciergeRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/demandes/': typeof AuthenticatedDemandesIndexRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByTo {
   '/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
   '/membership/informations': typeof AuthenticatedMembershipInformationsRoute
   '/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
+  '/api/public/mollie-webhook': typeof ApiPublicMollieWebhookRoute
   '/api/public/notify-concierge': typeof ApiPublicNotifyConciergeRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/demandes': typeof AuthenticatedDemandesIndexRoute
@@ -172,6 +180,7 @@ export interface FileRoutesById {
   '/_authenticated/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
   '/_authenticated/membership/informations': typeof AuthenticatedMembershipInformationsRoute
   '/_authenticated/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
+  '/api/public/mollie-webhook': typeof ApiPublicMollieWebhookRoute
   '/api/public/notify-concierge': typeof ApiPublicNotifyConciergeRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/demandes/': typeof AuthenticatedDemandesIndexRoute
@@ -192,6 +201,7 @@ export interface FileRouteTypes {
     | '/membership/historique'
     | '/membership/informations'
     | '/membership/parrainer'
+    | '/api/public/mollie-webhook'
     | '/api/public/notify-concierge'
     | '/admin/'
     | '/demandes/'
@@ -209,6 +219,7 @@ export interface FileRouteTypes {
     | '/membership/historique'
     | '/membership/informations'
     | '/membership/parrainer'
+    | '/api/public/mollie-webhook'
     | '/api/public/notify-concierge'
     | '/admin'
     | '/demandes'
@@ -228,6 +239,7 @@ export interface FileRouteTypes {
     | '/_authenticated/membership/historique'
     | '/_authenticated/membership/informations'
     | '/_authenticated/membership/parrainer'
+    | '/api/public/mollie-webhook'
     | '/api/public/notify-concierge'
     | '/_authenticated/admin/'
     | '/_authenticated/demandes/'
@@ -238,6 +250,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   ConnexionRoute: typeof ConnexionRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicMollieWebhookRoute: typeof ApiPublicMollieWebhookRoute
   ApiPublicNotifyConciergeRoute: typeof ApiPublicNotifyConciergeRoute
 }
 
@@ -355,6 +368,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMembershipParrainerRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/mollie-webhook': {
+      id: '/api/public/mollie-webhook'
+      path: '/api/public/mollie-webhook'
+      fullPath: '/api/public/mollie-webhook'
+      preLoaderRoute: typeof ApiPublicMollieWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/notify-concierge': {
       id: '/api/public/notify-concierge'
       path: '/api/public/notify-concierge'
@@ -415,6 +435,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   ConnexionRoute: ConnexionRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicMollieWebhookRoute: ApiPublicMollieWebhookRoute,
   ApiPublicNotifyConciergeRoute: ApiPublicNotifyConciergeRoute,
 }
 export const routeTree = rootRouteImport
