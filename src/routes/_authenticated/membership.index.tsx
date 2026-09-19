@@ -29,9 +29,9 @@ function Page() {
   }
 
   return <AppShell><PageHeader title="Ma carte de membre" subtitle="Votre carte d'accès virtuelle aux privilèges Art de Vie." /><div className="mx-auto max-w-[620px]"><MemberCard profile={profile}/>
-    {profile?.plan === "Signature" && conciergeFirstName ? (
+    {showConcierge ? (
       <Button asChild variant="primary" size="lg" className="mt-6 w-full">
-        <a href={mailto}><MessageCircle />Écrire à {conciergeFirstName}</a>
+        <a href={whatsappUrl} target="_blank" rel="noreferrer"><MessageCircle />Écrire à {conciergeFirstName}</a>
       </Button>
     ) : null}
     <div className="mt-6 overflow-hidden rounded-card bg-card">
