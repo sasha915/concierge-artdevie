@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, CircleUserRound, FileText, Gift, History, LogOut } from "lucide-react";
+import { ChevronRight, CircleUserRound, FileText, Gift, History, LogOut, MessageCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { AppShell, PageHeader } from "@/components/art-de-vie/app-shell";
 import { MemberCard } from "@/components/art-de-vie/member-card";
 import { supabase } from "@/integrations/supabase/client";
