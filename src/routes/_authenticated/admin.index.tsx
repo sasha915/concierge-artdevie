@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
-import { ChevronRight, Mail, Plus, Search, UserMinus, UserPlus } from "lucide-react";
+import { ChevronRight, Lock, Mail, Plus, Search, UserMinus, UserPlus } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/art-de-vie/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { EmptyState } from "@/components/art-de-vie/cards";
 import { membersQuery, type AdminMember } from "@/lib/admin-queries";
 import { createMember, sendMemberInvite, setMemberDisabled } from "@/lib/admin.functions";
+import { lockAdmin } from "@/lib/admin-gate.functions";
+import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/admin/")({ head: () => ({ meta: [{ title: "Administration des membres — Art de Vie" }, { name: "description", content: "Gérez les membres invités de la conciergerie Art de Vie." }, { property: "og:title", content: "Administration des membres — Art de Vie" }, { property: "og:description", content: "Gérez les membres invités de la conciergerie Art de Vie." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
 
@@ -19,6 +21,9 @@ function Page() {
   const create = useServerFn(createMember);
   const invite = useServerFn(sendMemberInvite);
   const toggle = useServerFn(setMemberDisabled);
+  const lock = useServerFn(lockAdmin);
+  const navigate = useNavigate();
+
 
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);

@@ -14,6 +14,7 @@ import { Route as ConnexionRouteImport } from './routes/connexion'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAdminConnexionRouteImport } from './routes/_authenticated/admin-connexion'
 import { Route as AuthenticatedOffresRouteImport } from './routes/_authenticated/offres'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminMemberIdRouteImport } from './routes/_authenticated/admin.$memberId'
@@ -52,6 +53,12 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminConnexionRoute =
+  AuthenticatedAdminConnexionRouteImport.update({
+    id: '/admin-connexion',
+    path: '/admin-connexion',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOffresRoute = AuthenticatedOffresRouteImport.update({
   id: '/offres',
   path: '/offres',
@@ -133,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/connexion': typeof ConnexionRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/admin-connexion': typeof AuthenticatedAdminConnexionRoute
   '/offres': typeof AuthenticatedOffresRoute
   '/admin/$memberId': typeof AuthenticatedAdminMemberIdRoute
   '/demandes/$requestId': typeof AuthenticatedDemandesRequestIdRoute
@@ -150,6 +158,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/connexion': typeof ConnexionRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin-connexion': typeof AuthenticatedAdminConnexionRoute
   '/offres': typeof AuthenticatedOffresRoute
   '/': typeof AuthenticatedIndexRoute
   '/admin/$memberId': typeof AuthenticatedAdminMemberIdRoute
@@ -171,6 +180,7 @@ export interface FileRoutesById {
   '/connexion': typeof ConnexionRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/_authenticated/admin-connexion': typeof AuthenticatedAdminConnexionRoute
   '/_authenticated/offres': typeof AuthenticatedOffresRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/admin/$memberId': typeof AuthenticatedAdminMemberIdRoute
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
     | '/connexion'
     | '/reset-password'
     | '/admin'
+    | '/admin-connexion'
     | '/offres'
     | '/admin/$memberId'
     | '/demandes/$requestId'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
   to:
     | '/connexion'
     | '/reset-password'
+    | '/admin-connexion'
     | '/offres'
     | '/'
     | '/admin/$memberId'
@@ -230,6 +242,7 @@ export interface FileRouteTypes {
     | '/connexion'
     | '/reset-password'
     | '/_authenticated/admin'
+    | '/_authenticated/admin-connexion'
     | '/_authenticated/offres'
     | '/_authenticated/'
     | '/_authenticated/admin/$memberId'
@@ -289,6 +302,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin-connexion': {
+      id: '/_authenticated/admin-connexion'
+      path: '/admin-connexion'
+      fullPath: '/admin-connexion'
+      preLoaderRoute: typeof AuthenticatedAdminConnexionRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/offres': {
@@ -400,6 +420,7 @@ const AuthenticatedAdminRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+  AuthenticatedAdminConnexionRoute: typeof AuthenticatedAdminConnexionRoute
   AuthenticatedOffresRoute: typeof AuthenticatedOffresRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedDemandesRequestIdRoute: typeof AuthenticatedDemandesRequestIdRoute
@@ -414,6 +435,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+  AuthenticatedAdminConnexionRoute: AuthenticatedAdminConnexionRoute,
   AuthenticatedOffresRoute: AuthenticatedOffresRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedDemandesRequestIdRoute: AuthenticatedDemandesRequestIdRoute,
