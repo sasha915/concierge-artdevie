@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, CircleUserRound, FileText, Gift, History, LogOut } from "lucide-react";
+import { ChevronRight, CircleUserRound, FileText, Gift, History, LogOut, MessageCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { AppShell, PageHeader } from "@/components/art-de-vie/app-shell";
 import { MemberCard } from "@/components/art-de-vie/member-card";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +15,9 @@ function Page() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: profile = null } = useQuery(profileQuery);
+  const conciergeFirstName = profile?.concierge_referent?.split(/\s+/)[0] ?? null;
+  const mailto = `mailto:concierge@artdevie.fr?subject=${encodeURIComponent(`Message de ${profile?.full_name ?? "membre"}`)}`;
+
 
   async function signOut() {
     await queryClient.cancelQueries();
@@ -23,7 +27,12 @@ function Page() {
   }
 
   return <AppShell><PageHeader title="Ma carte de membre" subtitle="Votre carte d'accès virtuelle aux privilèges Art de Vie." /><div className="mx-auto max-w-[620px]"><MemberCard profile={profile}/>
-    <div className="mt-10 overflow-hidden rounded-card bg-card">
+    {profile?.plan === "Signature" && conciergeFirstName ? (
+      <Button asChild variant="primary" size="lg" className="mt-6 w-full">
+        <a href={mailto}><MessageCircle />Écrire à {conciergeFirstName}</a>
+      </Button>
+    ) : null}
+    <div className="mt-6 overflow-hidden rounded-card bg-card">
       <Link to="/membership/informations" className={row}><CircleUserRound className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Vos informations</span><ChevronRight className="size-4 text-muted-foreground"/></Link>
       <Link to="/membership/factures" className={row}><FileText className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Mes factures</span><ChevronRight className="size-4 text-muted-foreground"/></Link>
       <Link to="/membership/historique" className={row}><History className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Historique des demandes</span><ChevronRight className="size-4 text-muted-foreground"/></Link>
