@@ -61,7 +61,7 @@ export const payInvoice = createServerFn({ method: "POST" })
         amount: { currency: "EUR", value: euro(invoice.amount_cents) },
         description: `Art de Vie — ${invoice.number}`,
         redirectUrl: `${base}/membership/factures?paiement=${invoice.id}`,
-        webhookUrl: `${base}/api/public/mollie-webhook`,
+        webhookUrl: `${webhookBase(getRequest())}/api/public/mollie-webhook`,
         customerId,
         metadata: { invoice_id: invoice.id, kind: "one_off" },
       }),
@@ -113,7 +113,7 @@ export const activateAutoDebit = createServerFn({ method: "POST" })
         sequenceType: "first",
         customerId,
         redirectUrl: `${base}/membership/factures?abonnement=active`,
-        webhookUrl: `${base}/api/public/mollie-webhook`,
+        webhookUrl: `${webhookBase(getRequest())}/api/public/mollie-webhook`,
         metadata: { user_id: context.userId, kind: "mandate_first", plan: profile.plan },
       }),
     });
