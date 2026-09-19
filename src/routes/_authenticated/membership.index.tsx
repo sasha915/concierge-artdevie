@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, CircleUserRound, FileText, Gift, History, LogOut, MessageCircle } from "lucide-react";
+import { ChevronRight, CircleUserRound, FileText, Gift, History, LogOut, MessageCircle, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppShell, PageHeader } from "@/components/art-de-vie/app-shell";
 import { MemberCard } from "@/components/art-de-vie/member-card";
 import { supabase } from "@/integrations/supabase/client";
 import { profileQuery } from "@/lib/adv-queries";
+import { isAdminQuery } from "@/lib/admin-queries";
 
 export const Route = createFileRoute("/_authenticated/membership/")({ head: () => ({ meta: [{ title: "Ma carte de membre — Art de Vie" }, { name: "description", content: "Votre carte et votre espace membre Art de Vie." }, { property: "og:title", content: "Ma carte de membre — Art de Vie" }, { property: "og:description", content: "Votre carte et votre espace membre Art de Vie." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
 
@@ -15,6 +16,7 @@ function Page() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: profile = null } = useQuery(profileQuery);
+  const { data: isAdmin = false } = useQuery(isAdminQuery);
   const conciergeFirstName = profile?.concierge_referent?.split(/\s+/)[0] ?? null;
   const whatsappDigits = profile?.concierge_whatsapp?.replace(/[^0-9]/g, "") ?? "";
   const whatsappUrl = `https://wa.me/${whatsappDigits}?text=${encodeURIComponent(`Bonjour ${conciergeFirstName ?? ""}, j'aimerais échanger avec vous.`)}`;
@@ -48,6 +50,7 @@ function Page() {
           <Link to="/membership/informations" className={row}><CircleUserRound className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Vos informations</span><ChevronRight className="size-4 text-muted-foreground"/></Link>
           <Link to="/membership/factures" className={row}><FileText className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Mes factures</span><ChevronRight className="size-4 text-muted-foreground"/></Link>
           <Link to="/membership/historique" className={row}><History className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Historique des demandes</span><ChevronRight className="size-4 text-muted-foreground"/></Link>
+          {isAdmin ? <Link to="/admin" className={row}><ShieldCheck className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Administration</span><ChevronRight className="size-4 text-muted-foreground"/></Link> : null}
           <Link to="/membership/parrainer" className={row}><Gift className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Parrainer un membre</span><ChevronRight className="size-4 text-muted-foreground"/></Link>
           <button type="button" onClick={signOut} className={row + " w-full text-left"}><LogOut className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Se déconnecter</span><ChevronRight className="size-4 text-muted-foreground"/></button>
         </div>

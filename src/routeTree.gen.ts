@@ -16,6 +16,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedOffresRouteImport } from './routes/_authenticated/offres'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedAdminMemberIdRouteImport } from './routes/_authenticated/admin.$memberId'
 import { Route as AuthenticatedDemandesIndexRouteImport } from './routes/_authenticated/demandes.index'
 import { Route as AuthenticatedDemandesRequestIdRouteImport } from './routes/_authenticated/demandes.$requestId'
 import { Route as AuthenticatedDemandesNouvelleRouteImport } from './routes/_authenticated/demandes.nouvelle'
@@ -59,6 +60,12 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminMemberIdRoute =
+  AuthenticatedAdminMemberIdRouteImport.update({
+    id: '/$memberId',
+    path: '/$memberId',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedDemandesIndexRoute =
   AuthenticatedDemandesIndexRouteImport.update({
     id: '/demandes/',
@@ -114,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/offres': typeof AuthenticatedOffresRoute
+  '/admin/$memberId': typeof AuthenticatedAdminMemberIdRoute
   '/demandes/$requestId': typeof AuthenticatedDemandesRequestIdRoute
   '/demandes/nouvelle': typeof AuthenticatedDemandesNouvelleRoute
   '/membership/factures': typeof AuthenticatedMembershipFacturesRoute
@@ -129,6 +137,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/offres': typeof AuthenticatedOffresRoute
   '/': typeof AuthenticatedIndexRoute
+  '/admin/$memberId': typeof AuthenticatedAdminMemberIdRoute
   '/demandes/$requestId': typeof AuthenticatedDemandesRequestIdRoute
   '/demandes/nouvelle': typeof AuthenticatedDemandesNouvelleRoute
   '/membership/factures': typeof AuthenticatedMembershipFacturesRoute
@@ -147,6 +156,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/offres': typeof AuthenticatedOffresRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/admin/$memberId': typeof AuthenticatedAdminMemberIdRoute
   '/_authenticated/demandes/$requestId': typeof AuthenticatedDemandesRequestIdRoute
   '/_authenticated/demandes/nouvelle': typeof AuthenticatedDemandesNouvelleRoute
   '/_authenticated/membership/factures': typeof AuthenticatedMembershipFacturesRoute
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admin'
     | '/offres'
+    | '/admin/$memberId'
     | '/demandes/$requestId'
     | '/demandes/nouvelle'
     | '/membership/factures'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/offres'
     | '/'
+    | '/admin/$memberId'
     | '/demandes/$requestId'
     | '/demandes/nouvelle'
     | '/membership/factures'
@@ -197,6 +209,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/offres'
     | '/_authenticated/'
+    | '/_authenticated/admin/$memberId'
     | '/_authenticated/demandes/$requestId'
     | '/_authenticated/demandes/nouvelle'
     | '/_authenticated/membership/factures'
@@ -265,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/$memberId': {
+      id: '/_authenticated/admin/$memberId'
+      path: '/$memberId'
+      fullPath: '/admin/$memberId'
+      preLoaderRoute: typeof AuthenticatedAdminMemberIdRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/demandes/': {
       id: '/_authenticated/demandes/'
       path: '/demandes'
@@ -325,10 +345,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminMemberIdRoute: typeof AuthenticatedAdminMemberIdRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminMemberIdRoute: AuthenticatedAdminMemberIdRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
