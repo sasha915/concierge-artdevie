@@ -132,7 +132,7 @@ function Page() {
             </article>)}
           </div>}
     </section>
-  </AppShell>;
+  </AdminShell>;
 }
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
