@@ -20,7 +20,7 @@ const firstName = profile?.full_name?.split(" ")[0]?.trim() || "Membre";
 const greeting = new Date().getHours() < 18 ? "Bonjour" : "Bonsoir";
 
   return <AppShell><header className="mb-6 flex items-center justify-between"><Logo/><Button aria-label="Notifications" variant="icon" size="icon"><Bell/></Button></header>
-    <section className="relative mb-20 overflow-visible rounded-card bg-linear-to-br from-primary to-primary-deep px-6 pb-8 pt-7 text-primary-foreground sm:px-10"><p className="mb-[10px] text-[11px] font-semibold uppercase tracking-[0.14em] text-[rgba(238,237,227,0.7)]">{greeting} {firstName}</p><p className="max-w-[480px] font-display text-[38px] font-normal leading-[1.15] sm:text-[46px]">Votre conciergerie,<br/><em>à votre rythme.</em></p><p className="mt-3 max-w-[220px] text-[13px] leading-[19px] text-[rgba(238,237,227,0.75)]">Suivez vos demandes et vos privilèges, ou contactez votre concierge en un geste.</p><div className="mt-8 flex flex-wrap gap-3"><Button asChild variant="light"><Link to="/demandes/nouvelle">Nouvelle demande</Link></Button><Button asChild variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"><Link to="/offres">Voir les offres</Link></Button></div><div className="absolute -bottom-8 right-5 w-[108px] rotate-[-3deg] rounded-[14px] border border-gold bg-primary-light p-3 shadow-member"><div className="flex items-start justify-between"><Logo inverse className="h-3 w-auto" /><span className="flex size-4 items-center justify-center rounded-full border border-gold text-[7px]">{initials(name)}</span></div><p className="mt-[10px] font-display text-[13px] font-medium">{profile?.plan ?? "Signature"}</p></div></section>
+    <section className="relative mb-[22px] overflow-visible rounded-card bg-linear-to-br from-primary to-primary-deep px-6 pb-8 pt-7 text-primary-foreground sm:px-10"><p className="mb-[10px] text-[11px] font-semibold uppercase tracking-[0.14em] text-[rgba(238,237,227,0.7)]">{greeting} {firstName}</p><p className="max-w-[480px] font-display text-[38px] font-normal leading-[1.15] sm:text-[46px]">Votre conciergerie,<br/><em>à votre rythme.</em></p><p className="mt-3 max-w-[220px] text-[13px] leading-[19px] text-[rgba(238,237,227,0.75)]">Suivez vos demandes et vos privilèges, ou contactez votre concierge en un geste.</p><div className="mt-8 flex flex-wrap gap-3"><Button asChild variant="light"><Link to="/demandes/nouvelle">Nouvelle demande</Link></Button><Button asChild variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"><Link to="/offres">Voir les offres</Link></Button></div><div className="absolute -bottom-8 right-5 w-[108px] rotate-[-3deg] rounded-[14px] border border-gold bg-primary-light p-3 shadow-member"><div className="flex items-start justify-between"><Logo inverse className="h-3 w-auto" /><span className="flex size-4 items-center justify-center rounded-full border border-gold text-[7px]">{initials(name)}</span></div><p className="mt-[10px] font-display text-[13px] font-medium">{profile?.plan ?? "Signature"}</p></div></section>
     <section className="grid grid-cols-3 gap-2">
       <div className="rounded-[16px] bg-card py-[14px] px-3 text-center">
         <p className="font-display text-[22px] font-medium text-primary">{upcoming.length}</p>
@@ -35,7 +35,7 @@ const greeting = new Date().getHours() < 18 ? "Bonjour" : "Bonsoir";
         <p className="mt-1 text-[11px] text-muted-foreground">Réponse moyenne</p>
       </div>
     </section>
-    <section className="mt-10">
+    <section className="mt-[22px]">
       {nextRequest ? (
         <section className="mt-1 flex items-center gap-4 rounded-card bg-card p-6">
           <div className="min-w-0 flex-1">
@@ -54,6 +54,6 @@ const greeting = new Date().getHours() < 18 ? "Bonjour" : "Bonsoir";
         <EmptyState>Aucune demande en cours. Confiez-nous votre prochaine envie.</EmptyState>
       )}
     </section>
-    <section className="mt-10"><div className="mb-4 flex items-center justify-between"><h2 className="font-display text-2xl text-primary">Offres en vedette</h2><Link to="/offres" aria-label="Toutes les offres" className="text-primary"><ArrowRight/></Link></div><div className="no-scrollbar -mx-5 flex gap-4 overflow-x-auto px-5 sm:mx-0 sm:grid sm:grid-cols-3 sm:px-0">{offers.slice(0,3).map((o)=><OfferCard key={o.id} offer={o} compact/>)}</div></section>
+    <section className="mt-[22px]"><div className="mb-4 flex items-center justify-between"><h2 className="font-display text-2xl text-primary">Offres en vedette</h2><Link to="/offres" aria-label="Toutes les offres" className="text-primary"><ArrowRight/></Link></div><div className="no-scrollbar -mx-5 flex gap-4 overflow-x-auto px-5 sm:mx-0 sm:grid sm:grid-cols-3 sm:px-0">{offers.slice(0,3).map((o)=><OfferCard key={o.id} offer={o} compact/>)}</div></section>
   </AppShell>;
 }
