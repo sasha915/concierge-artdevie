@@ -15,9 +15,9 @@ function Page() {
   const list = active === "Toutes" ? requests : requests.filter((r) => r.status === active);
   return <AppShell>
     <PageHeader title="Mes demandes" subtitle="Suivez l'avancement de chaque demande en temps réel." />
-    <div className="mt-4 mb-8"><NewRequestButton className="w-full" /></div>
+    <div className="mt-[18px] mb-[18px]"><NewRequestButton className="w-full" /></div>
     <Filters values={filters} active={active} onChange={setActive}/>
-    <div className="mt-6 grid gap-4 md:grid-cols-2">{list.map((r) => <RequestCard key={r.id} item={r}/>)}</div>
+    <div className="mt-[22px] grid gap-3 md:grid-cols-2">{list.map((r) => <RequestCard key={r.id} item={r}/>)}</div>
     {!isLoading && list.length === 0 && <div className="mt-6"><EmptyState>Aucune demande dans cette catégorie.</EmptyState></div>}
   </AppShell>;
 }
