@@ -9,3 +9,5 @@
 - [x] Membership formulas: dedicated concierge and commitment details
 - [x] Responsive desktop shell and home dashboard
 - [x] Responsive desktop requests, offers, and membership screens
+- [x] WhatsApp concierge notification infrastructure (endpoint, trigger, graceful degradation)
+- [ ] Mollie payment infrastructure (one-off invoices + subscriptions, awaiting API key)

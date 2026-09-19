@@ -21,6 +21,7 @@ export type Database = {
           id: string
           issued_on: string
           kind: string
+          mollie_payment_id: string | null
           number: string
           status: string
           user_id: string
@@ -31,6 +32,7 @@ export type Database = {
           id?: string
           issued_on?: string
           kind?: string
+          mollie_payment_id?: string | null
           number: string
           status?: string
           user_id: string
@@ -41,6 +43,7 @@ export type Database = {
           id?: string
           issued_on?: string
           kind?: string
+          mollie_payment_id?: string | null
           number?: string
           status?: string
           user_id?: string
@@ -100,6 +103,8 @@ export type Database = {
           id: string
           member_number: string
           member_since: string
+          mollie_customer_id: string | null
+          mollie_subscription_id: string | null
           notify_messages: boolean
           notify_offers: boolean
           notify_requests: boolean
@@ -118,6 +123,8 @@ export type Database = {
           id: string
           member_number?: string
           member_since?: string
+          mollie_customer_id?: string | null
+          mollie_subscription_id?: string | null
           notify_messages?: boolean
           notify_offers?: boolean
           notify_requests?: boolean
@@ -136,6 +143,8 @@ export type Database = {
           id?: string
           member_number?: string
           member_since?: string
+          mollie_customer_id?: string | null
+          mollie_subscription_id?: string | null
           notify_messages?: boolean
           notify_offers?: boolean
           notify_requests?: boolean
