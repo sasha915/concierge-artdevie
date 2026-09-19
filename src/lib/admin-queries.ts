@@ -46,5 +46,5 @@ export const memberDetailQuery = (id: string) =>
 export const memberPaymentsQuery = (id: string) =>
   queryOptions({
     queryKey: ["admin", "member", id, "payments"],
-    queryFn: async () => (await import("@/lib/admin.functions")).listMemberPayments({ data: { id } }),
+    queryFn: () => listMemberPayments({ data: { id } }),
   });
