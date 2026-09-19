@@ -71,10 +71,16 @@ function Page() {
         <h1 className="font-display text-[32px] font-semibold leading-tight text-primary">Administration</h1>
         <p className="mt-2 text-[13px] text-muted-foreground">Gérez les membres invités, leurs demandes et leurs factures.</p>
       </div>
-      <Button variant="primary" onClick={() => setOpen((v) => !v)}><Plus />Nouveau membre</Button>
+      <div className="flex items-center gap-2">
+        <Button variant="outline" onClick={lockSession}><Lock />Verrouiller</Button>
+        <Button variant="primary" onClick={() => setOpen((v) => !v)}><Plus />Nouveau membre</Button>
+      </div>
     </header>
 
-    <Button variant="primary" size="lg" className="mb-[18px] w-full lg:hidden" onClick={() => setOpen((v) => !v)}><Plus />Nouveau membre</Button>
+    <div className="mb-[18px] flex gap-2 lg:hidden">
+      <Button variant="primary" size="lg" className="flex-1" onClick={() => setOpen((v) => !v)}><Plus />Nouveau membre</Button>
+      <Button variant="outline" size="lg" onClick={lockSession} aria-label="Verrouiller l’administration"><Lock /></Button>
+    </div>
 
     <div className="relative">
       <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

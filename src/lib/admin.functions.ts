@@ -9,6 +9,8 @@ type Ctx = { supabase: any; userId: string };
 async function assertAdmin(context: Ctx) {
   const { data, error } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
   if (error || data !== true) throw new Error("Forbidden");
+  const { requireAdminUnlocked } = await import("./admin-gate.server");
+  await requireAdminUnlocked();
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return supabaseAdmin;
 }
