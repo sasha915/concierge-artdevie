@@ -155,5 +155,5 @@ function Page() {
               </div>}
       </section>
     </>}
-  </AppShell>;
+  </AdminShell>;
 }
