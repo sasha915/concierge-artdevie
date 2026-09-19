@@ -21,6 +21,7 @@ import { Route as AuthenticatedMembershipIndexRouteImport } from './routes/_auth
 import { Route as AuthenticatedMembershipFacturesRouteImport } from './routes/_authenticated/membership.factures'
 import { Route as AuthenticatedMembershipHistoriqueRouteImport } from './routes/_authenticated/membership.historique'
 import { Route as AuthenticatedMembershipInformationsRouteImport } from './routes/_authenticated/membership.informations'
+import { Route as AuthenticatedMembershipParrainerRouteImport } from './routes/_authenticated/membership.parrainer'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -88,6 +89,12 @@ const AuthenticatedMembershipInformationsRoute =
     path: '/membership/informations',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMembershipParrainerRoute =
+  AuthenticatedMembershipParrainerRouteImport.update({
+    id: '/membership/parrainer',
+    path: '/membership/parrainer',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/membership/factures': typeof AuthenticatedMembershipFacturesRoute
   '/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
   '/membership/informations': typeof AuthenticatedMembershipInformationsRoute
+  '/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
   '/demandes/': typeof AuthenticatedDemandesIndexRoute
   '/membership/': typeof AuthenticatedMembershipIndexRoute
 }
@@ -112,6 +120,7 @@ export interface FileRoutesByTo {
   '/membership/factures': typeof AuthenticatedMembershipFacturesRoute
   '/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
   '/membership/informations': typeof AuthenticatedMembershipInformationsRoute
+  '/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
   '/demandes': typeof AuthenticatedDemandesIndexRoute
   '/membership': typeof AuthenticatedMembershipIndexRoute
 }
@@ -127,6 +136,7 @@ export interface FileRoutesById {
   '/_authenticated/membership/factures': typeof AuthenticatedMembershipFacturesRoute
   '/_authenticated/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
   '/_authenticated/membership/informations': typeof AuthenticatedMembershipInformationsRoute
+  '/_authenticated/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
   '/_authenticated/demandes/': typeof AuthenticatedDemandesIndexRoute
   '/_authenticated/membership/': typeof AuthenticatedMembershipIndexRoute
 }
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | '/membership/factures'
     | '/membership/historique'
     | '/membership/informations'
+    | '/membership/parrainer'
     | '/demandes/'
     | '/membership/'
   fileRoutesByTo: FileRoutesByTo
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/membership/factures'
     | '/membership/historique'
     | '/membership/informations'
+    | '/membership/parrainer'
     | '/demandes'
     | '/membership'
   id:
@@ -169,6 +181,7 @@ export interface FileRouteTypes {
     | '/_authenticated/membership/factures'
     | '/_authenticated/membership/historique'
     | '/_authenticated/membership/informations'
+    | '/_authenticated/membership/parrainer'
     | '/_authenticated/demandes/'
     | '/_authenticated/membership/'
   fileRoutesById: FileRoutesById
@@ -265,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMembershipInformationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/membership/parrainer': {
+      id: '/_authenticated/membership/parrainer'
+      path: '/membership/parrainer'
+      fullPath: '/membership/parrainer'
+      preLoaderRoute: typeof AuthenticatedMembershipParrainerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -276,6 +296,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMembershipFacturesRoute: typeof AuthenticatedMembershipFacturesRoute
   AuthenticatedMembershipHistoriqueRoute: typeof AuthenticatedMembershipHistoriqueRoute
   AuthenticatedMembershipInformationsRoute: typeof AuthenticatedMembershipInformationsRoute
+  AuthenticatedMembershipParrainerRoute: typeof AuthenticatedMembershipParrainerRoute
   AuthenticatedDemandesIndexRoute: typeof AuthenticatedDemandesIndexRoute
   AuthenticatedMembershipIndexRoute: typeof AuthenticatedMembershipIndexRoute
 }
@@ -290,6 +311,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedMembershipHistoriqueRoute,
   AuthenticatedMembershipInformationsRoute:
     AuthenticatedMembershipInformationsRoute,
+  AuthenticatedMembershipParrainerRoute: AuthenticatedMembershipParrainerRoute,
   AuthenticatedDemandesIndexRoute: AuthenticatedDemandesIndexRoute,
   AuthenticatedMembershipIndexRoute: AuthenticatedMembershipIndexRoute,
 }

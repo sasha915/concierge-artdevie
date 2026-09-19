@@ -143,6 +143,36 @@ export type Database = {
         }
         Relationships: []
       }
+      referrals: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          inviter_id: string
+          message: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          inviter_id: string
+          message?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          inviter_id?: string
+          message?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       requests: {
         Row: {
           category: string

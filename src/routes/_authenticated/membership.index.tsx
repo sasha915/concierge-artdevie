@@ -48,7 +48,7 @@ function Page() {
           <Link to="/membership/informations" className={row}><CircleUserRound className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Vos informations</span><ChevronRight className="size-4 text-muted-foreground"/></Link>
           <Link to="/membership/factures" className={row}><FileText className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Mes factures</span><ChevronRight className="size-4 text-muted-foreground"/></Link>
           <Link to="/membership/historique" className={row}><History className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Historique des demandes</span><ChevronRight className="size-4 text-muted-foreground"/></Link>
-          <button type="button" className={row + " w-full text-left"}><Gift className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Parrainer un membre</span><ChevronRight className="size-4 text-muted-foreground"/></button>
+          <Link to="/membership/parrainer" className={row}><Gift className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Parrainer un membre</span><ChevronRight className="size-4 text-muted-foreground"/></Link>
           <button type="button" onClick={signOut} className={row + " w-full text-left"}><LogOut className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Se déconnecter</span><ChevronRight className="size-4 text-muted-foreground"/></button>
         </div>
       </div>
