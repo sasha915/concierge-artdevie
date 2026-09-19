@@ -44,7 +44,7 @@ function Page() {
         ) : null}
       </div>
       <div className="min-w-0">
-        <div className="mt-6 flex h-full flex-col justify-center overflow-hidden rounded-card bg-card lg:mt-0">
+        <div className="mt-6 overflow-hidden rounded-card bg-card lg:mt-0 lg:flex lg:h-full lg:flex-col lg:justify-center">
           <Link to="/membership/informations" className={row}><CircleUserRound className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Vos informations</span><ChevronRight className="size-4 text-muted-foreground"/></Link>
           <Link to="/membership/factures" className={row}><FileText className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Mes factures</span><ChevronRight className="size-4 text-muted-foreground"/></Link>
           <Link to="/membership/historique" className={row}><History className="size-5 text-primary"/><span className="flex-1 text-sm font-medium">Historique des demandes</span><ChevronRight className="size-4 text-muted-foreground"/></Link>
