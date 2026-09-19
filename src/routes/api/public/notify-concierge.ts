@@ -36,8 +36,14 @@ export const Route = createFileRoute('/api/public/notify-concierge')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const unauthorized = await authenticateCronRequest(request);
-        if (unauthorized) return unauthorized;
+        // Appelé par le trigger Postgres avec NOTIFY_CONCIERGE_WEBHOOK_SECRET,
+        // ou manuellement avec le secret cron de la plateforme.
+        const webhookSecret = process.env['NOTIFY_CONCIERGE_WEBHOOK_SECRET'];
+        const bearer = /^Bearer ([^\s,]+)$/.exec(request.headers.get('authorization') ?? '')?.[1];
+        if (!webhookSecret || bearer !== webhookSecret) {
+          const unauthorized = await authenticateCronRequest(request);
+          if (unauthorized) return unauthorized;
+        }
 
         const parsed = payloadSchema.safeParse(await request.json().catch(() => null));
         if (!parsed.success) {
