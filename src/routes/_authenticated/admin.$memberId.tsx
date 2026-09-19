@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { ChevronLeft, Mail, UserMinus, UserPlus } from "lucide-react";
-import { AppShell, Logo } from "@/components/art-de-vie/app-shell";
+import { AdminShell } from "@/components/art-de-vie/admin-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState, StatusBadge } from "@/components/art-de-vie/cards";
@@ -70,8 +70,7 @@ function Page() {
     await queryClient.invalidateQueries({ queryKey: ["admin"] });
   }
 
-  return <AppShell nav={false}>
-    <div className="mb-6 flex items-center justify-between"><div className="w-11" /><Logo className="h-[19px] w-auto" /><div className="w-11" /></div>
+  return <AdminShell>
     <header className="mb-7 flex items-center gap-4">
       <Button asChild variant="icon" size="icon" aria-label="Retour"><Link to="/admin"><ChevronLeft /></Link></Button>
       <h1 className="min-w-0 flex-1 truncate font-display text-[32px] font-semibold leading-tight text-primary">{profile?.full_name || (isLoading ? "Chargement…" : "Membre introuvable")}</h1>
@@ -156,5 +155,5 @@ function Page() {
               </div>}
       </section>
     </>}
-  </AppShell>;
+  </AdminShell>;
 }

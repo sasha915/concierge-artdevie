@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { ChevronRight, Lock, Mail, Plus, Search, UserMinus, UserPlus } from "lucide-react";
-import { AppShell, PageHeader } from "@/components/art-de-vie/app-shell";
+import { AdminShell } from "@/components/art-de-vie/admin-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,9 +77,8 @@ function Page() {
 
 
 
-  return <AppShell>
-    <div className="lg:hidden"><PageHeader title="Administration" subtitle="Gérez les membres invités, leurs demandes et leurs factures." /></div>
-    <header className="mb-[22px] hidden items-end justify-between gap-6 lg:flex">
+  return <AdminShell>
+    <header className="mb-[22px] flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <h1 className="font-display text-[32px] font-semibold leading-tight text-primary">Administration</h1>
         <p className="mt-2 text-[13px] text-muted-foreground">Gérez les membres invités, leurs demandes et leurs factures.</p>
@@ -89,11 +88,6 @@ function Page() {
         <Button variant="primary" onClick={() => setOpen((v) => !v)}><Plus />Nouveau membre</Button>
       </div>
     </header>
-
-    <div className="mb-[18px] flex gap-2 lg:hidden">
-      <Button variant="primary" size="lg" className="flex-1" onClick={() => setOpen((v) => !v)}><Plus />Nouveau membre</Button>
-      <Button variant="outline" size="lg" onClick={lockSession} aria-label="Verrouiller l’administration"><Lock /></Button>
-    </div>
 
     <div className="relative">
       <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -138,7 +132,7 @@ function Page() {
             </article>)}
           </div>}
     </section>
-  </AppShell>;
+  </AdminShell>;
 }
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
