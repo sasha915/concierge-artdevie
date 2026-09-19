@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
-import { ChevronRight, Mail, Plus, Search, UserMinus, UserPlus } from "lucide-react";
+import { ChevronRight, Lock, Mail, Plus, Search, UserMinus, UserPlus } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/art-de-vie/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { EmptyState } from "@/components/art-de-vie/cards";
 import { membersQuery, type AdminMember } from "@/lib/admin-queries";
 import { createMember, sendMemberInvite, setMemberDisabled } from "@/lib/admin.functions";
+import { lockAdmin } from "@/lib/admin-gate.functions";
+import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/admin/")({ head: () => ({ meta: [{ title: "Administration des membres — Art de Vie" }, { name: "description", content: "Gérez les membres invités de la conciergerie Art de Vie." }, { property: "og:title", content: "Administration des membres — Art de Vie" }, { property: "og:description", content: "Gérez les membres invités de la conciergerie Art de Vie." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
 
@@ -19,6 +21,9 @@ function Page() {
   const create = useServerFn(createMember);
   const invite = useServerFn(sendMemberInvite);
   const toggle = useServerFn(setMemberDisabled);
+  const lock = useServerFn(lockAdmin);
+  const navigate = useNavigate();
+
 
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -64,6 +69,14 @@ function Page() {
     await queryClient.invalidateQueries({ queryKey: ["admin", "members"] });
   }
 
+  async function lockSession() {
+    await lock({});
+    queryClient.removeQueries({ queryKey: ["admin"] });
+    await navigate({ to: "/admin-connexion", replace: true });
+  }
+
+
+
   return <AppShell>
     <div className="lg:hidden"><PageHeader title="Administration" subtitle="Gérez les membres invités, leurs demandes et leurs factures." /></div>
     <header className="mb-[22px] hidden items-end justify-between gap-6 lg:flex">
@@ -71,10 +84,16 @@ function Page() {
         <h1 className="font-display text-[32px] font-semibold leading-tight text-primary">Administration</h1>
         <p className="mt-2 text-[13px] text-muted-foreground">Gérez les membres invités, leurs demandes et leurs factures.</p>
       </div>
-      <Button variant="primary" onClick={() => setOpen((v) => !v)}><Plus />Nouveau membre</Button>
+      <div className="flex items-center gap-2">
+        <Button variant="outline" onClick={lockSession}><Lock />Verrouiller</Button>
+        <Button variant="primary" onClick={() => setOpen((v) => !v)}><Plus />Nouveau membre</Button>
+      </div>
     </header>
 
-    <Button variant="primary" size="lg" className="mb-[18px] w-full lg:hidden" onClick={() => setOpen((v) => !v)}><Plus />Nouveau membre</Button>
+    <div className="mb-[18px] flex gap-2 lg:hidden">
+      <Button variant="primary" size="lg" className="flex-1" onClick={() => setOpen((v) => !v)}><Plus />Nouveau membre</Button>
+      <Button variant="outline" size="lg" onClick={lockSession} aria-label="Verrouiller l’administration"><Lock /></Button>
+    </div>
 
     <div className="relative">
       <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
