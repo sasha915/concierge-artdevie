@@ -40,8 +40,8 @@ export const listMembers = createServerFn({ method: "GET" })
     const ic = countBy(invoices as { user_id: string }[] | null);
     return (profiles ?? []).map((p: Record<string, unknown>) => ({
       ...p,
-      requests_count: rc[p.id as string] ?? 0,
-      invoices_count: ic[p.id as string] ?? 0,
+      requests_count: rc[p['id'] as string] ?? 0,
+      invoices_count: ic[p['id'] as string] ?? 0,
     }));
   });
 
