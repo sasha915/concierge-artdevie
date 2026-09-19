@@ -52,7 +52,7 @@ function Page() {
 
   return <AppShell nav={false}><SubHeader title="Nouvelle demande" close backTo="/demandes"/>
     <div className="no-scrollbar flex gap-2 overflow-x-auto">{cats.map((x) => <Button key={x} variant={category === x ? "primary" : "outline"} onClick={() => setCategory(x)} type="button">{x}</Button>)}</div>
-    <form className="mt-7 rounded-card bg-card p-5 sm:p-7" onSubmit={submit}><div className="grid gap-5">
+    <form className="mt-5 rounded-card bg-card p-5 sm:p-7" onSubmit={submit}><div className="grid gap-5">
       <Field label="Prestation souhaitée"><Input value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="Ex. Une table avec vue"/></Field>
       <Field label="Date souhaitée"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)}/></Field>
       <div className="grid grid-cols-2 gap-4"><Field label="Heure"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)}/></Field><Field label="Couverts"><Input type="number" min="1" value={guests} onChange={(e) => setGuests(e.target.value)} placeholder="2"/></Field></div>
@@ -60,7 +60,7 @@ function Page() {
       {error && <p className="rounded-2xl bg-primary/10 p-4 text-xs leading-5 text-primary">{error}</p>}
       <Button type="submit" size="lg" className="mt-2" disabled={busy}>{busy ? "Envoi…" : "Envoyer la demande"}</Button>
     </div></form>
-    <section className="mt-10"><h2 className="font-display text-2xl text-primary">Idées du mois</h2><div className="no-scrollbar -mx-5 mt-4 flex gap-4 overflow-x-auto px-5">{offers.slice(0, 3).map((o) => <OfferCard key={o.id} offer={o} compact/>)}</div></section>
+    <section className="mt-5"><h2 className="font-display text-2xl text-primary">Idées du mois</h2><div className="no-scrollbar -mx-5 mt-4 flex gap-4 overflow-x-auto px-5">{offers.slice(0, 3).map((o) => <OfferCard key={o.id} offer={o} compact/>)}</div></section>
   </AppShell>;
 }
 

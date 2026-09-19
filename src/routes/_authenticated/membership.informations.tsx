@@ -50,7 +50,7 @@ function Page() {
         <Button className="mt-7 w-full" size="lg" onClick={() => setEditing(true)}>Modifier mes informations</Button>
       </>}
     </section>
-    <section className="mt-6 rounded-card bg-card p-5 sm:p-7"><h2 className="font-display text-2xl text-primary">Notifications</h2>
+    <section className="mt-5 rounded-card bg-card p-5 sm:p-7"><h2 className="font-display text-2xl text-primary">Notifications</h2>
       <div className="flex items-center gap-5 border-b border-primary/10 py-5"><div className="flex-1"><p className="text-sm font-medium">Suivi de mes demandes</p><p className="mt-1 text-xs text-muted-foreground">Recevoir chaque évolution importante</p></div><Switch checked={profile?.notify_requests ?? true} onCheckedChange={(v) => update({ notify_requests: v })}/></div>
       <div className="flex items-center gap-5 border-b border-primary/10 py-5"><div className="flex-1"><p className="text-sm font-medium">Nouvelles offres</p><p className="mt-1 text-xs text-muted-foreground">Découvrir nos privilèges partenaires</p></div><Switch checked={profile?.notify_offers ?? false} onCheckedChange={(v) => update({ notify_offers: v })}/></div>
       <div className="flex items-center gap-5 py-5 pb-0"><div className="flex-1"><p className="text-sm font-medium">Messages du concierge</p><p className="mt-1 text-xs text-muted-foreground">Être averti des nouveaux messages</p></div><Switch checked={profile?.notify_messages ?? true} onCheckedChange={(v) => update({ notify_messages: v })}/></div>
