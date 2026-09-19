@@ -5,6 +5,9 @@ export type MolliePayment = {
   id: string;
   status: string;
   amount: { value: string; currency: string };
+  description?: string;
+  createdAt?: string;
+  method?: string | null;
   sequenceType?: string;
   customerId?: string;
   subscriptionId?: string;

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState, StatusBadge } from "@/components/art-de-vie/cards";
 import { formatAmount, formatShortDate } from "@/data/art-de-vie";
-import { memberDetailQuery } from "@/lib/admin-queries";
+import { memberDetailQuery, memberPaymentsQuery } from "@/lib/admin-queries";
 import { sendMemberInvite, setMemberDisabled, updateMember } from "@/lib/admin.functions";
 import { Field, PlanSelect } from "./admin.index";
 
@@ -18,6 +18,7 @@ function Page() {
   const { memberId } = Route.useParams();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery(memberDetailQuery(memberId));
+  const { data: paymentsData } = useQuery(memberPaymentsQuery(memberId));
   const save = useServerFn(updateMember);
   const invite = useServerFn(sendMemberInvite);
   const toggle = useServerFn(setMemberDisabled);
@@ -133,6 +134,26 @@ function Page() {
               </div>}
         </section>
       </div>
+
+      <section className="mt-5">
+        <h2 className="eyebrow text-primary-light">Paiements Mollie</h2>
+        {paymentsData && !paymentsData.configured
+          ? <p className="mt-3 rounded-card bg-card p-5 text-[13px] text-muted-foreground">Le paiement en ligne n'est pas encore configuré.</p>
+          : (paymentsData?.payments ?? []).length === 0
+            ? <p className="mt-3 rounded-card bg-card p-5 text-[13px] text-muted-foreground">Aucun paiement enregistré chez Mollie pour ce membre.</p>
+            : <div className="mt-3 overflow-hidden rounded-card bg-card">
+                {(paymentsData?.payments ?? []).map((p) => <div key={p.id} className="flex items-center gap-4 border-b border-primary/10 p-5 last:border-0">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-primary">{p.description}</p>
+                    <p className="mt-1 text-[12px] text-muted-foreground">{formatShortDate(p.date)}{p.recurring ? " · Prélèvement automatique" : ""}</p>
+                  </div>
+                  <span className="text-sm font-medium text-primary">{formatAmount(p.amountCents)}</span>
+                  <span className={p.status === "Payée"
+                    ? "rounded-full bg-primary px-[13px] py-[5px] text-[11px] font-medium text-primary-foreground"
+                    : "rounded-full border border-primary/25 px-[13px] py-[5px] text-[11px] font-medium text-muted-foreground"}>{p.status}</span>
+                </div>)}
+              </div>}
+      </section>
     </>}
   </AppShell>;
 }

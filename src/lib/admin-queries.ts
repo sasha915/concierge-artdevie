@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { listMembers, getMemberDetail } from "@/lib/admin.functions";
+import { listMembers, getMemberDetail, listMemberPayments } from "@/lib/admin.functions";
 import type { Invoice, RequestItem } from "@/data/art-de-vie";
 
 export type AdminMember = {
@@ -41,4 +41,10 @@ export const memberDetailQuery = (id: string) =>
     queryKey: ["admin", "member", id],
     queryFn: async (): Promise<{ profile: AdminMember | null; requests: RequestItem[]; invoices: Invoice[] }> =>
       (await getMemberDetail({ data: { id } })) as { profile: AdminMember | null; requests: RequestItem[]; invoices: Invoice[] },
+  });
+
+export const memberPaymentsQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["admin", "member", id, "payments"],
+    queryFn: () => listMemberPayments({ data: { id } }),
   });
