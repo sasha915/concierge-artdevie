@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { ChevronLeft, Mail, UserMinus, UserPlus } from "lucide-react";
-import { AppShell, Logo } from "@/components/art-de-vie/app-shell";
+import { AdminShell } from "@/components/art-de-vie/admin-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState, StatusBadge } from "@/components/art-de-vie/cards";
