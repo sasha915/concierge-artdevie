@@ -44,6 +44,7 @@ export type Profile = {
   plan: string;
   role_label: string;
   concierge_referent: string | null;
+  concierge_whatsapp: string | null;
   member_number: string;
   member_since: string;
   valid_until: string;

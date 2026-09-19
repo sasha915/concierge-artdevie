@@ -16,7 +16,9 @@ function Page() {
   const queryClient = useQueryClient();
   const { data: profile = null } = useQuery(profileQuery);
   const conciergeFirstName = profile?.concierge_referent?.split(/\s+/)[0] ?? null;
-  const mailto = `mailto:concierge@artdevie.fr?subject=${encodeURIComponent(`Message de ${profile?.full_name ?? "membre"}`)}`;
+  const whatsappDigits = profile?.concierge_whatsapp?.replace(/[^0-9]/g, "") ?? "";
+  const whatsappUrl = `https://wa.me/${whatsappDigits}?text=${encodeURIComponent(`Bonjour ${conciergeFirstName ?? ""}, j'aimerais échanger avec vous.`)}`;
+  const showConcierge = profile?.plan === "Signature" && Boolean(conciergeFirstName) && whatsappDigits.length > 0;
 
 
   async function signOut() {
@@ -27,9 +29,9 @@ function Page() {
   }
 
   return <AppShell><PageHeader title="Ma carte de membre" subtitle="Votre carte d'accès virtuelle aux privilèges Art de Vie." /><div className="mx-auto max-w-[620px]"><MemberCard profile={profile}/>
-    {profile?.plan === "Signature" && conciergeFirstName ? (
+    {showConcierge ? (
       <Button asChild variant="primary" size="lg" className="mt-6 w-full">
-        <a href={mailto}><MessageCircle />Écrire à {conciergeFirstName}</a>
+        <a href={whatsappUrl} target="_blank" rel="noreferrer"><MessageCircle />Écrire à {conciergeFirstName}</a>
       </Button>
     ) : null}
     <div className="mt-6 overflow-hidden rounded-card bg-card">

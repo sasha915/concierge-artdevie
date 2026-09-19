@@ -45,7 +45,7 @@ export const profileQuery = queryOptions({
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "id, full_name, email, phone, plan, role_label, concierge_referent, member_number, member_since, valid_until, notify_requests, notify_offers, notify_messages",
+        "id, full_name, email, phone, plan, role_label, concierge_referent, concierge_whatsapp, member_number, member_since, valid_until, notify_requests, notify_offers, notify_messages",
       )
       .maybeSingle();
     if (error) throw error;
