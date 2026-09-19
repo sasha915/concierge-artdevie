@@ -114,6 +114,7 @@ function Page() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-display text-[18px] font-medium text-primary">{r.title}</p>
                     <p className="mt-1 text-[12px] text-muted-foreground">{r.category} · {formatShortDate(r.scheduled_date)}</p>
+                    {r.description ? <p className="mt-1 text-[12px] leading-5 text-muted-foreground line-clamp-2">{r.description}</p> : null}
                   </div>
                   <StatusBadge status={r.status} />
                 </div>)}
