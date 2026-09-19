@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Invoice, Offer, Profile, RequestItem } from "@/data/art-de-vie";
+import type { Invoice, Offer, Profile, Referral, RequestItem } from "@/data/art-de-vie";
 
 export const requestsQuery = queryOptions({
   queryKey: ["requests"],
@@ -50,5 +50,17 @@ export const profileQuery = queryOptions({
       .maybeSingle();
     if (error) throw error;
     return (data ?? null) as Profile | null;
+  },
+});
+
+export const referralsQuery = queryOptions({
+  queryKey: ["referrals"],
+  queryFn: async (): Promise<Referral[]> => {
+    const { data, error } = await supabase
+      .from("referrals")
+      .select("id, full_name, email, status, created_at")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as Referral[];
   },
 });

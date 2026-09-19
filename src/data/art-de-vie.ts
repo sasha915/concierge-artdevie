@@ -84,3 +84,11 @@ export function initials(name: string): string {
   if (parts.length === 0) return "AV";
   return parts.slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("");
 }
+
+export type Referral = {
+  id: string;
+  full_name: string;
+  email: string;
+  status: string;
+  created_at: string;
+};
