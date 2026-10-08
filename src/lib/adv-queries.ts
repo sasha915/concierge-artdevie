@@ -7,7 +7,7 @@ export const requestsQuery = queryOptions({
   queryFn: async (): Promise<RequestItem[]> => {
     const { data, error } = await supabase
       .from("requests")
-      .select("id, category, status, title, description, scheduled_date, scheduled_time, concierge, image_key")
+      .select("id, category, status, title, description, scheduled_date, scheduled_time, guests, concierge, image_key")
       .order("scheduled_date", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: true });
     if (error) throw error;
