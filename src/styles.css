@@ -64,7 +64,7 @@
   --color-primary-light: var(--primary-light);
   --color-primary-deep: var(--primary-deep);
   --color-gold: var(--gold);
-  --radius-card: 1.25rem;
+  --radius-card: 1.5rem;
   --shadow-nav: 0 14px 40px oklch(0.31 0.08 298 / 0.15);
   --shadow-action: 0 8px 18px oklch(0.31 0.08 298 / 0.18);
   --shadow-member: 0 28px 55px oklch(0.25 0.08 298 / 0.34);
@@ -83,6 +83,9 @@
   --primary-light: oklch(0.405 0.077 298.9);
   --primary-deep: oklch(0.332 0.070 298.7);
   --gold: oklch(0.664 0.083 77.4);
+  --photo-card-overlay: linear-gradient(to bottom, color-mix(in oklab, var(--primary-deep) 20%, transparent), color-mix(in oklab, var(--primary-deep) 8%, transparent) 38%, color-mix(in oklab, var(--primary-deep) 90%, transparent));
+  --photo-hero-overlay: linear-gradient(to bottom, color-mix(in oklab, var(--primary-deep) 52%, transparent), color-mix(in oklab, var(--primary-deep) 34%, transparent) 36%, color-mix(in oklab, var(--primary-deep) 93%, transparent));
+  --member-reflection: linear-gradient(115deg, transparent 42%, color-mix(in oklab, var(--primary-foreground) 16%, transparent) 50%, transparent 58%);
   --secondary: oklch(0.968 0.007 247.896);
   --secondary-foreground: oklch(0.208 0.042 265.755);
   --muted: oklch(0.968 0.007 247.896);
@@ -158,11 +161,44 @@
   button, a, input, textarea { -webkit-tap-highlight-color: transparent; }
 }
 
-@utility eyebrow { font-size: 0.6875rem; line-height: 1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.13em; color: var(--color-muted-foreground); }
+@utility eyebrow { font-size: 0.75rem; line-height: 1.4; font-weight: 600; text-transform: uppercase; letter-spacing: 0.13em; color: var(--color-muted-foreground); }
 @utility no-scrollbar { scrollbar-width: none; &::-webkit-scrollbar { display: none; } }
 @utility member-grain {
   background-image:
     radial-gradient(oklch(0.935 0.014 100 / 0.12) 0.5px, transparent 0.5px),
     linear-gradient(to bottom right, var(--primary), var(--primary-light), var(--primary-deep));
   background-size: 5px 5px, 100% 100%;
+}
+
+@utility dark-glass {
+  background: color-mix(in oklab, var(--primary-deep) 58%, transparent);
+  border: 1px solid color-mix(in oklab, var(--primary-foreground) 22%, transparent);
+  backdrop-filter: blur(18px);
+  color: var(--primary-foreground);
+}
+@utility photo-card-overlay { background: var(--photo-card-overlay); }
+@utility photo-hero-overlay { background: var(--photo-hero-overlay); }
+@utility v3-field {
+  height: 48px;
+  border-radius: 16px;
+  background: var(--background);
+  color: var(--primary);
+  border: 1px solid color-mix(in oklab, var(--primary) 25%, transparent);
+  padding-inline: 16px;
+  box-shadow: none;
+}
+@utility v3-heading { font-family: var(--font-sans); font-weight: 400; line-height: 1; letter-spacing: 0; }
+@utility v3-card-title { font-family: var(--font-sans); font-weight: 400; line-height: 1.15; letter-spacing: 0; }
+@utility appear { animation: block-appear 250ms ease-out both; }
+@keyframes block-appear { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@layer base {
+  html { overflow-x: clip; }
+  h1, h2, h3 { overflow-wrap: anywhere; }
+  .eyebrow::before { content: "( "; }
+  .eyebrow::after { content: " )"; }
+  textarea.v3-field { height: auto; min-height: 120px; padding-block: 14px; }
+  a, button { touch-action: manipulation; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  }
 }
