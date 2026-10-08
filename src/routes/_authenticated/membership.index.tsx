@@ -13,7 +13,7 @@ import { isAdminQuery } from "@/lib/admin-queries";
 
 export const Route = createFileRoute("/_authenticated/membership/")({ head: () => ({ meta: [{ title: "Votre Membership — Art de Vie" }, { name: "description", content: "Votre carte et votre espace membre Art de Vie." }, { property: "og:title", content: "Votre Membership — Art de Vie" }, { property: "og:description", content: "Votre carte et votre espace membre Art de Vie." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
 
-function AccountTile({ to, icon, label, dark = false, photo }: { to: "/membership/informations" | "/membership/factures" | "/membership/historique" | "/membership/parrainer"; icon: React.ReactNode; label: string; dark?: boolean; photo?: string }) {
+function AccountTile({ to, icon, label, dark = false, photo }: { to: "/membership/informations" | "/membership/factures" | "/membership/historique" | "/membership/parrainer"; icon: React.ReactNode; label: string; dark?: boolean; photo?: string | undefined }) {
   return <Link to={to} className={`relative flex min-h-[164px] flex-col justify-between overflow-hidden rounded-card p-5 transition-transform active:scale-[0.98] ${dark ? "bg-primary-deep text-primary-foreground" : "bg-primary/10 text-primary"}`}>
     {photo ? <Photo src={photo} alt="Bassin Art de Vie" className="absolute inset-0 h-full w-full" /> : null}
     <span className="relative z-10 flex size-11 items-center justify-center rounded-full border border-current/25">{icon}</span>
