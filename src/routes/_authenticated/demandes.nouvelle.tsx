@@ -1,36 +1,46 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { AppShell } from "@/components/art-de-vie/app-shell";
-import { SubHeader } from "@/components/art-de-vie/page-header";
-import { OfferCard } from "@/components/art-de-vie/cards";
+import { Check, X } from "lucide-react";
+import { AppShell, Logo } from "@/components/art-de-vie/app-shell";
+import { Photo } from "@/components/art-de-vie/cards";
+import { PillAction, StatusTimeline, Title } from "@/components/art-de-vie/v3";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { offersQuery } from "@/lib/adv-queries";
+import { cn } from "@/lib/utils";
+import bassin from "@/assets/v3/bassin.jpg.asset.json";
+import entree from "@/assets/v3/entree-de-nuit.jpg.asset.json";
+import vendome from "@/assets/v3/place-vendome.jpg.asset.json";
+import village from "@/assets/v3/village-cotier.jpg.asset.json";
 
-const cats = ["Tables", "Séjours", "Transferts", "Soins"];
-const imageByCat: Record<string, string> = { Tables: "restaurant", Séjours: "hotel", Transferts: "hotel", Soins: "spa" };
+const cats = [
+  { name: "Tables", note: "Restaurants et tables privées", image: entree.url, imageKey: "entree-de-nuit" },
+  { name: "Séjours", note: "Hôtels, villas, escapades", image: village.url, imageKey: "village-cotier" },
+  { name: "Transferts", note: "Chauffeurs et trajets privés", image: vendome.url, imageKey: "place-vendome" },
+  { name: "Soins", note: "Spa et soins à domicile", image: bassin.url, imageKey: "bassin" },
+] as const;
 
-export const Route = createFileRoute("/_authenticated/demandes/nouvelle")({ head: () => ({ meta: [{ title: "Nouvelle demande — Art de Vie" }, { name: "description", content: "Confiez une nouvelle demande à votre concierge." }, { property: "og:title", content: "Nouvelle demande — Art de Vie" }, { property: "og:description", content: "Confiez une nouvelle demande à votre concierge." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
+export const Route = createFileRoute("/_authenticated/demandes/nouvelle")({ validateSearch: (search: Record<string, unknown>) => ({ offer: typeof search["offer"] === "string" ? search["offer"] : undefined }), head: () => ({ meta: [{ title: "Nouvelle demande — Art de Vie" }, { name: "description", content: "Confiez une nouvelle demande à votre concierge." }, { property: "og:title", content: "Nouvelle demande — Art de Vie" }, { property: "og:description", content: "Confiez une nouvelle demande à votre concierge." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
 
 function Page() {
   const navigate = useNavigate();
+  const { offer } = Route.useSearch();
   const queryClient = useQueryClient();
-  const { data: offers = [] } = useQuery(offersQuery);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [category, setCategory] = useState("Tables");
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(offer ?? "");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [guests, setGuests] = useState("");
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [createdId, setCreatedId] = useState<string | null>(null);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  async function submit() {
     setBusy(true); setError(null);
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) { setBusy(false); setError("Votre session a expiré. Reconnectez-vous."); return; }
@@ -42,28 +52,31 @@ function Page() {
       scheduled_date: date || null,
       scheduled_time: time || null,
       guests: guests ? Number(guests) : null,
-      image_key: imageByCat[category] ?? "restaurant",
+      image_key: cats.find((cat) => cat.name === category)?.imageKey ?? "entree-de-nuit",
     }).select("id").single();
     setBusy(false);
     if (error || !data) { setError("L’envoi a échoué. Réessayez dans un instant."); return; }
     await queryClient.invalidateQueries({ queryKey: ["requests"] });
-    navigate({ to: "/demandes/$requestId", params: { requestId: data.id } });
+    setCreatedId(data.id);
   }
 
-  return <AppShell nav={false}><SubHeader title="Nouvelle demande" close backTo="/demandes"/>
-    <div className="no-scrollbar flex gap-2 overflow-x-auto">{cats.map((x) => <Button key={x} variant={category === x ? "primary" : "outline"} onClick={() => setCategory(x)} type="button">{x}</Button>)}</div>
-    <form className="mt-5 rounded-card bg-card p-5 sm:p-7" onSubmit={submit}><div className="grid gap-5">
-      <Field label="Prestation souhaitée"><Input value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="Ex. Une table avec vue"/></Field>
-      <Field label="Date souhaitée"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)}/></Field>
-      <div className="grid grid-cols-2 gap-4"><Field label="Heure"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)}/></Field><Field label="Couverts"><Input type="number" min="1" value={guests} onChange={(e) => setGuests(e.target.value)} placeholder="2"/></Field></div>
-      <Field label="Précisions pour votre concierge"><Textarea rows={5} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Vos envies, contraintes ou attentions particulières…"/></Field>
-      {error && <p className="rounded-2xl bg-primary/10 p-4 text-xs leading-5 text-primary">{error}</p>}
-      <Button type="submit" size="lg" className="mt-2" disabled={busy}>{busy ? "Envoi…" : "Envoyer la demande"}</Button>
-    </div></form>
-    <section className="mt-5"><h2 className="font-display text-2xl text-primary">Idées du mois</h2><div className="no-scrollbar -mx-5 mt-4 flex gap-4 overflow-x-auto px-5">{offers.slice(0, 3).map((o) => <OfferCard key={o.id} offer={o} compact/>)}</div></section>
-  </AppShell>;
+  if (createdId) return <AppShell nav={false}><div className="mx-auto max-w-[720px]"><WizardHeader step={3} complete /><section className="px-1 pt-16 text-primary"><span className="flex size-20 items-center justify-center rounded-full bg-primary text-primary-foreground"><Check className="size-8" /></span><Title italic="transmise." className="mt-8 text-[46px]">Demande<br /></Title><p className="mt-5 max-w-md text-[14px] leading-6 text-muted-foreground">Vous pouvez suivre son avancement à tout moment depuis Mes demandes.</p><div className="mt-7 rounded-[28px] bg-primary/10 p-5"><div className="flex items-center justify-between"><span className="eyebrow text-primary">{category}</span><span className="rounded-full bg-primary/10 px-3 py-1 text-[11px] font-medium">Nouvelle</span></div><h2 className="v3-card-title mt-6 text-[23px]">{title}</h2><div className="mt-5"><StatusTimeline status="Nouvelle" /></div></div><PillAction asChild className="mt-7 w-full"><Link to="/demandes">Voir mes demandes</Link></PillAction><Button variant="link" className="mt-2 px-0" onClick={() => navigate({ to: "/" })}>Retour à l’accueil</Button></section></div></AppShell>;
+
+  return <AppShell nav={false}><div className="mx-auto max-w-[760px]"><WizardHeader step={step} />
+    {step === 1 && <section className="pt-8"><p className="eyebrow text-primary">Catégorie</p><Title italic="organiser ?" className="mt-4 text-[38px] text-primary">Que pouvons-nous<br /></Title><div className="mt-6 grid grid-cols-2 gap-3">{cats.map((cat) => <Button key={cat.name} type="button" variant="ghost" onClick={() => setCategory(cat.name)} className={cn("relative h-[188px] overflow-hidden rounded-[18px] border-2 p-0 text-left text-primary-foreground transition-transform active:scale-[0.98]", category === cat.name ? "border-primary" : "border-transparent")}><Photo src={cat.image} alt={cat.name} className="absolute inset-0 h-full w-full"/><span className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full border border-primary-foreground/60 bg-primary-foreground/10">{category === cat.name && <Check className="size-4" />}</span><span className="absolute inset-x-4 bottom-4 whitespace-normal"><strong className="block text-[20px] font-normal">{cat.name}</strong><small className="mt-1 block text-[11px] leading-4">{cat.note}</small></span></Button>)}</div><PillAction className="mt-6 w-full" onClick={() => setStep(2)}>Continuer</PillAction></section>}
+    {step === 2 && <section className="pt-8"><p className="eyebrow text-primary">Détails · {category}</p><Title italic="demande." className="mt-4 text-[38px] text-primary">Votre </Title><form className="mt-6 rounded-card bg-card p-4 sm:p-7" onSubmit={(e) => { e.preventDefault(); setStep(3); }}><div className="grid gap-5"><Field label="Prestation souhaitée"><Input value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="Ex. Une table avec vue"/></Field><Field label="Date souhaitée"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)}/></Field><div className="grid grid-cols-2 gap-3"><Field label="Heure"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)}/></Field><Field label={category === "Tables" ? "Couverts" : "Personnes"}><Input type="number" min="1" value={guests} onChange={(e) => setGuests(e.target.value)} placeholder="2"/></Field></div><Field label="Précisions pour votre concierge"><Textarea rows={5} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Vos envies, contraintes ou attentions particulières…"/></Field></div><div className="mt-6 grid grid-cols-[auto_minmax(0,1fr)] gap-2"><Button type="button" variant="outline" size="lg" onClick={() => setStep(1)}>Retour</Button><PillAction type="submit" className="w-full">Continuer</PillAction></div></form></section>}
+    {step === 3 && <section className="pt-8"><p className="eyebrow text-primary">Récapitulatif</p><Title italic="exact ?" className="mt-4 text-[38px] text-primary">Tout est </Title><div className="mt-6 rounded-[28px] bg-primary-deep p-5 text-primary-foreground"><p className="eyebrow text-primary-foreground">{category}</p><h2 className="v3-card-title mt-5 text-[29px]">{title}</h2><dl className="mt-5 divide-y divide-primary-foreground/22 border-t border-primary-foreground/22 text-[13px]"><Review label="Date" value={date ? new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR") : "À définir"}/><Review label="Heure" value={time || "À définir"}/><Review label={category === "Tables" ? "Couverts" : "Personnes"} value={guests || "À définir"}/><Review label="Précisions" value={description || "Aucune"}/></dl></div><p className="mt-5 text-[13px] leading-5 text-muted-foreground">Votre demande sera transmise à votre conciergerie dès l’envoi.</p>{error && <p className="mt-4 rounded-[18px] bg-primary/10 p-4 text-xs leading-5 text-primary">{error}</p>}<div className="mt-6 grid grid-cols-[auto_minmax(0,1fr)] gap-2"><Button type="button" variant="outline" size="lg" onClick={() => setStep(2)}>Modifier</Button><PillAction onClick={() => void submit()} disabled={busy} className="w-full">{busy ? "Envoi…" : "Envoyer"}</PillAction></div></section>}
+  </div></AppShell>;
+}
+
+function WizardHeader({ step, complete = false }: { step: 1 | 2 | 3; complete?: boolean }) {
+  return <header className="sticky top-0 z-40 -mx-5 bg-background px-5 pb-3 pt-3 sm:-mx-8 sm:px-8 lg:static lg:mx-0 lg:px-0 lg:pt-0"><div className="grid h-[52px] grid-cols-[44px_minmax(0,1fr)_44px] items-center rounded-full bg-primary-deep px-1 text-primary-foreground"><Button asChild variant="ghost" size="icon" className="border border-primary-foreground/22 text-primary-foreground hover:bg-primary-foreground/10"><Link to="/demandes" aria-label="Fermer"><X /></Link></Button><Logo inverse className="mx-auto h-[20px] w-auto" />{!complete && <span className="text-center text-[10px] font-semibold tracking-[0.13em]">{step} / 3</span>}</div><div className="mt-3 grid grid-cols-3 gap-2">{[1, 2, 3].map((part) => <span key={part} className={cn("h-[3px] rounded-full", part <= step ? "bg-primary" : "bg-primary/15")} />)}</div></header>;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div><Label className="eyebrow">{label}</Label><div className="mt-2">{children}</div></div>;
+}
+
+function Review({ label, value }: { label: string; value: string }) {
+  return <div className="grid grid-cols-[100px_minmax(0,1fr)] gap-3 py-4"><dt className="text-primary-foreground/70">{label}</dt><dd className="text-right">{value}</dd></div>;
 }

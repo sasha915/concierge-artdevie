@@ -1,6 +1,10 @@
 import restaurant from "@/assets/offers/restaurant.jpg";
 import spa from "@/assets/offers/spa.jpg";
 import hotel from "@/assets/offers/hotel.jpg";
+import bassin from "@/assets/v3/bassin.jpg.asset.json";
+import entreeDeNuit from "@/assets/v3/entree-de-nuit.jpg.asset.json";
+import placeVendome from "@/assets/v3/place-vendome.jpg.asset.json";
+import villageCotier from "@/assets/v3/village-cotier.jpg.asset.json";
 
 export type RequestStatus = "Nouvelle" | "En cours" | "Confirmée" | "Terminée" | "Annulée";
 
@@ -12,6 +16,7 @@ export type RequestItem = {
   description: string;
   scheduled_date: string | null;
   scheduled_time: string | null;
+  guests: number | null;
   concierge: string;
   image_key: string;
 };
@@ -53,10 +58,18 @@ export type Profile = {
   notify_messages: boolean;
 };
 
-const images: Record<string, string> = { restaurant, spa, hotel };
+const images: Record<string, string> = {
+  restaurant,
+  spa,
+  hotel,
+  "place-vendome": placeVendome.url,
+  "village-cotier": villageCotier.url,
+  "entree-de-nuit": entreeDeNuit.url,
+  bassin: bassin.url,
+};
 
-export function imageFor(key: string | null | undefined): string {
-  return (key && images[key]) || restaurant;
+export function imageFor(key: string | null | undefined): string | undefined {
+  return key ? images[key] : undefined;
 }
 
 export function formatDate(iso: string | null | undefined): string {

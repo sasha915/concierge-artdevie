@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { AppShell } from "@/components/art-de-vie/app-shell";
-import { SubHeader } from "@/components/art-de-vie/page-header";
+import { AppShell, ListHeader } from "@/components/art-de-vie/app-shell";
 import { EmptyState, Filters, RequestCard } from "@/components/art-de-vie/cards";
+import { Skeleton } from "@/components/ui/skeleton";
 import { requestsQuery } from "@/lib/adv-queries";
 
 export const Route = createFileRoute("/_authenticated/membership/historique")({ head: () => ({ meta: [{ title: "Historique des demandes — Art de Vie" }, { name: "description", content: "Retrouvez vos demandes passées." }, { property: "og:title", content: "Historique des demandes — Art de Vie" }, { property: "og:description", content: "Retrouvez vos demandes passées." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
@@ -13,8 +13,9 @@ function Page() {
   const { data: requests = [], isLoading } = useQuery(requestsQuery);
   const history = requests.filter((r) => r.status === "Terminée" || r.status === "Annulée");
   const list = active === "Toutes" ? history : history.filter((r) => r.status === active);
-  return <AppShell nav={false}><SubHeader title="Historique des demandes"/><Filters values={["Toutes", "Terminée", "Annulée"]} active={active} onChange={setActive}/>
-    <div className="mt-5 grid gap-3 md:grid-cols-2">{list.map((r) => <RequestCard key={r.id} item={r}/>)}</div>
+  const filterValues = ["Toutes", "Terminée", "Annulée"];
+  return <AppShell nav={false}><div className="lg:hidden"><ListHeader eyebrow="Historique" title="Historique des " italic="demandes." introduction="Retrouvez les demandes que nous avons accompagnées."><Filters values={filterValues} active={active} onChange={setActive} dark /></ListHeader></div><div className="hidden lg:block"><h1 className="v3-heading text-[32px] text-primary">Historique des <em className="font-display font-normal">demandes.</em></h1><p className="mb-6 mt-2 text-[13px] text-muted-foreground">Retrouvez les demandes que nous avons accompagnées.</p><Filters values={filterValues} active={active} onChange={setActive}/></div>
+    {isLoading ? <div className="mt-5 grid gap-4 md:grid-cols-2"><Skeleton className="h-[404px] rounded-card bg-primary/10" /><Skeleton className="h-[180px] rounded-card bg-primary/10" /></div> : <div className="mt-5 grid gap-4 md:grid-cols-2">{list.map((r, index) => <RequestCard key={r.id} item={r} featured={index === 0}/>)}</div>}
     {!isLoading && list.length === 0 && <div className="mt-6"><EmptyState>Aucune demande passée pour l’instant.</EmptyState></div>}
   </AppShell>;
 }
