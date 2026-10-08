@@ -56,7 +56,7 @@ function Home() {
       <div className="relative mt-auto px-1 pb-1 pt-10 lg:max-w-[52%] lg:pt-12">
         <p className="eyebrow mb-5 text-primary-foreground">{greeting}{firstName ? ` ${firstName}` : ""}</p>
         <Title as="h2" italic={<>à votre rythme.</>} className="text-[47px]">Votre<br className="lg:hidden" /> conciergerie,<br /></Title>
-        <PillAction asChild light className="mt-7"><Link to="/demandes/nouvelle" search={{}}>Nouvelle demande</Link></PillAction>
+        <PillAction asChild light className="mt-7"><Link to="/demandes/nouvelle" search={{ offer: undefined }}>Nouvelle demande</Link></PillAction>
       </div>
       <div className="absolute bottom-8 right-9 hidden lg:block"><MiniMember profile={profile} /></div>
     </section>
