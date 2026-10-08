@@ -65,5 +65,5 @@ function Page() {
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div><Label className="eyebrow">{label}</Label><div className="mt-2 [&_input]:h-12 [&_input]:rounded-2xl [&_input]:border-0 [&_input]:bg-background [&_textarea]:rounded-2xl [&_textarea]:border-0 [&_textarea]:bg-background">{children}</div></div>;
+  return <div><Label className="eyebrow">{label}</Label><div className="mt-2">{children}</div></div>;
 }

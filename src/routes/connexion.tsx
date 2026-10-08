@@ -56,8 +56,8 @@ function Page() {
     <h1 className="text-center font-display text-[38px] font-semibold leading-[1.1] text-primary">{greeting}</h1>
     <p className="mt-3 text-center text-sm text-muted-foreground">Connectez-vous pour accéder à votre espace membre.</p>
     <form className="mt-10 space-y-5" onSubmit={submit}>
-      <div><Label htmlFor="email" className="eyebrow">Email</Label><Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@exemple.fr" className="mt-2 h-14 rounded-2xl border-0 bg-card px-4" /></div>
-      <div><Label htmlFor="password" className="eyebrow">Mot de passe</Label><Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-2 h-14 rounded-2xl border-0 bg-card px-4" /></div>
+      <div><Label htmlFor="email" className="eyebrow">Email</Label><Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@exemple.fr" className="mt-2" /></div>
+      <div><Label htmlFor="password" className="eyebrow">Mot de passe</Label><Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-2" /></div>
       <div className="text-right"><button type="button" onClick={reset} className="text-xs font-medium text-primary">Mot de passe oublié ?</button></div>
       {error && <p className="rounded-2xl bg-primary/10 p-4 text-xs leading-5 text-primary">{error}</p>}
       {notice && <p className="rounded-2xl bg-card p-4 text-xs leading-5 text-primary">{notice}</p>}
@@ -65,7 +65,7 @@ function Page() {
     </form>
     <p className="mt-10 text-center text-sm text-muted-foreground">
       Pas encore membre ?<br />
-      <a href="mailto:invitation@artdevie.fr" className="mt-2 inline-block font-semibold text-primary">Demander une invitation</a>
+      <span className="mt-2 inline-block font-medium text-primary">Demander une invitation : [ADRESSE À CONFIRMER]</span>
     </p>
   </div></AppShell>;
 }

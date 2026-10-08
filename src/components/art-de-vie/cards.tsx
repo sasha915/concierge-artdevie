@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { CalendarDays, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { formatDate, imageFor, type Offer, type RequestItem, type RequestStatus } from "@/data/art-de-vie";
 
 const statusClass: Record<RequestStatus, string> = {
@@ -10,7 +11,7 @@ const statusClass: Record<RequestStatus, string> = {
   "Terminée": "bg-primary-deep text-primary-foreground",
   "Annulée": "border border-primary/25 bg-transparent text-muted-foreground",
 };
-export function StatusBadge({ status }: { status: RequestStatus }) { return <span className={cn("shrink-0 rounded-full px-3 py-1 text-[10px] font-semibold", statusClass[status])}>{status}</span>; }
+export function StatusBadge({ status, onPhoto = false }: { status: RequestStatus; onPhoto?: boolean }) { return <span className={cn("shrink-0 rounded-full px-3 py-1 text-[11px] font-medium", onPhoto ? "border border-primary-foreground/22 bg-primary-deep text-primary-foreground" : statusClass[status])}>{status}</span>; }
 
 export function RequestCard({ item }: { item: RequestItem }) {
   return <Link to="/demandes/$requestId" params={{ requestId: item.id }} className="block rounded-card bg-card p-5 transition-transform hover:-translate-y-0.5">
@@ -21,8 +22,8 @@ export function RequestCard({ item }: { item: RequestItem }) {
   </Link>;
 }
 
-export function Photo({ src, alt, className = "" }: { src: string; alt: string; className?: string }) {
-  return <div className={cn("relative overflow-hidden bg-primary-deep", className)}><img src={src} alt={alt} width={1024} height={1280} loading="lazy" className="h-full w-full object-cover" /><div className="pointer-events-none absolute inset-0 bg-primary/32" /></div>;
+export function Photo({ src, alt, category, hero = false, eager = false, className = "" }: { src?: string; alt: string; category?: string; hero?: boolean; eager?: boolean; className?: string }) {
+  return <div className={cn("relative overflow-hidden bg-primary-deep", className)}>{src ? <img src={src} alt={alt} width={1024} height={1280} loading={eager ? "eager" : "lazy"} className="h-full w-full object-cover" /> : <span className="absolute inset-0 flex items-center justify-center px-5 text-center font-display text-[38px] italic text-primary-foreground/80">{category ?? alt}</span>}{src && <div className={cn("pointer-events-none absolute inset-0", hero ? "photo-hero-overlay" : "photo-card-overlay")} />}</div>;
 }
 
 export function OfferCard({ offer, compact = false }: { offer: Offer; compact?: boolean }) {
@@ -30,8 +31,8 @@ export function OfferCard({ offer, compact = false }: { offer: Offer; compact?: 
   return <article className="overflow-hidden rounded-card bg-card"><div className="relative"><Photo src={imageFor(offer.image_key)} alt={offer.title} className="aspect-[4/5]"/><span className="absolute left-4 top-4 rounded-full bg-card px-3 py-1.5 text-[10px] font-semibold text-primary">{offer.promo}</span></div><div className="p-5"><span className="eyebrow">{offer.category}</span><h2 className="mt-3 font-display text-2xl text-primary">{offer.title}</h2><p className="mt-1 text-sm font-medium text-foreground">{offer.partner}</p><div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground"><MapPin className="size-4" />{offer.place}<span className="mx-1">·</span>{offer.validity}</div></div></article>;
 }
 
-export function Filters({ values, active, onChange }: { values: string[]; active: string; onChange: (v: string) => void }) {
-  return <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:px-0">{values.map((value) => <button key={value} type="button" onClick={() => onChange(value)} className={active === value ? "h-10 shrink-0 rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground" : "h-10 shrink-0 rounded-full border border-primary/15 bg-transparent px-4 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"}>{value}</button>)}</div>;
+export function Filters({ values, active, onChange, dark = false }: { values: string[]; active: string; onChange: (v: string) => void; dark?: boolean }) {
+  return <div className="no-scrollbar flex min-w-0 gap-2 overflow-x-auto pb-1">{values.map((value) => <Button key={value} type="button" variant="soft" aria-pressed={active === value} onClick={() => onChange(value)} className={cn("h-11 shrink-0 px-5 text-[15px] font-medium", active === value ? dark ? "bg-background text-primary hover:bg-background/90" : "bg-primary text-primary-foreground hover:bg-primary-deep" : dark ? "border border-primary-foreground/22 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" : "border border-primary/25 bg-primary/10 text-primary")}>{value}</Button>)}</div>;
 }
 
 export function EmptyState({ children }: { children: React.ReactNode }) {

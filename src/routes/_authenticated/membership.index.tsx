@@ -31,9 +31,9 @@ function Page() {
   }
 
   return <AppShell>
-    <div className="lg:hidden"><PageHeader title="Ma carte de membre" subtitle="Votre carte d'accès virtuelle aux privilèges Art de Vie." /></div>
+    <div className="lg:hidden"><PageHeader title="Votre Membership" subtitle="Votre carte d'accès virtuelle aux privilèges Art de Vie." /></div>
     <header className="mb-7 hidden lg:block">
-      <h1 className="font-display text-[32px] font-semibold leading-tight text-primary">Ma carte de membre</h1>
+      <h1 className="font-display text-[32px] font-semibold leading-tight text-primary">Votre Membership.</h1>
       <p className="mt-2 text-[13px] text-muted-foreground">Votre carte d'accès virtuelle aux privilèges Art de Vie.</p>
     </header>
     <div className="mx-auto max-w-[620px] lg:grid lg:max-w-none lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-8 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)] xl:gap-10">
