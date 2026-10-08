@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { cloneElement, isValidElement, useEffect, useState, type ReactNode } from "react";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,9 @@ export function ArrowCircle({ diagonal = false, inverse = false, className }: { 
 }
 
 export function PillAction({ children, light = false, ...props }: React.ComponentProps<typeof Button> & { light?: boolean }) {
-  return <Button {...props} size="lg" variant={light ? "light" : "primary"} className={cn("justify-between gap-4 pl-6 pr-2 text-[15px]", props.className)}>{children}<ArrowCircle inverse={light} className="size-9" /></Button>;
+  const arrow = <ArrowCircle inverse={light} className="size-9" />;
+  const content = props.asChild && isValidElement<{ children?: ReactNode }>(children) ? cloneElement(children, {}, children.props.children, arrow) : <>{children}{arrow}</>;
+  return <Button {...props} size="lg" variant={light ? "light" : "primary"} className={cn("justify-between gap-4 pl-6 pr-2 text-[15px]", props.className)}>{content}</Button>;
 }
 
 const steps: RequestStatus[] = ["Nouvelle", "En cours", "Confirmée", "Terminée"];

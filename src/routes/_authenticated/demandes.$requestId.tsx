@@ -19,7 +19,7 @@ function Page() {
     <div className="mx-auto max-w-2xl">
       <section className="mt-7 rounded-card bg-card p-5"><p className="font-display text-xl text-primary">Votre demande a bien été transmise.</p><p className="mt-2 text-sm leading-6 text-muted-foreground">{item.description || "Votre concierge s’occupe de chaque détail et reviendra vers vous très prochainement."}</p></section>
       <section className="mt-5 rounded-card bg-card p-5"><h2 className="eyebrow">Détails</h2><div className="mt-5 grid gap-5 text-sm"><div className="flex items-center gap-4"><CalendarDays className="size-5 text-primary"/><span>{formatDate(item.scheduled_date)}</span></div><div className="flex items-center gap-4"><Clock3 className="size-5 text-primary"/><span>{item.scheduled_time ?? "Heure à définir"}</span></div><div className="flex items-center gap-4"><UserRound className="size-5 text-primary"/><span>{item.concierge}</span></div></div></section>
-      <div className="mt-6 grid gap-3 sm:grid-cols-2"><Button asChild size="lg"><Link to="/demandes/nouvelle">Faire une nouvelle demande</Link></Button><Button variant="outline" size="lg">Modifier ma demande</Button></div>
+      <div className="mt-6 grid gap-3"><Button asChild size="lg"><Link to="/demandes/nouvelle">Faire une nouvelle demande</Link></Button></div>
     </div>
   </AppShell>;
 }

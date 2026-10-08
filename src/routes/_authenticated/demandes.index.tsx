@@ -16,7 +16,6 @@ function Page() {
   return <AppShell>
     <div className="lg:hidden">
       <PageHeader title="Mes demandes" subtitle="Suivez l'avancement de chaque demande en temps réel." />
-      <div className="mt-[18px] mb-[18px]"><NewRequestButton className="w-full" /></div>
     </div>
     <header className="mb-[22px] hidden grid-cols-[minmax(0,1fr)_auto] items-center gap-6 lg:grid">
       <div className="min-w-0">

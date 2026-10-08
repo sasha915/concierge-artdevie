@@ -36,8 +36,8 @@ function Page() {
   return <AppShell nav={false}><div className="mx-auto max-w-2xl"><SubHeader title="Vos informations"/>
     <section className="rounded-card bg-card p-5 sm:p-7">
       {editing ? <form className="grid gap-5" onSubmit={save}>
-        <div><Label htmlFor="fullName" className="eyebrow">Nom</Label><Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} className="mt-2 h-12 rounded-2xl border-0 bg-background"/></div>
-        <div><Label htmlFor="phone" className="eyebrow">Téléphone</Label><Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-2 h-12 rounded-2xl border-0 bg-background"/></div>
+        <div><Label htmlFor="fullName" className="eyebrow">Nom</Label><Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} className="mt-2"/></div>
+        <div><Label htmlFor="phone" className="eyebrow">Téléphone</Label><Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-2"/></div>
         <div className="flex gap-3"><Button type="submit" size="lg" className="flex-1">Enregistrer</Button><Button type="button" variant="outline" size="lg" onClick={() => setEditing(false)}>Annuler</Button></div>
       </form> : <>
         <div className="divide-y divide-primary/10">
