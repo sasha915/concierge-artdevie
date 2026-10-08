@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Bell, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import logoBeige from "@/assets/logo-beige.svg";
@@ -8,6 +8,7 @@ import logoViolet from "@/assets/logo-violet.svg";
 import { initials } from "@/data/art-de-vie";
 import { profileQuery } from "@/lib/adv-queries";
 import { BookmarkIcon, HomeIcon, InboxIcon, UserIcon } from "./icons";
+import { PillAction, Title } from "./v3";
 
 export function Logo({ inverse = false, className = "h-8 w-auto" }: { inverse?: boolean; className?: string }) {
   return <img src={inverse ? logoBeige : logoViolet} alt="Art de Vie" className={className} />;
@@ -22,13 +23,12 @@ const nav = [
 
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  return <nav aria-label="Navigation principale" className="fixed bottom-[max(16px,env(safe-area-inset-bottom))] left-1/2 z-50 flex h-16 w-[calc(100%-32px)] max-w-[500px] -translate-x-1/2 items-center justify-around rounded-full border border-primary/10 bg-card/95 px-2 shadow-nav backdrop-blur-xl lg:hidden">
-    {nav.map(({ to, label, Icon }) => {
+  return <nav aria-label="Navigation principale" className="fixed bottom-[max(16px,env(safe-area-inset-bottom))] left-1/2 z-50 grid h-16 w-[calc(100%-32px)] max-w-[500px] -translate-x-1/2 grid-cols-5 items-center justify-items-center rounded-full border border-primary-foreground/22 bg-primary-deep/86 px-2 text-primary-foreground shadow-nav backdrop-blur-[18px] lg:hidden">
+    {nav.map(({ to, label, Icon }, index) => {
       const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
-      return <Link key={to} to={to} aria-label={label} className={active ? "flex h-11 items-center gap-2 rounded-full bg-primary/10 px-4 text-primary" : "flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-primary"}>
-        <Icon filled={active} aria-hidden="true" />{active && <span className="text-[11px] font-semibold">{label}</span>}
-      </Link>;
+      return <Link key={to} to={to} aria-label={label} aria-current={active ? "page" : undefined} className={`flex size-12 items-center justify-center rounded-full transition-colors active:scale-95 ${index > 1 ? index === 2 ? "col-start-4" : "col-start-5" : ""} ${active ? "bg-primary-foreground/16" : "hover:bg-primary-foreground/10"}`}><Icon filled={active} aria-hidden="true" /></Link>;
     })}
+    <Button asChild variant="light" size="icon" className="col-start-3 row-start-1 size-12" title="Nouvelle demande"><Link to="/demandes/nouvelle" aria-label="Nouvelle demande"><Plus className="size-6" /></Link></Button>
   </nav>;
 }
 
@@ -64,23 +64,28 @@ function DesktopSidebar() {
   </aside>;
 }
 
-export function AppShell({ children, nav = true }: { children: ReactNode; nav?: boolean }) {
-  const baseMain = "mx-auto min-h-screen max-w-[1120px] px-5 pt-6 sm:px-8 lg:ml-[264px] lg:max-w-[calc(100%-264px)] lg:px-10 lg:pb-10 lg:pt-8 xl:px-12";
+export function AppShell({ children, nav = true, immersive = false }: { children: ReactNode; nav?: boolean; immersive?: boolean }) {
+  const baseMain = `appear mx-auto min-h-screen min-w-0 max-w-[1120px] ${immersive ? "px-3 pt-3" : "px-5 pt-6"} sm:px-8 lg:ml-[264px] lg:max-w-[calc(100%-264px)] lg:px-10 lg:pb-10 lg:pt-8 xl:px-12`;
   return <><DesktopSidebar /><main className={`${baseMain} ${nav ? "pb-28 lg:pb-10" : "pb-10"}`}>{children}{nav && <BottomNav />}</main></>;
 }
 
 export function TopBar({ title, action }: { title?: string; action?: ReactNode }) {
-  return <header className="mb-8 flex items-center justify-between"><div>{title ? <h1 className="font-display text-[32px] font-semibold leading-tight text-primary">{title}</h1> : <Logo />}</div>{action ?? <Button aria-label="Notifications" variant="icon" size="icon"><Bell /></Button>}</header>;
+  const { data: profile } = useQuery(profileQuery);
+  return <header className="dark-glass grid h-[60px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-full py-2 pl-4 pr-2"><div className="min-w-0">{title ? <span className="text-sm">{title}</span> : <Logo inverse className="h-[23px] w-auto max-w-full" />}</div>{action ?? <Button asChild variant="light" size="icon" className="size-11 font-medium"><Link to="/membership" aria-label="Votre Membership">{initials(profile?.full_name ?? "")}</Link></Button>}</header>;
 }
 
 export function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return <>
-    <div className="mb-6 flex items-center justify-between"><div className="w-11" /><Logo className="h-[19px] w-auto" /><Button aria-label="Notifications" variant="icon" size="icon"><Bell /></Button></div>
-    <h1 className="font-display text-[32px] font-semibold leading-tight text-primary">{title}</h1>
+    <div className="mb-6"><TopBar /></div>
+    <Title italic={`${title.split(" ").slice(-1).join(" ")}.`} className="text-primary">{title.split(" ").slice(0, -1).join(" ")}{title.includes(" ") ? " " : ""}</Title>
     {subtitle && <p className="mt-2 mb-6 text-[13px] text-muted-foreground">{subtitle}</p>}
   </>;
 }
 
 export function NewRequestButton({ className }: { className?: string }) {
-  return <Button asChild variant="primary" size="lg" className={className}><Link to="/demandes/nouvelle"><Plus />Nouvelle demande</Link></Button>;
+  return <PillAction asChild className={className}><Link to="/demandes/nouvelle">Nouvelle demande</Link></PillAction>;
+}
+
+export function ListHeader({ eyebrow, title, italic, introduction, children }: { eyebrow: string; title: string; italic: string; introduction: string; children?: ReactNode }) {
+  return <section className="relative -mx-2 -mt-3 overflow-hidden rounded-[28px] bg-primary-deep p-4 text-primary-foreground sm:mx-0 sm:mt-0"><Logo inverse className="pointer-events-none absolute bottom-16 left-3 w-[150%] max-w-none opacity-5" /><div className="relative"><TopBar /><p className="eyebrow mt-7 text-primary-foreground/80">{eyebrow}</p><Title italic={italic} className="mt-4">{title}</Title><p className="mb-5 mt-5 border-t border-primary-foreground/22 pt-4 text-[13px] leading-5 text-primary-foreground">{introduction}</p>{children}</div></section>;
 }
