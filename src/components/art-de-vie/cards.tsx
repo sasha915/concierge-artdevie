@@ -34,7 +34,7 @@ function formatRequestDate(item: RequestItem) {
   return `${formatDate(item.scheduled_date)}${time ? ` · ${time}` : ""}`;
 }
 
-export function Photo({ src, alt, category, hero = false, eager = false, className = "" }: { src?: string; alt: string; category?: string; hero?: boolean; eager?: boolean; className?: string }) {
+export function Photo({ src, alt, category, hero = false, eager = false, className = "" }: { src?: string | undefined; alt: string; category?: string; hero?: boolean; eager?: boolean; className?: string }) {
   return <div className={cn("relative overflow-hidden bg-primary-deep", className)}>{src ? <img src={src} alt={alt} width={1024} height={1280} loading={eager ? "eager" : "lazy"} className="h-full w-full object-cover" /> : <span className="absolute inset-0 flex items-center justify-center px-5 text-center font-display text-[38px] italic text-primary-foreground/80">{category ?? alt}</span>}{src && <div className={cn("pointer-events-none absolute inset-0", hero ? "photo-hero-overlay" : "photo-card-overlay")} />}</div>;
 }
 

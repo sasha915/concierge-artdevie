@@ -22,7 +22,7 @@ function Page() {
       <section className="mt-3 rounded-[28px] bg-primary-deep p-5 text-primary-foreground"><div className="flex items-center justify-between gap-3"><h2 className="eyebrow text-primary-foreground">Suivi</h2><StatusBadge status={item.status} onPhoto /></div><div className="mt-5"><StatusTimeline status={item.status} dark /></div></section>
       <section className="mt-3 rounded-[28px] bg-primary/10 p-5 text-primary"><h2 className="eyebrow text-primary">Votre demande</h2><div className="mt-5 grid gap-3"><p className="rounded-[18px] bg-card p-4 text-[14px] leading-6">{item.description || "Aucune précision complémentaire n’a été indiquée."}</p><p className="rounded-[18px] bg-primary p-4 text-[14px] text-primary-foreground">Votre demande a bien été transmise.</p></div></section>
       <section className="mt-8 px-2 text-primary"><h2 className="eyebrow text-primary">Détails</h2><dl className="mt-4 divide-y divide-primary/25 border-y border-primary/25 text-[14px]"><Detail label="Date" value={formatDate(item.scheduled_date)} /><Detail label="Heure" value={item.scheduled_time?.slice(0, 5).replace(":", " h ") ?? "À définir"} />{item.guests && <Detail label={item.category === "Tables" ? "Couverts" : "Personnes"} value={String(item.guests)} />}<Detail label="Concierge" value={item.concierge} /></dl></section>
-      <div className="mt-6"><PillAction asChild className="w-full"><Link to="/demandes/nouvelle">Faire une nouvelle demande</Link></PillAction></div>
+      <div className="mt-6"><PillAction asChild className="w-full"><Link to="/demandes/nouvelle" search={{}}>Faire une nouvelle demande</Link></PillAction></div>
     </div>
   </AppShell>;
 }

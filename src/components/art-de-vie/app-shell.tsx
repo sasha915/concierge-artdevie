@@ -28,7 +28,7 @@ export function BottomNav() {
       const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
       return <Link key={to} to={to} aria-label={label} aria-current={active ? "page" : undefined} className={`flex size-12 items-center justify-center rounded-full transition-colors active:scale-95 ${index > 1 ? index === 2 ? "col-start-4" : "col-start-5" : ""} ${active ? "bg-primary-foreground/16" : "hover:bg-primary-foreground/10"}`}><Icon filled={active} aria-hidden="true" /></Link>;
     })}
-    <Button asChild variant="light" size="icon" className="col-start-3 row-start-1 size-12" title="Nouvelle demande"><Link to="/demandes/nouvelle" aria-label="Nouvelle demande"><Plus className="size-6" /></Link></Button>
+    <Button asChild variant="light" size="icon" className="col-start-3 row-start-1 size-12" title="Nouvelle demande"><Link to="/demandes/nouvelle" search={{}} aria-label="Nouvelle demande"><Plus className="size-6" /></Link></Button>
   </nav>;
 }
 
@@ -83,7 +83,7 @@ export function PageHeader({ title, subtitle }: { title: string; subtitle?: stri
 }
 
 export function NewRequestButton({ className }: { className?: string }) {
-  return <PillAction asChild className={className}><Link to="/demandes/nouvelle">Nouvelle demande</Link></PillAction>;
+  return <PillAction asChild className={className}><Link to="/demandes/nouvelle" search={{}}>Nouvelle demande</Link></PillAction>;
 }
 
 export function ListHeader({ eyebrow, title, italic, introduction, children }: { eyebrow: string; title: string; italic: string; introduction: string; children?: ReactNode }) {

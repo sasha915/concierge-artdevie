@@ -23,7 +23,7 @@ const cats = [
   { name: "Soins", note: "Spa et soins à domicile", image: bassin.url, imageKey: "bassin" },
 ] as const;
 
-export const Route = createFileRoute("/_authenticated/demandes/nouvelle")({ validateSearch: (search: Record<string, unknown>) => ({ offer: typeof search.offer === "string" ? search.offer : undefined }), head: () => ({ meta: [{ title: "Nouvelle demande — Art de Vie" }, { name: "description", content: "Confiez une nouvelle demande à votre concierge." }, { property: "og:title", content: "Nouvelle demande — Art de Vie" }, { property: "og:description", content: "Confiez une nouvelle demande à votre concierge." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
+export const Route = createFileRoute("/_authenticated/demandes/nouvelle")({ validateSearch: (search: Record<string, unknown>) => ({ offer: typeof search["offer"] === "string" ? search["offer"] : undefined }), head: () => ({ meta: [{ title: "Nouvelle demande — Art de Vie" }, { name: "description", content: "Confiez une nouvelle demande à votre concierge." }, { property: "og:title", content: "Nouvelle demande — Art de Vie" }, { property: "og:description", content: "Confiez une nouvelle demande à votre concierge." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
 
 function Page() {
   const navigate = useNavigate();
