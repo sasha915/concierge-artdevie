@@ -55,7 +55,7 @@ function Page() {
     <form className="mt-8 space-y-5" onSubmit={submit}>
       <div>
         <Label htmlFor="admin-password" className="eyebrow">Mot de passe administrateur</Label>
-        <Input id="admin-password" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-2 h-14 rounded-2xl border-0 bg-card px-4" />
+        <Input id="admin-password" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-2" />
       </div>
       {error && <p className="rounded-2xl bg-primary/10 p-4 text-xs leading-5 text-primary">{error}</p>}
       <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>{busy ? "Vérification…" : "Accéder à l’administration"}</Button>

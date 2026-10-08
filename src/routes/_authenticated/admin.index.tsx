@@ -7,6 +7,7 @@ import { AdminShell } from "@/components/art-de-vie/admin-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/art-de-vie/cards";
 import { membersQuery, type AdminMember } from "@/lib/admin-queries";
 import { createMember, sendMemberInvite, setMemberDisabled } from "@/lib/admin.functions";
@@ -80,7 +81,7 @@ function Page() {
   return <AdminShell>
     <header className="mb-[22px] flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="font-display text-[32px] font-semibold leading-tight text-primary">Administration</h1>
+        <h1 className="v3-heading text-[46px] text-primary">Administration</h1>
         <p className="mt-2 text-[13px] text-muted-foreground">Gérez les membres invités, leurs demandes et leurs factures.</p>
       </div>
       <div className="flex items-center gap-2">
@@ -111,7 +112,7 @@ function Page() {
     </form>}
 
     <section className="mt-[22px]">
-      {isLoading ? <EmptyState>Chargement des membres…</EmptyState>
+      {isLoading ? <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3"><Skeleton className="h-44 rounded-card bg-primary/10"/><Skeleton className="h-44 rounded-card bg-primary/10"/><Skeleton className="h-44 rounded-card bg-primary/10"/></div>
         : filtered.length === 0 ? <EmptyState>Aucun membre ne correspond à cette recherche.</EmptyState>
         : <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
             {filtered.map((m) => <article key={m.id} className="rounded-card bg-card p-5">

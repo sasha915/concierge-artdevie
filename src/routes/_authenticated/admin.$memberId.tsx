@@ -7,6 +7,7 @@ import { AdminShell } from "@/components/art-de-vie/admin-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState, StatusBadge } from "@/components/art-de-vie/cards";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatShortDate } from "@/data/art-de-vie";
 import { memberDetailQuery, memberPaymentsQuery } from "@/lib/admin-queries";
 import { sendMemberInvite, setMemberDisabled, updateMember } from "@/lib/admin.functions";
@@ -73,7 +74,7 @@ function Page() {
   return <AdminShell>
     <header className="mb-7 flex items-center gap-4">
       <Button asChild variant="icon" size="icon" aria-label="Retour"><Link to="/admin"><ChevronLeft /></Link></Button>
-      <h1 className="min-w-0 flex-1 truncate font-display text-[32px] font-semibold leading-tight text-primary">{profile?.full_name || (isLoading ? "Chargement…" : "Membre introuvable")}</h1>
+      {isLoading ? <Skeleton className="h-12 min-w-0 flex-1 rounded-[16px] bg-primary/10"/> : <h1 className="v3-heading min-w-0 flex-1 truncate text-[38px] text-primary lg:text-[46px]">{profile?.full_name || "Membre introuvable"}</h1>}
     </header>
 
     {!profile && !isLoading ? <EmptyState>Ce membre est introuvable.</EmptyState> : null}

@@ -13,4 +13,4 @@
 - [x] Mollie payment infrastructure (one-off invoices + subscriptions, key configured, webhook connected)
 - [x] V3 lot 1: shared presentation, four uploaded photos, corrections, home, mobile/desktop verification
 - [x] V3 lot 2: requests, three-step request form, detail, offers
-- [ ] V3 lot 3: membership, secondary pages, login, desktop/admin presentation — awaiting approval
+- [x] V3 lot 3: membership, secondary pages, login, desktop/admin presentation
