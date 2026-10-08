@@ -21,7 +21,7 @@ function CurrentRequest({ item }: { item: RequestItem }) {
   </Link>;
 }
 
-function MiniMember({ profile }: { profile?: Profile }) {
+function MiniMember({ profile }: { profile: Profile | null | undefined }) {
   return <div className="member-grain w-[120px] rotate-[-4deg] rounded-[14px] border border-gold p-3 text-primary-foreground shadow-member"><div className="flex items-center justify-between gap-2"><Logo inverse className="h-3 w-auto" /><span className="flex size-4 items-center justify-center rounded-full border border-gold text-[7px]">{initials(profile?.full_name ?? "")}</span></div><p className="mt-5 font-display text-sm">{profile?.plan ?? "—"}</p></div>;
 }
 
