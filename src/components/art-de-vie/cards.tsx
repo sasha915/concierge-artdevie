@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarDays, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { formatDate, imageFor, type Offer, type RequestItem, type RequestStatus } from "@/data/art-de-vie";
+import { ArrowCircle, StatusTimeline } from "./v3";
 
 const statusClass: Record<RequestStatus, string> = {
   "Nouvelle": "bg-primary/10 text-primary",
@@ -13,13 +14,24 @@ const statusClass: Record<RequestStatus, string> = {
 };
 export function StatusBadge({ status, onPhoto = false }: { status: RequestStatus; onPhoto?: boolean }) { return <span className={cn("shrink-0 rounded-full px-3 py-1 text-[11px] font-medium", onPhoto ? "border border-primary-foreground/22 bg-primary-deep text-primary-foreground" : statusClass[status])}>{status}</span>; }
 
-export function RequestCard({ item }: { item: RequestItem }) {
-  return <Link to="/demandes/$requestId" params={{ requestId: item.id }} className="block rounded-card bg-card p-5 transition-transform hover:-translate-y-0.5">
-    <div className="flex items-start justify-between gap-4"><span className="eyebrow">{item.category}</span><StatusBadge status={item.status} /></div>
-    <h2 className="mt-5 font-display text-[23px] font-normal text-primary">{item.title}</h2>
-    <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">{item.description}</p>
-    <div className="mt-5 flex items-center gap-2 border-t border-primary/10 pt-4 text-xs text-muted-foreground"><CalendarDays className="size-4" />{formatDate(item.scheduled_date)}</div>
+export function RequestCard({ item, featured = false }: { item: RequestItem; featured?: boolean }) {
+  if (featured && item.status !== "Annulée") return <Link to="/demandes/$requestId" params={{ requestId: item.id }} className="relative block h-[404px] overflow-hidden rounded-card text-primary-foreground transition-transform active:scale-[0.99] lg:h-[430px]">
+    <Photo src={imageFor(item.image_key)} alt={item.title} category={item.category} className="absolute inset-0 h-full w-full" />
+    <div className="absolute inset-x-4 top-4 flex items-start justify-between gap-3"><span className="dark-glass rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.13em]">{item.category}</span><ArrowCircle diagonal /></div>
+    <div className="dark-glass absolute inset-x-4 bottom-4 rounded-[20px] p-5"><div className="flex items-center justify-between gap-3"><p className="text-[13px]">{formatRequestDate(item)}</p><StatusBadge status={item.status} onPhoto /></div><h2 className="v3-card-title mt-5 text-[29px]">{item.title}</h2><div className="mt-5"><StatusTimeline status={item.status} dark /></div></div>
   </Link>;
+  return <Link to="/demandes/$requestId" params={{ requestId: item.id }} className={cn("block rounded-card p-4 text-primary transition-transform active:scale-[0.99]", item.status === "Annulée" ? "border border-primary/25 bg-transparent" : "bg-primary/10")}>
+    <div className="grid grid-cols-[116px_minmax(0,1fr)] gap-4 lg:grid-cols-[92px_minmax(0,1fr)]">
+      <Photo src={imageFor(item.image_key)} alt={item.title} category={item.category} className="h-[116px] rounded-[16px]" />
+      <div className="min-w-0"><div className="flex items-start justify-between gap-2"><span className="eyebrow text-primary">{item.category}</span><StatusBadge status={item.status} /></div><h2 className="v3-card-title mt-4 text-[22px]">{item.title}</h2><p className="mt-2 text-[13px] text-muted-foreground">{formatDate(item.scheduled_date)}</p></div>
+    </div>
+    {item.status !== "Annulée" && <div className="mt-4"><StatusTimeline status={item.status} /></div>}
+  </Link>;
+}
+
+function formatRequestDate(item: RequestItem) {
+  const time = item.scheduled_time?.slice(0, 5).replace(":", " h ");
+  return `${formatDate(item.scheduled_date)}${time ? ` · ${time}` : ""}`;
 }
 
 export function Photo({ src, alt, category, hero = false, eager = false, className = "" }: { src?: string; alt: string; category?: string; hero?: boolean; eager?: boolean; className?: string }) {
@@ -29,6 +41,19 @@ export function Photo({ src, alt, category, hero = false, eager = false, classNa
 export function OfferCard({ offer, compact = false }: { offer: Offer; compact?: boolean }) {
   if (compact) return <article className="min-w-[248px] overflow-hidden rounded-card bg-card sm:min-w-0"><Photo src={imageFor(offer.image_key)} alt={offer.title} className="aspect-[4/3]"/><div className="p-4"><span className="eyebrow">{offer.category}</span><h3 className="mt-2 font-display text-xl text-primary">{offer.title}</h3><p className="mt-1 text-xs text-muted-foreground">{offer.partner}</p></div></article>;
   return <article className="overflow-hidden rounded-card bg-card"><div className="relative"><Photo src={imageFor(offer.image_key)} alt={offer.title} className="aspect-[4/5]"/><span className="absolute left-4 top-4 rounded-full bg-card px-3 py-1.5 text-[10px] font-semibold text-primary">{offer.promo}</span></div><div className="p-5"><span className="eyebrow">{offer.category}</span><h2 className="mt-3 font-display text-2xl text-primary">{offer.title}</h2><p className="mt-1 text-sm font-medium text-foreground">{offer.partner}</p><div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground"><MapPin className="size-4" />{offer.place}<span className="mx-1">·</span>{offer.validity}</div></div></article>;
+}
+
+export function EditorialOfferCard({ offer, variant }: { offer: Offer; variant: "hero" | "tile" | "feature" }) {
+  const search = { offer: offer.title };
+  if (variant === "feature") return <Link to="/demandes/nouvelle" search={search} className="block rounded-[28px] bg-primary/10 p-4 text-primary transition-transform active:scale-[0.99] lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)] lg:gap-6">
+    <Photo src={imageFor(offer.image_key)} alt={offer.title} category={offer.category} className="h-[244px] rounded-[18px] lg:h-full lg:min-h-[280px]" />
+    <div className="px-3 pb-2 pt-6 lg:flex lg:flex-col lg:justify-center lg:py-6"><span className="eyebrow text-primary">{offer.category} · {offer.promo}</span><h2 className="v3-card-title mt-5 text-[32px]">{offer.title}</h2><p className="mt-4 text-[14px] leading-6">{offer.partner} · {offer.place} · {offer.validity}</p><div className="mt-7 flex items-center justify-between border-t border-primary/25 pt-4"><span className="text-[14px] font-medium">Demander cette offre</span><ArrowCircle inverse /></div></div>
+  </Link>;
+  return <Link to="/demandes/nouvelle" search={search} className={cn("relative block overflow-hidden rounded-card text-primary-foreground transition-transform active:scale-[0.99]", variant === "hero" ? "h-[412px] lg:col-span-2 lg:h-[520px]" : "h-[268px]")}>
+    <Photo src={imageFor(offer.image_key)} alt={offer.title} category={offer.category} className="absolute inset-0 h-full w-full" />
+    <div className="absolute inset-x-4 top-4 flex items-start justify-between gap-3"><span className="dark-glass rounded-full px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.13em]">{offer.category}{variant === "hero" ? ` · ${offer.promo}` : ""}</span>{variant === "hero" && <ArrowCircle diagonal />}</div>
+    <div className="absolute inset-x-5 bottom-5"><h2 className={cn("v3-card-title", variant === "hero" ? "text-[36px] lg:text-[44px]" : "text-[23px]")}>{offer.title}</h2><p className="mt-3 text-[13px] leading-5">{offer.partner} · {offer.place}</p></div>
+  </Link>;
 }
 
 export function Filters({ values, active, onChange, dark = false }: { values: string[]; active: string; onChange: (v: string) => void; dark?: boolean }) {
