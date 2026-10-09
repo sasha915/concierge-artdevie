@@ -32,46 +32,21 @@ export function BottomNav() {
   </nav>;
 }
 
-function DesktopSidebar() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { data: profile } = useQuery(profileQuery);
-  const name = profile?.full_name?.trim() || "Membre Art de Vie";
-
-  return <aside className="fixed inset-y-0 left-0 z-50 hidden w-[264px] flex-col bg-linear-to-b from-primary to-primary-deep px-5 py-8 text-primary-foreground lg:flex">
-    <div className="px-3">
-      <Logo inverse className="h-[26px] w-auto" />
-      <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.13em] text-primary-foreground/45">Espace membre</p>
-    </div>
-    <nav aria-label="Navigation principale" className="mt-14 flex flex-col gap-2">
-      {nav.map(({ to, label, Icon }) => {
-        const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
-        const desktopLabel = to === "/demandes" ? "Mes demandes" : label;
-        return <Link key={to} to={to} className={active ? "flex h-12 items-center gap-3 rounded-full bg-primary-foreground/12 px-4 text-primary-foreground" : "flex h-12 items-center gap-3 rounded-full px-4 text-primary-foreground/60 transition-colors hover:bg-primary-foreground/8 hover:text-primary-foreground"}>
-          <Icon filled={active} className="size-[21px] shrink-0" aria-hidden="true" />
-          <span className="text-[13px] font-medium">{desktopLabel}</span>
-        </Link>;
-      })}
-    </nav>
-    <div className="mt-auto border-t border-primary-foreground/18 px-2 pt-5">
-      <div className="grid grid-cols-[40px_minmax(0,1fr)] items-center gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-primary-foreground/35 font-display text-[13px] font-semibold">{initials(name)}</span>
-        <div className="min-w-0">
-          <p className="truncate text-[13px] font-semibold">{name}</p>
-          <p className="mt-0.5 truncate text-[11px] text-primary-foreground/55">Formule {profile?.plan ?? "Signature"}</p>
-        </div>
-      </div>
-    </div>
-  </aside>;
-}
-
 export function AppShell({ children, nav = true, immersive = false }: { children: ReactNode; nav?: boolean; immersive?: boolean }) {
-  const baseMain = `appear mx-auto min-h-screen min-w-0 max-w-[1120px] ${immersive ? "px-3 pt-3" : "px-5 pt-6"} sm:px-8 lg:ml-[264px] lg:max-w-[calc(100%-264px)] lg:px-10 lg:pb-10 lg:pt-8 xl:px-12`;
-  return <><DesktopSidebar /><main className={`${baseMain} ${nav ? "pb-28 lg:pb-10" : "pb-10"}`}>{children}{nav && <BottomNav />}</main></>;
+  const baseMain = `appear mx-auto min-h-screen min-w-0 max-w-[1120px] ${immersive ? "px-3 pt-3" : "px-5 pt-6"} sm:px-8 lg:max-w-[1440px] lg:px-4 lg:pb-16 lg:pt-4`;
+  return <><main className={`${baseMain} ${nav ? "pb-28 lg:pb-10" : "pb-10"}`}>{children}{nav && <BottomNav />}</main></>;
 }
 
 export function TopBar({ title, action }: { title?: string; action?: ReactNode }) {
   const { data: profile } = useQuery(profileQuery);
-  return <header className="dark-glass grid h-[60px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-full py-2 pl-4 pr-2"><div className="min-w-0">{title ? <span className="text-sm">{title}</span> : <Logo inverse className="h-[23px] w-auto max-w-full" />}</div>{action ?? <Button asChild variant="light" size="icon" className="size-11 font-medium"><Link to="/membership" aria-label="Votre Membership">{initials(profile?.full_name ?? "")}</Link></Button>}</header>;
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  return <><header className="dark-glass grid h-[60px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-full py-2 pl-4 pr-2 lg:hidden"><div className="min-w-0">{title ? <span className="text-sm">{title}</span> : <Logo inverse className="h-[23px] w-auto max-w-full" />}</div>{action ?? <Button asChild variant="light" size="icon" className="size-11 font-medium"><Link to="/membership" aria-label="Votre Membership">{initials(profile?.full_name ?? "")}</Link></Button>}</header>
+    <nav aria-label="Navigation desktop" className="hidden lg:dark-glass lg:mx-auto lg:flex lg:min-h-[60px] lg:w-fit lg:max-w-full lg:flex-wrap lg:items-center lg:justify-center lg:gap-2 lg:rounded-full lg:px-4 lg:py-2 lg:text-primary-foreground">
+      <Logo inverse className="lg:mr-3 lg:h-[24px] lg:w-auto" />
+      {nav.map(({ to, label }) => { const active = to === "/" ? pathname === "/" : pathname.startsWith(to); return <Button key={to} asChild variant="ghost" className={`lg:h-11 lg:px-4 lg:text-[15px] lg:text-primary-foreground lg:hover:bg-primary-foreground/10 ${active ? "lg:bg-primary-foreground/16 lg:font-medium" : "lg:font-normal"}`}><Link to={to} aria-current={active ? "page" : undefined}>{to === "/demandes" ? "Mes demandes" : label}</Link></Button>; })}
+      <Button asChild variant="light" className="lg:ml-2 lg:h-11 lg:px-5 lg:text-[15px]"><Link to="/demandes/nouvelle" search={{ offer: undefined }}>Nouvelle demande</Link></Button>
+      <Button asChild variant="outline" size="icon" className="lg:size-11 lg:border-primary-foreground/22 lg:bg-transparent lg:text-primary-foreground lg:hover:bg-primary-foreground/10"><Link to="/membership" aria-label="Votre Membership">{initials(profile?.full_name ?? "")}</Link></Button>
+    </nav></>;
 }
 
 export function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
@@ -86,6 +61,6 @@ export function NewRequestButton({ className }: { className?: string }) {
   return <PillAction asChild className={className}><Link to="/demandes/nouvelle" search={{ offer: undefined }}>Nouvelle demande</Link></PillAction>;
 }
 
-export function ListHeader({ eyebrow, title, italic, introduction, children }: { eyebrow: string; title: string; italic: string; introduction: string; children?: ReactNode }) {
-  return <section className="relative -mx-2 -mt-3 overflow-hidden rounded-[28px] bg-primary-deep p-4 text-primary-foreground sm:mx-0 sm:mt-0"><Logo inverse className="pointer-events-none absolute bottom-16 left-3 w-[150%] max-w-none opacity-5" /><div className="relative"><TopBar /><p className="eyebrow mt-7 text-primary-foreground/80">{eyebrow}</p><Title italic={italic} className="mt-4">{title}</Title><p className="mb-5 mt-5 border-t border-primary-foreground/22 pt-4 text-[13px] leading-5 text-primary-foreground">{introduction}</p>{children}</div></section>;
+export function ListHeader({ eyebrow, title, italic, introduction, children, desktop = false }: { desktop?: boolean; eyebrow: string; title: string; italic: string; introduction: string; children?: ReactNode }) {
+  return <section className={`relative -mx-2 -mt-3 overflow-hidden rounded-[28px] bg-primary-deep p-4 text-primary-foreground sm:mx-0 sm:mt-0 ${desktop ? "lg:flex lg:min-h-[520px] lg:flex-col lg:px-[clamp(20px,3.9vw,56px)] lg:py-6" : ""}`}><Logo inverse className="pointer-events-none absolute bottom-16 left-3 w-[150%] max-w-none opacity-5" /><div className={`relative ${desktop ? "lg:flex lg:flex-1 lg:flex-col" : ""}`}><TopBar /><p className={`eyebrow mt-7 text-primary-foreground/80 ${desktop ? "lg:mt-24" : ""}`}>{eyebrow}</p><Title italic={italic} className={`mt-4 ${desktop ? "lg:text-[clamp(70px,10vw,144px)] lg:leading-[0.96]" : ""}`}>{title}</Title><p className={`mb-5 mt-5 border-t border-primary-foreground/22 pt-4 text-[13px] leading-5 text-primary-foreground ${desktop ? "lg:hidden" : ""}`}>{introduction}</p><div className={desktop ? "lg:mt-auto lg:flex lg:flex-wrap lg:items-center lg:justify-between lg:gap-6 lg:border-t lg:border-primary-foreground/22 lg:pt-7" : undefined}>{desktop && <p className="hidden lg:block lg:min-w-[260px] lg:flex-1 lg:text-[18px] lg:leading-7">{introduction}</p>}{children}</div></div></section>;
 }

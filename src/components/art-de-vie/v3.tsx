@@ -40,5 +40,5 @@ export function Counter({ value }: { value: number }) {
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [value]);
-  return <span aria-label={String(value)} className="block font-display text-[72px] font-normal leading-none"><span aria-hidden="true">{display}</span></span>;
+  return <span aria-label={String(value)} className="block font-display text-[72px] font-normal leading-none lg:text-[88px]"><span aria-hidden="true">{display}</span></span>;
 }
