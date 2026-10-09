@@ -14,16 +14,16 @@ const statusClass: Record<RequestStatus, string> = {
 };
 export function StatusBadge({ status, onPhoto = false }: { status: RequestStatus; onPhoto?: boolean }) { return <span className={cn("shrink-0 rounded-full px-3 py-1 text-[11px] font-medium", onPhoto ? "border border-primary-foreground/22 bg-primary-deep text-primary-foreground" : statusClass[status])}>{status}</span>; }
 
-export function RequestCard({ item, featured = false }: { item: RequestItem; featured?: boolean }) {
-  if (featured && item.status !== "Annulée") return <Link to="/demandes/$requestId" params={{ requestId: item.id }} className="relative block h-[404px] overflow-hidden rounded-card text-primary-foreground transition-transform active:scale-[0.99] lg:h-[430px]">
+export function RequestCard({ item, featured = false, desktop = false }: { item: RequestItem; featured?: boolean; desktop?: boolean }) {
+  if (featured && item.status !== "Annulée") return <Link to="/demandes/$requestId" params={{ requestId: item.id }} className={cn("relative block h-[404px] overflow-hidden rounded-card text-primary-foreground transition-transform active:scale-[0.99] lg:h-[430px]", desktop && "lg:h-full lg:min-h-[620px]")}>
     <Photo src={imageFor(item.image_key)} alt={item.title} category={item.category} className="absolute inset-0 h-full w-full" />
     <div className="absolute inset-x-4 top-4 flex items-start justify-between gap-3"><span className="dark-glass rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.13em]">{item.category}</span><ArrowCircle diagonal /></div>
-    <div className="dark-glass absolute inset-x-4 bottom-4 rounded-[20px] p-5"><div className="flex items-center justify-between gap-3"><p className="text-[13px]">{formatRequestDate(item)}</p><StatusBadge status={item.status} onPhoto /></div><h2 className="v3-card-title mt-5 text-[29px]">{item.title}</h2><div className="mt-5"><StatusTimeline status={item.status} dark /></div></div>
+    <div className={cn("dark-glass absolute inset-x-4 bottom-4 rounded-[20px] p-5", desktop && "lg:inset-x-6 lg:bottom-6 lg:max-w-[520px] lg:p-6")}><div className="flex items-center justify-between gap-3"><p className="text-[13px]">{formatRequestDate(item)}</p><StatusBadge status={item.status} onPhoto /></div><h2 className={cn("v3-card-title mt-5 text-[29px]", desktop && "lg:text-[40px]")}>{item.title}</h2><div className="mt-5"><StatusTimeline status={item.status} dark /></div></div>
   </Link>;
-  return <Link to="/demandes/$requestId" params={{ requestId: item.id }} className={cn("block rounded-card p-4 text-primary transition-transform active:scale-[0.99]", item.status === "Annulée" ? "border border-primary/25 bg-transparent" : "bg-primary/10")}>
-    <div className="grid grid-cols-[116px_minmax(0,1fr)] gap-4 lg:grid-cols-[92px_minmax(0,1fr)]">
-      <Photo src={imageFor(item.image_key)} alt={item.title} category={item.category} className="h-[116px] rounded-[16px]" />
-      <div className="min-w-0"><div className="flex items-start justify-between gap-2"><span className="eyebrow text-primary">{item.category}</span><StatusBadge status={item.status} /></div><h2 className="v3-card-title mt-4 text-[22px]">{item.title}</h2><p className="mt-2 text-[13px] text-muted-foreground">{formatDate(item.scheduled_date)}</p></div>
+  return <Link to="/demandes/$requestId" params={{ requestId: item.id }} className={cn("block rounded-card p-4 text-primary transition-transform active:scale-[0.99]", item.status === "Annulée" ? "border border-primary/25 bg-transparent" : "bg-primary/10", desktop && "lg:p-5")}>
+    <div className={cn("grid grid-cols-[116px_minmax(0,1fr)] gap-4 lg:grid-cols-[92px_minmax(0,1fr)]", desktop && "lg:grid-cols-[104px_minmax(0,1fr)]")}>
+      <Photo src={imageFor(item.image_key)} alt={item.title} category={item.category} className={cn("h-[116px] rounded-[16px]", desktop && "lg:h-[128px]")} />
+      <div className="min-w-0"><div className="flex items-start justify-between gap-2"><span className="eyebrow text-primary">{item.category}</span><StatusBadge status={item.status} /></div><h2 className={cn("v3-card-title mt-4 text-[22px]", desktop && "lg:text-[26px]")}>{item.title}</h2><p className="mt-2 text-[13px] text-muted-foreground">{formatDate(item.scheduled_date)}</p></div>
     </div>
     {item.status !== "Annulée" && <div className="mt-4"><StatusTimeline status={item.status} /></div>}
   </Link>;
@@ -56,8 +56,8 @@ export function EditorialOfferCard({ offer, variant }: { offer: Offer; variant: 
   </Link>;
 }
 
-export function Filters({ values, active, onChange, dark = false }: { values: string[]; active: string; onChange: (v: string) => void; dark?: boolean }) {
-  return <div className="no-scrollbar flex min-w-0 gap-2 overflow-x-auto pb-1">{values.map((value) => <Button key={value} type="button" variant="soft" aria-pressed={active === value} onClick={() => onChange(value)} className={cn("h-11 shrink-0 px-5 text-[15px] font-medium", active === value ? dark ? "bg-background text-primary hover:bg-background/90" : "bg-primary text-primary-foreground hover:bg-primary-deep" : dark ? "border border-primary-foreground/22 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" : "border border-primary/25 bg-primary/10 text-primary")}>{value}</Button>)}</div>;
+export function Filters({ values, active, onChange, dark = false, desktop = false }: { desktop?: boolean; values: string[]; active: string; onChange: (v: string) => void; dark?: boolean }) {
+  return <div className={cn("no-scrollbar flex min-w-0 gap-2 overflow-x-auto pb-1", desktop && "lg:max-w-[720px] lg:flex-wrap lg:justify-end lg:overflow-visible lg:pb-0")}>{values.map((value) => <Button key={value} type="button" variant="soft" aria-pressed={active === value} onClick={() => onChange(value)} className={cn("h-11 shrink-0 px-5 text-[15px] font-medium", active === value ? dark ? "bg-background text-primary hover:bg-background/90" : "bg-primary text-primary-foreground hover:bg-primary-deep" : dark ? "border border-primary-foreground/22 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" : "border border-primary/25 bg-primary/10 text-primary")}>{value}</Button>)}</div>;
 }
 
 export function EmptyState({ children }: { children: React.ReactNode }) {

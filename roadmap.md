@@ -14,3 +14,5 @@
 - [x] V3 lot 1: shared presentation, four uploaded photos, corrections, home, mobile/desktop verification
 - [x] V3 lot 2: requests, three-step request form, detail, offers
 - [x] V3 lot 3: membership, secondary pages, login, desktop/admin presentation
+- [ ] Desktop V3 lot A: header navigation, home, requests/history; verify 1280/1440 and unchanged mobile
+- [ ] Desktop V3 lot B: awaiting approval
