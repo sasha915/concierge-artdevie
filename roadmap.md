@@ -15,4 +15,4 @@
 - [x] V3 lot 2: requests, three-step request form, detail, offers
 - [x] V3 lot 3: membership, secondary pages, login, desktop/admin presentation
 - [ ] Desktop V3 lot A: header navigation, home, requests/history; verify 1280/1440 and unchanged mobile
-- [ ] Desktop V3 lot B: awaiting approval
+- [x] Desktop V3 lot B: offers, detail, wizard, membership, login, secondary pages; isolated visual checks at 390/1024/1280/1440/1920 (hosted authenticated flow unavailable)

@@ -45,14 +45,14 @@ export function OfferCard({ offer, compact = false }: { offer: Offer; compact?: 
 
 export function EditorialOfferCard({ offer, variant }: { offer: Offer; variant: "hero" | "tile" | "feature" }) {
   const search = { offer: offer.title };
-  if (variant === "feature") return <Link to="/demandes/nouvelle" search={search} className="block rounded-[28px] bg-primary/10 p-4 text-primary transition-transform active:scale-[0.99] lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)] lg:gap-6">
-    <Photo src={imageFor(offer.image_key)} alt={offer.title} category={offer.category} className="h-[244px] rounded-[18px] lg:h-full lg:min-h-[280px]" />
-    <div className="px-3 pb-2 pt-6 lg:flex lg:flex-col lg:justify-center lg:py-6"><span className="eyebrow text-primary">{offer.category} · {offer.promo}</span><h2 className="v3-card-title mt-5 text-[32px]">{offer.title}</h2><p className="mt-4 text-[14px] leading-6">{offer.partner} · {offer.place} · {offer.validity}</p><div className="mt-7 flex items-center justify-between border-t border-primary/25 pt-4"><span className="text-[14px] font-medium">Demander cette offre</span><ArrowCircle inverse /></div></div>
+  if (variant === "feature") return <Link to="/demandes/nouvelle" search={search} className="block rounded-[28px] bg-primary/10 p-4 text-primary transition-transform active:scale-[0.99] lg:grid lg:h-[440px] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-6 lg:p-6">
+    <Photo src={imageFor(offer.image_key)} alt={offer.title} category={offer.category} className="h-[244px] rounded-[18px] lg:h-full lg:min-h-0" />
+    <div className="px-3 pb-2 pt-6 lg:flex lg:min-w-0 lg:flex-col lg:justify-center lg:px-0 lg:py-6"><span className="eyebrow text-primary">{offer.category} · {offer.promo}</span><h2 className="v3-card-title mt-5 text-[32px] lg:text-[clamp(26px,2.8vw,40px)]">{offer.title}</h2><p className="mt-4 text-[14px] leading-6 lg:text-[16px]">{offer.partner} · {offer.place} · {offer.validity}</p><div className="mt-7 flex items-center justify-between border-t border-primary/25 pt-4"><span className="text-[14px] font-medium">Demander cette offre</span><ArrowCircle inverse /></div></div>
   </Link>;
-  return <Link to="/demandes/nouvelle" search={search} className={cn("relative block overflow-hidden rounded-card text-primary-foreground transition-transform active:scale-[0.99]", variant === "hero" ? "h-[412px] lg:col-span-2 lg:h-[520px]" : "h-[268px]")}>
+  return <Link to="/demandes/nouvelle" search={search} className={cn("relative block overflow-hidden rounded-card text-primary-foreground transition-transform active:scale-[0.99]", variant === "hero" ? "h-[412px] lg:h-[520px]" : "h-[268px] lg:h-full lg:min-h-[440px]")}>
     <Photo src={imageFor(offer.image_key)} alt={offer.title} category={offer.category} className="absolute inset-0 h-full w-full" />
     <div className="absolute inset-x-4 top-4 flex items-start justify-between gap-3"><span className="dark-glass rounded-full px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.13em]">{offer.category}{variant === "hero" ? ` · ${offer.promo}` : ""}</span>{variant === "hero" && <ArrowCircle diagonal />}</div>
-    <div className="absolute inset-x-5 bottom-5"><h2 className={cn("v3-card-title", variant === "hero" ? "text-[36px] lg:text-[44px]" : "text-[23px]")}>{offer.title}</h2><p className="mt-3 text-[13px] leading-5">{offer.partner} · {offer.place}</p></div>
+    <div className="absolute inset-x-5 bottom-5 lg:inset-x-8 lg:bottom-8"><h2 className={cn("v3-card-title", variant === "hero" ? "text-[36px] lg:text-[52px]" : "text-[23px] lg:text-[36px]")}>{offer.title}</h2><p className="mt-3 text-[13px] leading-5 lg:text-[16px] lg:leading-6">{offer.partner} · {offer.place}</p></div>
   </Link>;
 }
 

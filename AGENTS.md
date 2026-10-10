@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Desktop member presentation uses lg-only layouts or desktop-only variants of existing shared components; preserve all mobile classes and business logic to keep the validated mobile experience unchanged.
