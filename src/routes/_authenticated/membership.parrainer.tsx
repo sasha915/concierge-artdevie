@@ -42,10 +42,10 @@ function Page() {
     }
   }
 
-  return <AppShell nav={false}><div className="mx-auto max-w-3xl"><SubHeader title="Parrainer un membre" close backTo="/membership"/>
-    <p className="mb-6 max-w-[560px] text-[14px] leading-6 text-muted-foreground">Votre invité reçoit un email personnel contenant un lien privé. Ce lien crée automatiquement son compte membre — il n’a plus qu’à choisir son mot de passe.</p>
+  return <AppShell nav={false}><div className="mx-auto max-w-3xl lg:max-w-none"><SubHeader title="Parrainer un membre" close backTo="/membership"/>
+    <p className="mb-6 max-w-[560px] lg:ml-[clamp(20px,3.9vw,56px)] lg:max-w-[760px] lg:text-[18px] lg:leading-7 text-[14px] leading-6 text-muted-foreground">Votre invité reçoit un email personnel contenant un lien privé. Ce lien crée automatiquement son compte membre — il n’a plus qu’à choisir son mot de passe.</p>
 
-    <form className="rounded-[28px] bg-card p-5 sm:p-8" onSubmit={submit}><div className="grid gap-5">
+    <form className="rounded-[28px] bg-card p-5 sm:p-8 lg:mx-[clamp(20px,3.9vw,56px)] lg:p-10" onSubmit={submit}><div className="grid gap-5">
       <Field label="Nom de votre invité"><Input value={fullName} onChange={(e) => setFullName(e.target.value)} required maxLength={80} placeholder="Ex. Élise Marchand"/></Field>
       <Field label="Adresse email"><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required maxLength={160} placeholder="elise@exemple.com"/></Field>
       <Field label="Mot personnel (facultatif)"><Textarea rows={4} maxLength={500} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Quelques mots que votre concierge transmettra…"/></Field>
@@ -54,7 +54,7 @@ function Page() {
       <PillAction type="submit" className="w-full sm:max-w-sm" disabled={busy}>{busy ? "Envoi en cours" : "Envoyer l’invitation"}</PillAction>
     </div></form>
 
-    <section className="mt-5">
+    <section className="mt-5 lg:mx-[clamp(20px,3.9vw,56px)] lg:mt-16">
       <h2 className="eyebrow text-primary-light">Vos invitations</h2>
       {referrals.length === 0 ? (
         <p className="mt-3 rounded-card bg-primary/10 p-5 text-[13px] text-muted-foreground">Vous n’avez pas encore parrainé de membre.</p>
