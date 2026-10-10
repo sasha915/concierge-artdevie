@@ -14,10 +14,10 @@ import { isAdminQuery } from "@/lib/admin-queries";
 export const Route = createFileRoute("/_authenticated/membership/")({ head: () => ({ meta: [{ title: "Votre Membership — Art de Vie" }, { name: "description", content: "Votre carte et votre espace membre Art de Vie." }, { property: "og:title", content: "Votre Membership — Art de Vie" }, { property: "og:description", content: "Votre carte et votre espace membre Art de Vie." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
 
 function AccountTile({ to, icon, label, dark = false, photo }: { to: "/membership/informations" | "/membership/factures" | "/membership/historique" | "/membership/parrainer"; icon: React.ReactNode; label: string; dark?: boolean; photo?: string | undefined }) {
-  return <Link to={to} className={`relative flex min-h-[164px] flex-col justify-between overflow-hidden rounded-card p-5 lg:min-h-[240px] lg:p-6 transition-transform active:scale-[0.98] ${dark ? "bg-primary-deep text-primary-foreground" : "bg-primary/10 text-primary"}`}>
+  return <Link to={to} className={`relative flex min-h-[164px] flex-col justify-between overflow-hidden rounded-card p-5 lg:min-h-[240px] lg:p-6 transition-transform active:scale-[0.98] ${dark ? "bg-primary-deep text-primary-foreground" : "bg-primary/10 text-primary"} ${photo ? "lg:text-primary-foreground" : ""}`}>
     {photo ? <Photo src={photo} alt="Bassin Art de Vie" className="absolute inset-0 h-full w-full" /> : null}
     <span className="relative z-10 flex size-11 items-center justify-center rounded-full border border-current/25">{icon}</span>
-    <div className="relative z-10 flex items-end justify-between gap-3"><span className="max-w-[120px] lg:max-w-[220px] lg:text-[26px] lg:leading-8 text-[16px] font-medium leading-5">{label}</span><ArrowCircle diagonal inverse={!dark && !photo} className="size-9" /></div>
+    <div className="relative z-10 flex items-end justify-between gap-3"><span className="max-w-[120px] lg:max-w-[220px] lg:text-[26px] lg:leading-8 text-[16px] font-medium leading-5">{label}</span><ArrowCircle diagonal inverse={!dark && !photo} className="size-9 lg:absolute lg:right-6 lg:top-[-154px]" /></div>
   </Link>;
 }
 
@@ -47,7 +47,7 @@ function Page() {
       </div>
     </section>
 
-    <div className="relative z-20 mx-auto -mt-[88px] max-w-[620px] px-2 lg:-mt-[70px] lg:max-w-none lg:px-[clamp(20px,3.9vw,56px)]">
+    <div className="relative z-20 mx-auto -mt-[88px] max-w-[620px] px-2 lg:-mt-[230px] lg:max-w-none lg:px-[clamp(20px,3.9vw,56px)]">
       <div className="lg:relative">
         <div className="lg:ml-auto lg:w-[460px]"><MemberCard profile={profile}/>{showConcierge ? <PillAction asChild className="mt-5 w-full lg:hidden"><a href={whatsappUrl} target="_blank" rel="noreferrer">Écrire à {conciergeFirstName}</a></PillAction> : null}</div>
         <div className="mt-9 lg:mt-16"><p className="eyebrow text-primary">Votre compte</p><Title as="h2" italic="compte." className="hidden lg:mt-5 lg:block lg:text-[clamp(38px,4.44vw,64px)]">Votre </Title><div className="mt-4 grid grid-cols-2 gap-3 lg:mt-10 lg:grid-cols-4 lg:gap-4">
