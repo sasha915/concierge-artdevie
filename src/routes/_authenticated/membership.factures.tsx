@@ -73,7 +73,7 @@ function Page() {
       </div>}
       {billing?.hasMandate && <p className="mt-5 flex items-center gap-2 text-[11px] opacity-80"><RefreshCcw className="size-3.5"/>Prélèvement automatique actif</p>}
     </section>
-    <div className="mt-5 lg:mx-[clamp(20px,3.9vw,56px)] lg:mt-16"><Filters values={["Toutes", "Abonnement", "Prestations"]} active={active} onChange={setActive}/></div>
+    <div className="mt-5 lg:mx-[clamp(20px,3.9vw,56px)] lg:mt-16 lg:rounded-[28px] lg:bg-primary-deep lg:p-6"><Filters values={["Toutes", "Abonnement", "Prestations"]} active={active} onChange={setActive} desktop desktopDark/></div>
     {isLoading ? <div className="mt-5 grid gap-3"><Skeleton className="h-24 rounded-card bg-primary/10"/><Skeleton className="h-24 rounded-card bg-primary/10"/></div> : <div className="mt-5 overflow-hidden rounded-card bg-primary/10 px-5 lg:mx-[clamp(20px,3.9vw,56px)] lg:px-8">{list.map((i) => { const unpaid = i.status !== "Payée"; return <div key={i.id} className="flex items-center gap-4 border-b border-primary/25 py-5 last:border-0">
       <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{i.number}</p><p className="mt-1 text-xs text-muted-foreground">{formatShortDate(i.issued_on)} · {i.kind}</p></div>
       <div className="text-right"><p className="font-display text-lg lg:text-[26px] text-primary">{formatAmount(i.amount_cents)}</p>
