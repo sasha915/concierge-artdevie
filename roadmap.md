@@ -14,6 +14,6 @@
 - [x] V3 lot 1: shared presentation, four uploaded photos, corrections, home, mobile/desktop verification
 - [x] V3 lot 2: requests, three-step request form, detail, offers
 - [x] V3 lot 3: membership, secondary pages, login, desktop/admin presentation
-- [ ] Desktop V3 lot A: header navigation, home, requests/history; verify 1280/1440 and unchanged mobile
+- [x] Desktop V3 lot A: header navigation, home, requests/history; desktop verified; original mobile checks limited
 - [x] Desktop V3 lot B: offers, detail, wizard, membership, login, secondary pages; isolated visual checks at 390/1024/1280/1440/1920 (hosted authenticated flow unavailable)
-- [ ] Desktop V3 finishing: login punctuation, invoice filters, cancelled-first requests/history, complete typing, mocked confirmation, pre-lot-B mobile detail photo comparison
+- [x] Desktop V3 finishing: login punctuation, invoice filters, cancelled-first requests/history; complete typing passed; mocked confirmation at 1280/1440; pre-lot-B mobile detail pixel-identical at 390 including fully decoded photo; original photo discrepancy cause unavailable
