@@ -16,3 +16,4 @@
 - [x] V3 lot 3: membership, secondary pages, login, desktop/admin presentation
 - [ ] Desktop V3 lot A: header navigation, home, requests/history; verify 1280/1440 and unchanged mobile
 - [x] Desktop V3 lot B: offers, detail, wizard, membership, login, secondary pages; isolated visual checks at 390/1024/1280/1440/1920 (hosted authenticated flow unavailable)
+- [ ] Desktop V3 finishing: login punctuation, invoice filters, cancelled-first requests/history, complete typing, mocked confirmation, pre-lot-B mobile detail photo comparison
