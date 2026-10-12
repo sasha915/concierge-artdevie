@@ -1,3 +1,4 @@
+// @ts-ignore — runner intégré de bun, sans dépendance supplémentaire
 import { expect, test } from "bun:test";
 import { replyUpdate } from "./request-rules";
 
