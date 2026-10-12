@@ -14,7 +14,7 @@ import { createMember, sendMemberInvite, setMemberDisabled } from "@/lib/admin.f
 import { lockAdmin } from "@/lib/admin-gate.functions";
 import { useNavigate } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_authenticated/admin/")({ head: () => ({ meta: [{ title: "Administration des membres — Art de Vie" }, { name: "description", content: "Gérez les membres invités de la conciergerie Art de Vie." }, { property: "og:title", content: "Administration des membres — Art de Vie" }, { property: "og:description", content: "Gérez les membres invités de la conciergerie Art de Vie." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
+export const Route = createFileRoute("/_authenticated/admin/membres/")({ head: () => ({ meta: [{ title: "Membres — Équipe Art de Vie" }, { name: "description", content: "Gérez les membres invités de la conciergerie Art de Vie." }, { property: "og:title", content: "Membres — Équipe Art de Vie" }, { property: "og:description", content: "Gérez les membres invités de la conciergerie Art de Vie." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
 
 function Page() {
   const queryClient = useQueryClient();
@@ -128,7 +128,7 @@ function Page() {
               <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-primary/10 pt-4">
                 <Button variant="soft" size="sm" onClick={() => sendInvite(m)}><Mail />Invitation</Button>
                 <Button variant="outline" size="sm" onClick={() => toggleDisabled(m)}>{m.disabled_at ? <UserPlus /> : <UserMinus />}{m.disabled_at ? "Réactiver" : "Désactiver"}</Button>
-                <Button asChild variant="soft" size="sm" className="ml-auto"><Link to="/admin/$memberId" params={{ memberId: m.id }}>Fiche<ChevronRight /></Link></Button>
+                <Button asChild variant="soft" size="sm" className="ml-auto"><Link to="/admin/membres/$memberId" params={{ memberId: m.id }}>Fiche<ChevronRight /></Link></Button>
               </div>
             </article>)}
           </div>}

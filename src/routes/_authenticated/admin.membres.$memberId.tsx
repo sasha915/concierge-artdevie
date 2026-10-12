@@ -11,9 +11,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatShortDate } from "@/data/art-de-vie";
 import { memberDetailQuery, memberPaymentsQuery } from "@/lib/admin-queries";
 import { sendMemberInvite, setMemberDisabled, updateMember } from "@/lib/admin.functions";
-import { Field, PlanSelect } from "./admin.index";
+import { Field, PlanSelect } from "./admin.membres.index";
 
-export const Route = createFileRoute("/_authenticated/admin/$memberId")({ head: () => ({ meta: [{ title: "Fiche membre — Art de Vie" }, { name: "description", content: "Détail d’un membre, ses demandes et ses factures." }, { property: "og:title", content: "Fiche membre — Art de Vie" }, { property: "og:description", content: "Détail d’un membre, ses demandes et ses factures." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
+export const Route = createFileRoute("/_authenticated/admin/membres/$memberId")({ head: () => ({ meta: [{ title: "Fiche membre — Art de Vie" }, { name: "description", content: "Détail d’un membre, ses demandes et ses factures." }, { property: "og:title", content: "Fiche membre — Art de Vie" }, { property: "og:description", content: "Détail d’un membre, ses demandes et ses factures." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
 
 function Page() {
   const { memberId } = Route.useParams();
@@ -73,7 +73,7 @@ function Page() {
 
   return <AdminShell>
     <header className="mb-7 flex items-center gap-4">
-      <Button asChild variant="icon" size="icon" aria-label="Retour"><Link to="/admin"><ChevronLeft /></Link></Button>
+      <Button asChild variant="icon" size="icon" aria-label="Retour"><Link to="/admin/membres"><ChevronLeft /></Link></Button>
       {isLoading ? <Skeleton className="h-12 min-w-0 flex-1 rounded-[16px] bg-primary/10"/> : <h1 className="v3-heading min-w-0 flex-1 truncate text-[38px] text-primary lg:text-[46px]">{profile?.full_name || "Membre introuvable"}</h1>}
     </header>
 
