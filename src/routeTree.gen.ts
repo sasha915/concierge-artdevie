@@ -16,8 +16,6 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminConnexionRouteImport } from './routes/_authenticated/admin-connexion'
 import { Route as AuthenticatedOffresRouteImport } from './routes/_authenticated/offres'
-import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
-import { Route as AuthenticatedAdminMemberIdRouteImport } from './routes/_authenticated/admin.$memberId'
 import { Route as AuthenticatedDemandesIndexRouteImport } from './routes/_authenticated/demandes.index'
 import { Route as AuthenticatedDemandesRequestIdRouteImport } from './routes/_authenticated/demandes.$requestId'
 import { Route as AuthenticatedDemandesNouvelleRouteImport } from './routes/_authenticated/demandes.nouvelle'
@@ -28,6 +26,8 @@ import { Route as AuthenticatedMembershipInformationsRouteImport } from './route
 import { Route as AuthenticatedMembershipParrainerRouteImport } from './routes/_authenticated/membership.parrainer'
 import { Route as ApiPublicMollieWebhookRouteImport } from './routes/api/public/mollie-webhook'
 import { Route as ApiPublicNotifyConciergeRouteImport } from './routes/api/public/notify-concierge'
+import { Route as AuthenticatedAdminMembresIndexRouteImport } from './routes/_authenticated/admin.membres.index'
+import { Route as AuthenticatedAdminMembresMemberIdRouteImport } from './routes/_authenticated/admin.membres.$memberId'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -64,17 +64,6 @@ const AuthenticatedOffresRoute = AuthenticatedOffresRouteImport.update({
   path: '/offres',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthenticatedAdminRoute,
-} as any)
-const AuthenticatedAdminMemberIdRoute =
-  AuthenticatedAdminMemberIdRouteImport.update({
-    id: '/$memberId',
-    path: '/$memberId',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
 const AuthenticatedDemandesIndexRoute =
   AuthenticatedDemandesIndexRouteImport.update({
     id: '/demandes/',
@@ -134,6 +123,18 @@ const ApiPublicNotifyConciergeRoute =
     path: '/api/public/notify-concierge',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedAdminMembresIndexRoute =
+  AuthenticatedAdminMembresIndexRouteImport.update({
+    id: '/membres/',
+    path: '/membres/',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminMembresMemberIdRoute =
+  AuthenticatedAdminMembresMemberIdRouteImport.update({
+    id: '/membres/$memberId',
+    path: '/membres/$memberId',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -142,7 +143,6 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/admin-connexion': typeof AuthenticatedAdminConnexionRoute
   '/offres': typeof AuthenticatedOffresRoute
-  '/admin/$memberId': typeof AuthenticatedAdminMemberIdRoute
   '/demandes/$requestId': typeof AuthenticatedDemandesRequestIdRoute
   '/demandes/nouvelle': typeof AuthenticatedDemandesNouvelleRoute
   '/membership/factures': typeof AuthenticatedMembershipFacturesRoute
@@ -151,17 +151,18 @@ export interface FileRoutesByFullPath {
   '/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
   '/api/public/mollie-webhook': typeof ApiPublicMollieWebhookRoute
   '/api/public/notify-concierge': typeof ApiPublicNotifyConciergeRoute
-  '/admin/': typeof AuthenticatedAdminIndexRoute
   '/demandes/': typeof AuthenticatedDemandesIndexRoute
   '/membership/': typeof AuthenticatedMembershipIndexRoute
+  '/admin/membres/$memberId': typeof AuthenticatedAdminMembresMemberIdRoute
+  '/admin/membres/': typeof AuthenticatedAdminMembresIndexRoute
 }
 export interface FileRoutesByTo {
   '/connexion': typeof ConnexionRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/admin-connexion': typeof AuthenticatedAdminConnexionRoute
   '/offres': typeof AuthenticatedOffresRoute
   '/': typeof AuthenticatedIndexRoute
-  '/admin/$memberId': typeof AuthenticatedAdminMemberIdRoute
   '/demandes/$requestId': typeof AuthenticatedDemandesRequestIdRoute
   '/demandes/nouvelle': typeof AuthenticatedDemandesNouvelleRoute
   '/membership/factures': typeof AuthenticatedMembershipFacturesRoute
@@ -170,9 +171,10 @@ export interface FileRoutesByTo {
   '/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
   '/api/public/mollie-webhook': typeof ApiPublicMollieWebhookRoute
   '/api/public/notify-concierge': typeof ApiPublicNotifyConciergeRoute
-  '/admin': typeof AuthenticatedAdminIndexRoute
   '/demandes': typeof AuthenticatedDemandesIndexRoute
   '/membership': typeof AuthenticatedMembershipIndexRoute
+  '/admin/membres/$memberId': typeof AuthenticatedAdminMembresMemberIdRoute
+  '/admin/membres': typeof AuthenticatedAdminMembresIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -183,7 +185,6 @@ export interface FileRoutesById {
   '/_authenticated/admin-connexion': typeof AuthenticatedAdminConnexionRoute
   '/_authenticated/offres': typeof AuthenticatedOffresRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
-  '/_authenticated/admin/$memberId': typeof AuthenticatedAdminMemberIdRoute
   '/_authenticated/demandes/$requestId': typeof AuthenticatedDemandesRequestIdRoute
   '/_authenticated/demandes/nouvelle': typeof AuthenticatedDemandesNouvelleRoute
   '/_authenticated/membership/factures': typeof AuthenticatedMembershipFacturesRoute
@@ -192,9 +193,10 @@ export interface FileRoutesById {
   '/_authenticated/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
   '/api/public/mollie-webhook': typeof ApiPublicMollieWebhookRoute
   '/api/public/notify-concierge': typeof ApiPublicNotifyConciergeRoute
-  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/demandes/': typeof AuthenticatedDemandesIndexRoute
   '/_authenticated/membership/': typeof AuthenticatedMembershipIndexRoute
+  '/_authenticated/admin/membres/$memberId': typeof AuthenticatedAdminMembresMemberIdRoute
+  '/_authenticated/admin/membres/': typeof AuthenticatedAdminMembresIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -205,7 +207,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin-connexion'
     | '/offres'
-    | '/admin/$memberId'
     | '/demandes/$requestId'
     | '/demandes/nouvelle'
     | '/membership/factures'
@@ -214,17 +215,18 @@ export interface FileRouteTypes {
     | '/membership/parrainer'
     | '/api/public/mollie-webhook'
     | '/api/public/notify-concierge'
-    | '/admin/'
     | '/demandes/'
     | '/membership/'
+    | '/admin/membres/$memberId'
+    | '/admin/membres/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/connexion'
     | '/reset-password'
+    | '/admin'
     | '/admin-connexion'
     | '/offres'
     | '/'
-    | '/admin/$memberId'
     | '/demandes/$requestId'
     | '/demandes/nouvelle'
     | '/membership/factures'
@@ -233,9 +235,10 @@ export interface FileRouteTypes {
     | '/membership/parrainer'
     | '/api/public/mollie-webhook'
     | '/api/public/notify-concierge'
-    | '/admin'
     | '/demandes'
     | '/membership'
+    | '/admin/membres/$memberId'
+    | '/admin/membres'
   id:
     | '__root__'
     | '/_authenticated'
@@ -245,7 +248,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin-connexion'
     | '/_authenticated/offres'
     | '/_authenticated/'
-    | '/_authenticated/admin/$memberId'
     | '/_authenticated/demandes/$requestId'
     | '/_authenticated/demandes/nouvelle'
     | '/_authenticated/membership/factures'
@@ -254,9 +256,10 @@ export interface FileRouteTypes {
     | '/_authenticated/membership/parrainer'
     | '/api/public/mollie-webhook'
     | '/api/public/notify-concierge'
-    | '/_authenticated/admin/'
     | '/_authenticated/demandes/'
     | '/_authenticated/membership/'
+    | '/_authenticated/admin/membres/$memberId'
+    | '/_authenticated/admin/membres/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -317,20 +320,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/offres'
       preLoaderRoute: typeof AuthenticatedOffresRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/admin/': {
-      id: '/_authenticated/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
-    }
-    '/_authenticated/admin/$memberId': {
-      id: '/_authenticated/admin/$memberId'
-      path: '/$memberId'
-      fullPath: '/admin/$memberId'
-      preLoaderRoute: typeof AuthenticatedAdminMemberIdRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/demandes/': {
       id: '/_authenticated/demandes/'
@@ -402,17 +391,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicNotifyConciergeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin/membres/': {
+      id: '/_authenticated/admin/membres/'
+      path: '/membres'
+      fullPath: '/admin/membres/'
+      preLoaderRoute: typeof AuthenticatedAdminMembresIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/membres/$memberId': {
+      id: '/_authenticated/admin/membres/$memberId'
+      path: '/membres/$memberId'
+      fullPath: '/admin/membres/$memberId'
+      preLoaderRoute: typeof AuthenticatedAdminMembresMemberIdRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
 interface AuthenticatedAdminRouteChildren {
-  AuthenticatedAdminMemberIdRoute: typeof AuthenticatedAdminMemberIdRoute
-  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedAdminMembresMemberIdRoute: typeof AuthenticatedAdminMembresMemberIdRoute
+  AuthenticatedAdminMembresIndexRoute: typeof AuthenticatedAdminMembresIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
-  AuthenticatedAdminMemberIdRoute: AuthenticatedAdminMemberIdRoute,
-  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+  AuthenticatedAdminMembresMemberIdRoute:
+    AuthenticatedAdminMembresMemberIdRoute,
+  AuthenticatedAdminMembresIndexRoute: AuthenticatedAdminMembresIndexRoute,
 }
 
 const AuthenticatedAdminRouteWithChildren =

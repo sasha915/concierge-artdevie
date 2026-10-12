@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/art-de-vie/cards";
+import { Title } from "@/components/art-de-vie/v3";
 import { membersQuery, type AdminMember } from "@/lib/admin-queries";
 import { createMember, sendMemberInvite, setMemberDisabled } from "@/lib/admin.functions";
 import { lockAdmin } from "@/lib/admin-gate.functions";
@@ -81,7 +82,8 @@ function Page() {
   return <AdminShell>
     <header className="mb-[22px] flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="v3-heading text-[46px] text-primary">Administration</h1>
+        <p className="eyebrow team-mention">( Membres )</p>
+        <Title italic="membres." className="mt-3 text-primary lg:text-[clamp(52px,6vw,88px)]">Les </Title>
         <p className="mt-2 text-[13px] text-muted-foreground">Gérez les membres invités, leurs demandes et leurs factures.</p>
       </div>
       <div className="flex items-center gap-2">
@@ -115,10 +117,10 @@ function Page() {
       {isLoading ? <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3"><Skeleton className="h-44 rounded-card bg-primary/10"/><Skeleton className="h-44 rounded-card bg-primary/10"/><Skeleton className="h-44 rounded-card bg-primary/10"/></div>
         : filtered.length === 0 ? <EmptyState>Aucun membre ne correspond à cette recherche.</EmptyState>
         : <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
-            {filtered.map((m) => <article key={m.id} className="rounded-card bg-card p-5">
+            {filtered.map((m) => <article key={m.id} className={`rounded-card p-5 ${m.disabled_at ? "border border-dashed border-border" : "team-panel"}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate font-display text-[21px] font-medium text-primary">{m.full_name || "Sans nom"}</p>
+                  <p className="truncate text-[24px] text-primary">{m.full_name || "Sans nom"}</p>
                   <p className="mt-1 truncate text-[12px] text-muted-foreground">{m.email}</p>
                 </div>
                 <span className={m.disabled_at ? "shrink-0 rounded-full border border-primary/25 px-3 py-1 text-[10px] font-semibold text-muted-foreground" : "shrink-0 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-semibold text-primary"}>{m.disabled_at ? "Désactivé" : "Actif"}</span>
