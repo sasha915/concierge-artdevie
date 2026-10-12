@@ -17,4 +17,4 @@
 - [x] Desktop V3 lot A: header navigation, home, requests/history; desktop verified; original mobile checks limited
 - [x] Desktop V3 lot B: offers, detail, wizard, membership, login, secondary pages; isolated visual checks at 390/1024/1280/1440/1920 (hosted authenticated flow unavailable)
 - [x] Desktop V3 finishing: login punctuation, invoice filters, cancelled-first requests/history; complete typing passed; mocked confirmation at 1280/1440; pre-lot-B mobile detail pixel-identical at 390 including fully decoded photo; original photo discrepancy cause unavailable
-- [ ] Équipe lot 1.1 : colonnes team_reply, verrouillage des écritures membres, fonctions serveur équipe
+- [x] Équipe lot 1.1 : colonnes team_reply, verrouillage des écritures membres, fonctions serveur équipe
