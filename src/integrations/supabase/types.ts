@@ -197,6 +197,8 @@ export type Database = {
           scheduled_date: string | null
           scheduled_time: string | null
           status: Database["public"]["Enums"]["request_status"]
+          team_reply: string | null
+          team_reply_at: string | null
           title: string
           user_id: string
         }
@@ -211,6 +213,8 @@ export type Database = {
           scheduled_date?: string | null
           scheduled_time?: string | null
           status?: Database["public"]["Enums"]["request_status"]
+          team_reply?: string | null
+          team_reply_at?: string | null
           title: string
           user_id: string
         }
@@ -225,6 +229,8 @@ export type Database = {
           scheduled_date?: string | null
           scheduled_time?: string | null
           status?: Database["public"]["Enums"]["request_status"]
+          team_reply?: string | null
+          team_reply_at?: string | null
           title?: string
           user_id?: string
         }
