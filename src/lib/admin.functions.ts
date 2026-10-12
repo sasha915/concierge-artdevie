@@ -168,3 +168,113 @@ export const listMemberPayments = createServerFn({ method: "GET" })
     }));
     return { configured: true as const, payments };
   });
+
+// ---- Lot 1.1 : demandes (équipe) ----
+
+const requestStatus = z.enum(["Nouvelle", "En cours", "Confirmée", "Terminée", "Annulée"]);
+const requestCols = "id, user_id, category, status, title, description, scheduled_date, scheduled_time, guests, concierge, image_key, created_at, team_reply, team_reply_at";
+
+export const listAllRequests = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const [{ data: requests }, { data: profiles }] = await Promise.all([
+      admin.from("requests").select(requestCols).order("created_at", { ascending: false }),
+      admin.from("profiles").select("id, full_name, email, plan"),
+    ]);
+    const byId = new Map((profiles ?? []).map((p: { id: string }) => [p.id, p]));
+    return (requests ?? []).map((r: { user_id: string }) => {
+      const p = byId.get(r.user_id) as { full_name: string; email: string | null; plan: string } | undefined;
+      return { ...r, member_name: p?.full_name ?? "", member_email: p?.email ?? null, member_plan: p?.plan ?? null };
+    });
+  });
+
+export const getRequestDetail = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { data: request } = await admin.from("requests").select(requestCols).eq("id", data.id).maybeSingle();
+    if (!request) return { request: null, member: null };
+    const { data: member } = await admin
+      .from("profiles")
+      .select("id, full_name, email, phone, plan, role_label, member_number, member_since, valid_until, disabled_at, concierge_referent")
+      .eq("id", request.user_id)
+      .maybeSingle();
+    return { request, member: member ?? null };
+  });
+
+export const updateRequestStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), status: requestStatus }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { error } = await admin.from("requests").update({ status: data.status }).eq("id", data.id);
+    if (error) return { ok: false as const, reason: "Le statut n’a pas pu être modifié." };
+    return { ok: true as const };
+  });
+
+export const setRequestConcierge = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), concierge: z.string().trim().min(1).max(60) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { error } = await admin.from("requests").update({ concierge: data.concierge }).eq("id", data.id);
+    if (error) return { ok: false as const, reason: "L’attribution a échoué." };
+    return { ok: true as const };
+  });
+
+export const setRequestReply = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), reply: z.string().max(4000) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { replyUpdate } = await import("./request-rules");
+    const { error } = await admin.from("requests").update(replyUpdate(data.reply)).eq("id", data.id);
+    if (error) return { ok: false as const, reason: "La réponse n’a pas pu être enregistrée." };
+    return { ok: true as const };
+  });
+
+async function adminIds(admin: any): Promise<string[]> {
+  const { data } = await admin.from("user_roles").select("user_id").eq("role", "admin");
+  return (data ?? []).map((r: { user_id: string }) => r.user_id);
+}
+
+export const listTeamNames = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const ids = await adminIds(admin);
+    if (!ids.length) return [] as string[];
+    const { data } = await admin.from("profiles").select("full_name").in("id", ids);
+    return [...new Set((data ?? []).map((p: { full_name: string }) => p.full_name.trim()).filter(Boolean))].sort() as string[];
+  });
+
+export const getDashboard = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const today = new Date().toISOString().slice(0, 10);
+    const ids = await adminIds(admin);
+    const [{ data: requests }, { data: profiles }] = await Promise.all([
+      admin.from("requests").select("id, user_id, title, category, status, concierge, scheduled_date, scheduled_time, created_at").order("created_at", { ascending: true }),
+      admin.from("profiles").select("id, full_name, disabled_at"),
+    ]);
+    const rows = (requests ?? []) as Array<{ id: string; user_id: string; title: string; category: string; status: string; concierge: string; scheduled_date: string | null; scheduled_time: string | null; created_at: string }>;
+    const names = new Map((profiles ?? []).map((p: { id: string; full_name: string }) => [p.id, p.full_name]));
+    const withName = (r: (typeof rows)[number]) => ({ ...r, member_name: names.get(r.user_id) ?? "" });
+    const open = rows.filter((r) => ["Nouvelle", "En cours", "Confirmée"].includes(r.status));
+    const last = rows[rows.length - 1];
+    return {
+      openCount: open.length,
+      unassignedCount: open.filter((r) => r.concierge === "À attribuer").length,
+      activeMembers: (profiles ?? []).filter((p: { id: string; disabled_at: string | null }) => !p.disabled_at && !ids.includes(p.id)).length,
+      lastRequest: last ? { id: last.id, title: last.title, created_at: last.created_at } : null,
+      toProcess: rows.filter((r) => r.status === "Nouvelle").map(withName),
+      upcoming: rows
+        .filter((r) => (r.status === "En cours" || r.status === "Confirmée") && r.scheduled_date && r.scheduled_date >= today)
+        .sort((a, b) => `${a.scheduled_date}${a.scheduled_time ?? ""}`.localeCompare(`${b.scheduled_date}${b.scheduled_time ?? ""}`))
+        .slice(0, 5)
+        .map(withName),
+    };
+  });
