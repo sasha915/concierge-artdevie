@@ -1,148 +1,96 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
-import { ChevronRight, Lock, Mail, Plus, Search, UserMinus, UserPlus } from "lucide-react";
-import { AdminShell } from "@/components/art-de-vie/admin-shell";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { ArrowUpRight } from "lucide-react";
+import { AdminShell, TeamStatus } from "@/components/art-de-vie/admin-shell";
+import { Title } from "@/components/art-de-vie/v3";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/art-de-vie/cards";
-import { membersQuery, type AdminMember } from "@/lib/admin-queries";
-import { createMember, sendMemberInvite, setMemberDisabled } from "@/lib/admin.functions";
-import { lockAdmin } from "@/lib/admin-gate.functions";
-import { useNavigate } from "@tanstack/react-router";
+import { formatShortDate } from "@/data/art-de-vie";
+import { profileQuery } from "@/lib/adv-queries";
+import { getDashboard } from "@/lib/admin.functions";
 
-export const Route = createFileRoute("/_authenticated/admin/")({ head: () => ({ meta: [{ title: "Administration des membres — Art de Vie" }, { name: "description", content: "Gérez les membres invités de la conciergerie Art de Vie." }, { property: "og:title", content: "Administration des membres — Art de Vie" }, { property: "og:description", content: "Gérez les membres invités de la conciergerie Art de Vie." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
+export const Route = createFileRoute("/_authenticated/admin/")({
+  head: () => ({ meta: [
+    { title: "Tableau de bord — Équipe Art de Vie" },
+    { name: "description", content: "Demandes à traiter et prochaines prestations de la conciergerie Art de Vie." },
+    { property: "og:title", content: "Tableau de bord — Équipe Art de Vie" },
+    { property: "og:description", content: "Demandes à traiter et prochaines prestations de la conciergerie Art de Vie." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
+  component: Page,
+});
+
+function elapsed(iso: string) {
+  const min = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if (min < 60) return `il y a ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 48) return `il y a ${h} h`;
+  return `il y a ${Math.round(h / 24)} jours`;
+}
+
+function Stat({ value, label }: { value: number; label: string }) {
+  return <div className="team-panel flex min-h-[200px] flex-col justify-end rounded-card p-6">
+    <p className="font-display text-[72px] leading-none">{value}</p>
+    <p className="mt-2 text-[14px] text-muted-foreground">{label}</p>
+  </div>;
+}
 
 function Page() {
-  const queryClient = useQueryClient();
-  const { data: members = [], isLoading } = useQuery(membersQuery);
-  const create = useServerFn(createMember);
-  const invite = useServerFn(sendMemberInvite);
-  const toggle = useServerFn(setMemberDisabled);
-  const lock = useServerFn(lockAdmin);
-  const navigate = useNavigate();
-
-
-  const [search, setSearch] = useState("");
-  const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({ fullName: "", email: "", phone: "", plan: "Signature", conciergeReferent: "", conciergeWhatsapp: "" });
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return members;
-    return members.filter((m) => `${m.full_name} ${m.email ?? ""}`.toLowerCase().includes(q));
-  }, [members, search]);
-
-  function set(key: keyof typeof form, value: string) { setForm((f) => ({ ...f, [key]: value })); }
-
-  async function submitCreate(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true); setError(null); setNotice(null);
-    try {
-      const r = await create({ data: { ...form, plan: form.plan as "Essentiel" | "Signature" } });
-      if (!r.ok) { setError(r.reason); return; }
-      setNotice(`${form.fullName} a été ajouté. Envoyez-lui son email d’invitation.`);
-      setForm({ fullName: "", email: "", phone: "", plan: "Signature", conciergeReferent: "", conciergeWhatsapp: "" });
-      setOpen(false);
-      await queryClient.invalidateQueries({ queryKey: ["admin", "members"] });
-    } catch { setError("La création a échoué. Réessayez."); } finally { setBusy(false); }
-  }
-
-  async function sendInvite(m: AdminMember) {
-    if (!m.email) return;
-    setError(null); setNotice(null);
-    const r = await invite({ data: { email: m.email } });
-    if (r.ok) setNotice(`Email d’invitation envoyé à ${m.email}.`);
-    else setError(r.reason);
-  }
-
-  async function toggleDisabled(m: AdminMember) {
-    setError(null); setNotice(null);
-    const r = await toggle({ data: { id: m.id, disabled: !m.disabled_at } });
-    if (!r.ok) { setError(r.reason); return; }
-    setNotice(m.disabled_at ? `${m.full_name} a été réactivé.` : `${m.full_name} a été désactivé.`);
-    await queryClient.invalidateQueries({ queryKey: ["admin", "members"] });
-  }
-
-  async function lockSession() {
-    await lock({});
-    queryClient.removeQueries({ queryKey: ["admin"] });
-    await navigate({ to: "/admin-connexion", replace: true });
-  }
-
-
+  const fetchDashboard = useServerFn(getDashboard);
+  const { data, isLoading } = useQuery({ queryKey: ["admin", "dashboard"], queryFn: () => fetchDashboard() });
+  const { data: profile } = useQuery(profileQuery);
+  const firstName = (profile?.full_name ?? "").trim().split(/\s+/)[0] ?? "";
 
   return <AdminShell>
-    <header className="mb-[22px] flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 className="v3-heading text-[46px] text-primary">Administration</h1>
-        <p className="mt-2 text-[13px] text-muted-foreground">Gérez les membres invités, leurs demandes et leurs factures.</p>
+    <p className="eyebrow team-mention">( Tableau de bord )</p>
+    <Title italic={`${firstName || "à vous"}.`} className="mt-3 text-primary lg:text-[clamp(52px,6vw,88px)]">Bonjour, </Title>
+
+    {isLoading || !data ? <div className="mt-8 grid gap-4 lg:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-[200px] rounded-card bg-primary/10" />)}</div> : <>
+      <section aria-label="Chiffres" className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat value={data.openCount} label={data.openCount > 1 ? "demandes ouvertes" : "demande ouverte"} />
+        <Stat value={data.unassignedCount} label={data.unassignedCount > 1 ? "demandes à attribuer" : "demande à attribuer"} />
+        <Stat value={data.activeMembers} label={data.activeMembers > 1 ? "membres actifs" : "membre actif"} />
+        <div className="team-glass flex min-h-[200px] flex-col justify-end rounded-card p-6">
+          <p className="eyebrow team-mention">( Dernière demande reçue )</p>
+          {data.lastRequest ? <>
+            <p className="mt-3 text-[24px] leading-tight">{data.lastRequest.title}</p>
+            <p className="mt-2 text-[14px] text-muted-foreground">{elapsed(data.lastRequest.created_at)}</p>
+          </> : <p className="mt-3 text-[14px] text-muted-foreground">Aucune demande reçue pour le moment.</p>}
+        </div>
+      </section>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-12">
+        <section className="team-panel rounded-[28px] p-6 lg:col-span-7">
+          <h2 className="eyebrow team-mention">( À traiter )</h2>
+          {data.toProcess.length === 0 ? <p className="mt-6 text-[14px] text-muted-foreground">Aucune nouvelle demande en attente.</p>
+            : <ul className="mt-4">{data.toProcess.map((r) => <li key={r.id} className="border-b border-border last:border-0">
+                <Link to="/admin/membres/$memberId" params={{ memberId: r.user_id }} className="flex items-center gap-4 rounded-2xl py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2"><TeamStatus status={r.status} /><span className="text-[13px] text-muted-foreground">{r.member_name}</span></div>
+                    <p className="mt-2 truncate text-[22px] leading-tight">{r.title}</p>
+                    <p className="mt-1 text-[13px] text-muted-foreground">{r.category}{r.scheduled_date ? ` · souhaitée le ${formatShortDate(r.scheduled_date)}` : ""} · reçue {elapsed(r.created_at)}</p>
+                  </div>
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"><ArrowUpRight className="size-4" /></span>
+                </Link>
+              </li>)}</ul>}
+        </section>
+
+        <section className="team-glass rounded-[28px] p-6 lg:col-span-5">
+          <h2 className="eyebrow team-mention">( Prochaines prestations )</h2>
+          {data.upcoming.length === 0 ? <p className="mt-6 text-[14px] text-muted-foreground">Aucune prestation datée à venir.</p>
+            : <ul className="mt-4">{data.upcoming.map((r) => {
+                const d = new Date(`${r.scheduled_date}T00:00:00`);
+                return <li key={r.id} className="border-b border-border last:border-0">
+                  <Link to="/admin/membres/$memberId" params={{ memberId: r.user_id }} className="flex items-center gap-4 rounded-2xl py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <div className="w-12 shrink-0 text-center"><p className="font-display text-[30px] leading-none">{d.getDate()}</p><p className="mt-1 text-[11px] team-mention">{d.toLocaleDateString("fr-FR", { month: "short" })}</p></div>
+                    <div className="min-w-0 flex-1"><p className="truncate text-[18px]">{r.title}</p><p className="mt-1 text-[13px] text-muted-foreground">{r.member_name}{r.scheduled_time ? ` · ${r.scheduled_time}` : ""}</p></div>
+                    <TeamStatus status={r.status} />
+                  </Link>
+                </li>;
+              })}</ul>}
+        </section>
       </div>
-      <div className="flex items-center gap-2">
-        <Button variant="outline" onClick={lockSession}><Lock />Verrouiller</Button>
-        <Button variant="primary" onClick={() => setOpen((v) => !v)}><Plus />Nouveau membre</Button>
-      </div>
-    </header>
-
-    <div className="relative">
-      <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-      <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher un membre…" className="h-12 rounded-full border-0 bg-card pl-11" />
-    </div>
-
-    {notice && <p className="mt-4 rounded-2xl bg-primary/10 p-4 text-xs leading-5 text-primary">{notice}</p>}
-    {error && <p className="mt-4 rounded-2xl border border-primary/25 p-4 text-xs leading-5 text-primary">{error}</p>}
-
-    {open && <form className="mt-[22px] rounded-card bg-card p-5 sm:p-7" onSubmit={submitCreate}>
-      <h2 className="font-display text-[22px] font-medium text-primary">Créer un membre</h2>
-      <div className="mt-5 grid gap-5 lg:grid-cols-2">
-        <Field label="Nom complet"><Input value={form.fullName} onChange={(e) => set("fullName", e.target.value)} required maxLength={80} placeholder="Ex. Élise Marchand" /></Field>
-        <Field label="Adresse email"><Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} required maxLength={160} placeholder="elise@exemple.com" /></Field>
-        <Field label="Téléphone"><Input value={form.phone} onChange={(e) => set("phone", e.target.value)} maxLength={40} placeholder="+33 6 12 34 56 78" /></Field>
-        <Field label="Formule"><PlanSelect value={form.plan} onChange={(v) => set("plan", v)} /></Field>
-        <Field label="Concierge référent"><Input value={form.conciergeReferent} onChange={(e) => set("conciergeReferent", e.target.value)} maxLength={60} placeholder="Clara M." /></Field>
-        <Field label="WhatsApp du concierge"><Input value={form.conciergeWhatsapp} onChange={(e) => set("conciergeWhatsapp", e.target.value)} maxLength={30} placeholder="+33612345678" /></Field>
-      </div>
-      <Button type="submit" variant="primary" size="lg" className="mt-5 w-full lg:w-auto" disabled={busy}>{busy ? "Création…" : "Créer le membre"}</Button>
-    </form>}
-
-    <section className="mt-[22px]">
-      {isLoading ? <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3"><Skeleton className="h-44 rounded-card bg-primary/10"/><Skeleton className="h-44 rounded-card bg-primary/10"/><Skeleton className="h-44 rounded-card bg-primary/10"/></div>
-        : filtered.length === 0 ? <EmptyState>Aucun membre ne correspond à cette recherche.</EmptyState>
-        : <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
-            {filtered.map((m) => <article key={m.id} className="rounded-card bg-card p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate font-display text-[21px] font-medium text-primary">{m.full_name || "Sans nom"}</p>
-                  <p className="mt-1 truncate text-[12px] text-muted-foreground">{m.email}</p>
-                </div>
-                <span className={m.disabled_at ? "shrink-0 rounded-full border border-primary/25 px-3 py-1 text-[10px] font-semibold text-muted-foreground" : "shrink-0 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-semibold text-primary"}>{m.disabled_at ? "Désactivé" : "Actif"}</span>
-              </div>
-              <p className="mt-3 text-[12px] text-muted-foreground">{m.plan} · {m.member_number}</p>
-              <p className="mt-1 text-[12px] text-muted-foreground">{m.requests_count} demande(s) · {m.invoices_count} facture(s)</p>
-              <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-primary/10 pt-4">
-                <Button variant="soft" size="sm" onClick={() => sendInvite(m)}><Mail />Invitation</Button>
-                <Button variant="outline" size="sm" onClick={() => toggleDisabled(m)}>{m.disabled_at ? <UserPlus /> : <UserMinus />}{m.disabled_at ? "Réactiver" : "Désactiver"}</Button>
-                <Button asChild variant="soft" size="sm" className="ml-auto"><Link to="/admin/$memberId" params={{ memberId: m.id }}>Fiche<ChevronRight /></Link></Button>
-              </div>
-            </article>)}
-          </div>}
-    </section>
+    </>}
   </AdminShell>;
-}
-
-export function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div><Label className="eyebrow">{label}</Label><div className="mt-2">{children}</div></div>;
-}
-
-export function PlanSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return <div className="flex gap-2">
-    <Button type="button" variant={value === "Essentiel" ? "primary" : "outline"} onClick={() => onChange("Essentiel")}>Essentiel</Button>
-    <Button type="button" variant={value === "Signature" ? "primary" : "outline"} onClick={() => onChange("Signature")}>Signature</Button>
-  </div>;
 }

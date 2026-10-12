@@ -202,3 +202,28 @@
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
   }
 }
+
+/* Interface équipe : thème sombre limité à la coque /admin (tokens globaux inchangés). */
+.team-theme {
+  --background: oklch(0.248 0.044 299.2);
+  --foreground: oklch(0.944 0.013 102.0);
+  --card: oklch(0.944 0.013 102.0 / 0.07);
+  --card-foreground: oklch(0.944 0.013 102.0);
+  --primary: oklch(0.944 0.013 102.0);
+  --primary-foreground: oklch(0.248 0.044 299.2);
+  --primary-light: oklch(0.843 0.031 302.2);
+  --primary-deep: oklch(0.332 0.070 298.7);
+  --muted-foreground: oklch(0.843 0.031 302.2);
+  --border: oklch(0.944 0.013 102.0 / 0.16);
+  --input: oklch(0.944 0.013 102.0 / 0.07);
+  --ring: oklch(0.944 0.013 102.0);
+  --team-panel: oklch(0.332 0.070 298.7);
+  --team-mention: oklch(0.718 0.041 298.4);
+  --team-confirmed: oklch(0.719 0.037 303.6);
+  background: var(--background);
+  color: var(--foreground);
+}
+.team-theme .team-glass { background: var(--card); border: 1px solid var(--border); }
+.team-theme .team-panel { background: var(--team-panel); }
+.team-theme .team-mention { color: var(--team-mention); }
+.team-theme input { border: 1px solid var(--border); color: var(--foreground); }
