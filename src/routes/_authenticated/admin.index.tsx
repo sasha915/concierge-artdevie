@@ -60,8 +60,8 @@ function Page() {
         </div>
       </section>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-12">
-        <section className="team-panel rounded-[28px] p-6 lg:col-span-7">
+      <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-12">
+        <section className="team-panel min-w-0 rounded-[28px] p-6 lg:col-span-7">
           <h2 className="eyebrow team-mention">( À traiter )</h2>
           {data.toProcess.length === 0 ? <p className="mt-6 text-[14px] text-muted-foreground">Aucune nouvelle demande en attente.</p>
             : <ul className="mt-4">{data.toProcess.map((r) => <li key={r.id} className="border-b border-border last:border-0">
@@ -76,7 +76,7 @@ function Page() {
               </li>)}</ul>}
         </section>
 
-        <section className="team-glass rounded-[28px] p-6 lg:col-span-5">
+        <section className="team-glass min-w-0 rounded-[28px] p-6 lg:col-span-5">
           <h2 className="eyebrow team-mention">( Prochaines prestations )</h2>
           {data.upcoming.length === 0 ? <p className="mt-6 text-[14px] text-muted-foreground">Aucune prestation datée à venir.</p>
             : <ul className="mt-4">{data.upcoming.map((r) => {

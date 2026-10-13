@@ -139,7 +139,7 @@ function Page() {
 }
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="min-w-0"><Label className="eyebrow">{label}</Label><div className="mt-2 min-w-0">{children}</div></div>;
+  return <div className="min-w-0"><Label className="eyebrow text-muted-foreground">{label}</Label><div className="mt-2 min-w-0">{children}</div></div>;
 }
 
 export function PlanSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
