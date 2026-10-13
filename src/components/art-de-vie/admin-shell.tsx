@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { Logo } from "@/components/art-de-vie/app-shell";
 import { supabase } from "@/integrations/supabase/client";
 import { lockAdmin } from "@/lib/admin-gate.functions";
+import { Button } from "@/components/ui/button";
 
 const teamNav = [
   { to: "/admin", label: "Tableau de bord", exact: true },
@@ -34,7 +35,7 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
   return (
     <div className="team-theme min-h-screen">
       <div className="px-4 pt-4">
-        <nav aria-label="Navigation équipe" className="team-glass mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-1 rounded-full px-3 py-2 backdrop-blur-[18px]">
+        <nav aria-label="Navigation équipe" className="team-glass mx-auto grid w-full max-w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-[28px] px-3 py-2 backdrop-blur-[18px] sm:flex sm:w-fit sm:flex-wrap sm:justify-center sm:gap-1 sm:rounded-full">
           <Link to="/admin" className="mr-1 flex items-center gap-2 rounded-full px-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <Logo inverse className="h-[22px] w-auto" />
           </Link>
@@ -43,9 +44,9 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
             const active = exact ? pathname === to || pathname === `${to}/` : pathname.startsWith(to);
             return <Link key={to} to={to} aria-current={active ? "page" : undefined} className={`${pill} ${active ? "bg-primary font-medium text-primary-foreground" : "hover:bg-primary/10"}`}>{label}</Link>;
           })}
-          <Link to="/membership" className={`${pill} hover:bg-primary/10`}><ArrowLeft className="size-4" />Retour à l’espace membre</Link>
-          <button type="button" aria-label="Verrouiller l’administration" onClick={lockSession} className={`${pill} size-11 justify-center border border-border px-0 hover:bg-primary/10`}><Lock className="size-4" /></button>
-          <button type="button" aria-label="Se déconnecter" onClick={signOut} className={`${pill} size-11 justify-center border border-border px-0 hover:bg-primary/10`}><LogOut className="size-4" /></button>
+          <Link to="/membership" className={`${pill} col-span-2 min-w-0 hover:bg-primary/10 sm:col-auto`}><ArrowLeft className="size-4 shrink-0" />Retour à l’espace membre</Link>
+          <Button type="button" variant="outline" size="icon" title="Verrouiller l’administration" aria-label="Verrouiller l’administration" onClick={lockSession} className="size-11 rounded-full"><Lock className="size-4" /></Button>
+          <Button type="button" variant="outline" size="icon" title="Se déconnecter" aria-label="Se déconnecter" onClick={signOut} className="size-11 rounded-full"><LogOut className="size-4" /></Button>
         </nav>
       </div>
       <main className="mx-auto max-w-[1440px] px-4 pb-16 pt-8 lg:px-[clamp(20px,3.9vw,56px)]">{children}</main>

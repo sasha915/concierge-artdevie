@@ -86,7 +86,7 @@ function Page() {
         <Title italic="membres." className="mt-3 text-primary lg:text-[clamp(52px,6vw,88px)]">Les </Title>
         <p className="mt-2 text-[13px] text-muted-foreground">Gérez les membres invités, leurs demandes et leurs factures.</p>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="grid grid-cols-2 items-center gap-2 sm:flex">
         <Button variant="outline" onClick={lockSession}><Lock />Verrouiller</Button>
         <Button variant="primary" onClick={() => setOpen((v) => !v)}><Plus />Nouveau membre</Button>
       </div>
@@ -139,7 +139,7 @@ function Page() {
 }
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div><Label className="eyebrow">{label}</Label><div className="mt-2">{children}</div></div>;
+  return <div className="min-w-0"><Label className="eyebrow text-muted-foreground">{label}</Label><div className="mt-2 min-w-0">{children}</div></div>;
 }
 
 export function PlanSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
