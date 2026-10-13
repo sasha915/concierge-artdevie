@@ -18,4 +18,5 @@
 - [x] Desktop V3 lot B: offers, detail, wizard, membership, login, secondary pages; isolated visual checks at 390/1024/1280/1440/1920 (hosted authenticated flow unavailable)
 - [x] Desktop V3 finishing: login punctuation, invoice filters, cancelled-first requests/history; complete typing passed; mocked confirmation at 1280/1440; pre-lot-B mobile detail pixel-identical at 390 including fully decoded photo; original photo discrepancy cause unavailable
 - [x] Équipe lot 1.1 : colonnes team_reply, verrouillage des écritures membres, fonctions serveur équipe
-- [ ] Équipe lot 1.2 : terminer la fiche membre selon equipe_3 et vérifier /admin, /admin/membres et la fiche à 390/1280/1440 px ; contrôle d’accès inchangé
+- [x] Équipe lot 1.2 : fiche membre selon equipe_3 ; captures isolées avec données réelles à 390/1280/1440 px, aucun débordement ; build automatique OK ; contrôle d’accès inchangé
+- [ ] Équipe lot 1.2 : vérification authentifiée des trois pages (bloquée : aucune session autorisée disponible) et résultat distinct du typage complet (non fourni par les contrôles automatiques)
