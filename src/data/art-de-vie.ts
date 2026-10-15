@@ -19,6 +19,8 @@ export type RequestItem = {
   guests: number | null;
   concierge: string;
   image_key: string;
+  team_reply?: string | null;
+  team_reply_at?: string | null;
 };
 
 export type Offer = {

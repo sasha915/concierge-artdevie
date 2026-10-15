@@ -65,7 +65,7 @@ function Page() {
           <h2 className="eyebrow team-mention">( À traiter )</h2>
           {data.toProcess.length === 0 ? <p className="mt-6 text-[14px] text-muted-foreground">Aucune nouvelle demande en attente.</p>
             : <ul className="mt-4">{data.toProcess.map((r) => <li key={r.id} className="border-b border-border last:border-0">
-                <Link to="/admin/membres/$memberId" params={{ memberId: r.user_id }} className="flex items-center gap-4 rounded-2xl py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <Link to="/admin/demandes/$requestId" params={{ requestId: r.id }} className="flex items-center gap-4 rounded-2xl py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2"><TeamStatus status={r.status} /><span className="text-[13px] text-muted-foreground">{r.member_name}</span></div>
                     <p className="mt-2 truncate text-[22px] leading-tight">{r.title}</p>
@@ -82,7 +82,7 @@ function Page() {
             : <ul className="mt-4">{data.upcoming.map((r) => {
                 const d = new Date(`${r.scheduled_date}T00:00:00`);
                 return <li key={r.id} className="border-b border-border last:border-0">
-                  <Link to="/admin/membres/$memberId" params={{ memberId: r.user_id }} className="flex items-center gap-4 rounded-2xl py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <Link to="/admin/demandes/$requestId" params={{ requestId: r.id }} className="flex items-center gap-4 rounded-2xl py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     <div className="w-12 shrink-0 text-center"><p className="font-display text-[30px] leading-none">{d.getDate()}</p><p className="mt-1 text-[11px] team-mention">{d.toLocaleDateString("fr-FR", { month: "short" })}</p></div>
                     <div className="min-w-0 flex-1"><p className="truncate text-[18px]">{r.title}</p><p className="mt-1 text-[13px] text-muted-foreground">{r.member_name}{r.scheduled_time ? ` · ${r.scheduled_time}` : ""}</p></div>
                     <TeamStatus status={r.status} />
