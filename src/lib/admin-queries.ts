@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { listMembers, getMemberDetail, listMemberPayments } from "@/lib/admin.functions";
+import { listMembers, getMemberDetail, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames } from "@/lib/admin.functions";
 import type { Invoice, RequestItem } from "@/data/art-de-vie";
 
 export type AdminMember = {
@@ -48,3 +48,30 @@ export const memberPaymentsQuery = (id: string) =>
     queryKey: ["admin", "member", id, "payments"],
     queryFn: () => listMemberPayments({ data: { id } }),
   });
+
+export type AdminRequest = RequestItem & {
+  user_id: string;
+  created_at: string;
+  team_reply: string | null;
+  team_reply_at: string | null;
+  member_name: string;
+  member_email?: string | null;
+  member_plan?: string | null;
+};
+
+export const allRequestsQuery = queryOptions({
+  queryKey: ["admin", "requests"],
+  queryFn: async (): Promise<AdminRequest[]> => (await listAllRequests()) as AdminRequest[],
+});
+
+export const requestDetailQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["admin", "request", id],
+    queryFn: async () =>
+      (await getRequestDetail({ data: { id } })) as { request: Omit<AdminRequest, "member_name"> | null; member: (Omit<AdminMember, "requests_count" | "invoices_count" | "concierge_whatsapp">) | null },
+  });
+
+export const teamNamesQuery = queryOptions({
+  queryKey: ["admin", "team-names"],
+  queryFn: async (): Promise<string[]> => (await listTeamNames()) as string[],
+});

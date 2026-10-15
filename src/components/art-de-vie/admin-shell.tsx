@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 
 const teamNav = [
   { to: "/admin", label: "Tableau de bord", exact: true },
+  { to: "/admin/demandes", label: "Demandes", exact: false },
   { to: "/admin/membres", label: "Membres", exact: false },
 ] as const;
 
