@@ -27,6 +27,8 @@ import { Route as AuthenticatedMembershipInformationsRouteImport } from './route
 import { Route as AuthenticatedMembershipParrainerRouteImport } from './routes/_authenticated/membership.parrainer'
 import { Route as ApiPublicMollieWebhookRouteImport } from './routes/api/public/mollie-webhook'
 import { Route as ApiPublicNotifyConciergeRouteImport } from './routes/api/public/notify-concierge'
+import { Route as AuthenticatedAdminDemandesIndexRouteImport } from './routes/_authenticated/admin.demandes.index'
+import { Route as AuthenticatedAdminDemandesRequestIdRouteImport } from './routes/_authenticated/admin.demandes.$requestId'
 import { Route as AuthenticatedAdminMembresIndexRouteImport } from './routes/_authenticated/admin.membres.index'
 import { Route as AuthenticatedAdminMembresMemberIdRouteImport } from './routes/_authenticated/admin.membres.$memberId'
 
@@ -129,6 +131,18 @@ const ApiPublicNotifyConciergeRoute =
     path: '/api/public/notify-concierge',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedAdminDemandesIndexRoute =
+  AuthenticatedAdminDemandesIndexRouteImport.update({
+    id: '/demandes/',
+    path: '/demandes/',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminDemandesRequestIdRoute =
+  AuthenticatedAdminDemandesRequestIdRouteImport.update({
+    id: '/demandes/$requestId',
+    path: '/demandes/$requestId',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminMembresIndexRoute =
   AuthenticatedAdminMembresIndexRouteImport.update({
     id: '/membres/',
@@ -160,7 +174,9 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/demandes/': typeof AuthenticatedDemandesIndexRoute
   '/membership/': typeof AuthenticatedMembershipIndexRoute
+  '/admin/demandes/$requestId': typeof AuthenticatedAdminDemandesRequestIdRoute
   '/admin/membres/$memberId': typeof AuthenticatedAdminMembresMemberIdRoute
+  '/admin/demandes/': typeof AuthenticatedAdminDemandesIndexRoute
   '/admin/membres/': typeof AuthenticatedAdminMembresIndexRoute
 }
 export interface FileRoutesByTo {
@@ -180,7 +196,9 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/demandes': typeof AuthenticatedDemandesIndexRoute
   '/membership': typeof AuthenticatedMembershipIndexRoute
+  '/admin/demandes/$requestId': typeof AuthenticatedAdminDemandesRequestIdRoute
   '/admin/membres/$memberId': typeof AuthenticatedAdminMembresMemberIdRoute
+  '/admin/demandes': typeof AuthenticatedAdminDemandesIndexRoute
   '/admin/membres': typeof AuthenticatedAdminMembresIndexRoute
 }
 export interface FileRoutesById {
@@ -203,7 +221,9 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/demandes/': typeof AuthenticatedDemandesIndexRoute
   '/_authenticated/membership/': typeof AuthenticatedMembershipIndexRoute
+  '/_authenticated/admin/demandes/$requestId': typeof AuthenticatedAdminDemandesRequestIdRoute
   '/_authenticated/admin/membres/$memberId': typeof AuthenticatedAdminMembresMemberIdRoute
+  '/_authenticated/admin/demandes/': typeof AuthenticatedAdminDemandesIndexRoute
   '/_authenticated/admin/membres/': typeof AuthenticatedAdminMembresIndexRoute
 }
 export interface FileRouteTypes {
@@ -226,7 +246,9 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/demandes/'
     | '/membership/'
+    | '/admin/demandes/$requestId'
     | '/admin/membres/$memberId'
+    | '/admin/demandes/'
     | '/admin/membres/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -246,7 +268,9 @@ export interface FileRouteTypes {
     | '/admin'
     | '/demandes'
     | '/membership'
+    | '/admin/demandes/$requestId'
     | '/admin/membres/$memberId'
+    | '/admin/demandes'
     | '/admin/membres'
   id:
     | '__root__'
@@ -268,7 +292,9 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/demandes/'
     | '/_authenticated/membership/'
+    | '/_authenticated/admin/demandes/$requestId'
     | '/_authenticated/admin/membres/$memberId'
+    | '/_authenticated/admin/demandes/'
     | '/_authenticated/admin/membres/'
   fileRoutesById: FileRoutesById
 }
@@ -408,6 +434,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicNotifyConciergeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin/demandes/': {
+      id: '/_authenticated/admin/demandes/'
+      path: '/demandes'
+      fullPath: '/admin/demandes/'
+      preLoaderRoute: typeof AuthenticatedAdminDemandesIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/demandes/$requestId': {
+      id: '/_authenticated/admin/demandes/$requestId'
+      path: '/demandes/$requestId'
+      fullPath: '/admin/demandes/$requestId'
+      preLoaderRoute: typeof AuthenticatedAdminDemandesRequestIdRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/membres/': {
       id: '/_authenticated/admin/membres/'
       path: '/membres'
@@ -427,14 +467,19 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedAdminDemandesRequestIdRoute: typeof AuthenticatedAdminDemandesRequestIdRoute
   AuthenticatedAdminMembresMemberIdRoute: typeof AuthenticatedAdminMembresMemberIdRoute
+  AuthenticatedAdminDemandesIndexRoute: typeof AuthenticatedAdminDemandesIndexRoute
   AuthenticatedAdminMembresIndexRoute: typeof AuthenticatedAdminMembresIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+  AuthenticatedAdminDemandesRequestIdRoute:
+    AuthenticatedAdminDemandesRequestIdRoute,
   AuthenticatedAdminMembresMemberIdRoute:
     AuthenticatedAdminMembresMemberIdRoute,
+  AuthenticatedAdminDemandesIndexRoute: AuthenticatedAdminDemandesIndexRoute,
   AuthenticatedAdminMembresIndexRoute: AuthenticatedAdminMembresIndexRoute,
 }
 
