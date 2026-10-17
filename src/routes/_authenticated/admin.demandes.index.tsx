@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { AdminShell, TeamStatus } from "@/components/art-de-vie/admin-shell";
 import { Title } from "@/components/art-de-vie/v3";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,7 +37,10 @@ function Page() {
 
   return <AdminShell>
     <p className="eyebrow team-mention">( Demandes )</p>
-    <Title italic="demandes." className="mt-3 text-primary lg:text-[clamp(52px,6vw,88px)]">Les </Title>
+    <div className="flex flex-wrap items-end justify-between gap-4">
+      <Title italic="demandes." className="mt-3 text-primary lg:text-[clamp(52px,6vw,88px)]">Les </Title>
+      <Link to="/admin/demandes/nouvelle" className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-[14px] font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><Plus className="size-4" />Nouvelle demande</Link>
+    </div>
 
     <div className="mt-6 flex flex-wrap gap-2">
       <label className="relative min-w-0 flex-1 basis-full sm:basis-[280px]">

@@ -9,9 +9,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, initials, type RequestStatus } from "@/data/art-de-vie";
 import { requestDetailQuery, teamNamesQuery } from "@/lib/admin-queries";
-import { setRequestConcierge, setRequestReply, updateRequestStatus } from "@/lib/admin.functions";
+import { addRequestNote, listRequestNotes, setRequestConcierge, setRequestReply, updateRequestStatus } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/demandes/$requestId")({
+  validateSearch: (search: Record<string, unknown>): { cree?: boolean } => (search["cree"] === true || search["cree"] === "true" ? { cree: true } : {}),
   head: () => ({ meta: [
     { title: "Détail de la demande — Équipe Art de Vie" },
     { name: "description", content: "Statut, concierge et réponse au membre pour une demande." },
@@ -32,6 +33,11 @@ function stamp(iso: string) {
 
 function Page() {
   const { requestId } = Route.useParams();
+  const { cree } = Route.useSearch();
+  const fetchNotes = useServerFn(listRequestNotes);
+  const addNote = useServerFn(addRequestNote);
+  const { data: notes = [] } = useQuery({ queryKey: ["admin", "request", requestId, "notes"], queryFn: () => fetchNotes({ data: { requestId } }) });
+  const [note, setNote] = useState("");
   const qc = useQueryClient();
   const { data, isLoading } = useQuery(requestDetailQuery(requestId));
   const { data: team = [] } = useQuery(teamNamesQuery);
@@ -45,6 +51,7 @@ function Page() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   useEffect(() => { setReplyText(r?.team_reply ?? ""); }, [r?.id, r?.team_reply]);
+  useEffect(() => { if (cree) setNotice({ ok: true, text: "Demande créée. Elle apparaît dès maintenant dans l’espace du membre." }); }, [cree]);
 
   async function run(action: () => Promise<{ ok: boolean; reason?: string }>, success: string) {
     setBusy(true); setNotice(null);
@@ -97,6 +104,23 @@ function Page() {
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <p className="text-[13px] text-muted-foreground">{r.team_reply_at ? `Dernière publication le ${stamp(r.team_reply_at)}` : "Aucune réponse publiée."}</p>
             <Button type="button" disabled={busy} onClick={() => run(() => setReply({ data: { id: r.id, reply } }), reply.trim() ? "Réponse publiée." : "Réponse retirée.")} className="h-11 rounded-full px-5">Publier la réponse</Button>
+          </div>
+        </section>
+
+        <section className="team-panel rounded-[28px] p-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="eyebrow team-mention">( Notes internes )</h2>
+            <span className="rounded-full border border-dashed border-border px-3 py-1 text-[11px]">Invisibles du membre</span>
+          </div>
+          {notes.length === 0 ? <p className="mt-4 text-[13px] text-muted-foreground">Aucune note pour le moment.</p>
+            : <ol className="mt-4 divide-y divide-border border-y border-border">{notes.map((n) => <li key={n.id} className="py-4">
+                <p className="flex flex-wrap items-baseline justify-between gap-2 text-[13px]"><span className="font-medium">{n.author_name}</span><span className="text-muted-foreground">{stamp(n.created_at)}</span></p>
+                <p className="mt-2 whitespace-pre-line break-words text-[15px] leading-6">{n.body}</p>
+              </li>)}</ol>}
+          <label htmlFor="team-note" className="sr-only">Nouvelle note interne</label>
+          <Textarea id="team-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={4000} rows={3} placeholder="Ajouter une note pour l’équipe…" className="mt-4 min-h-[96px]" />
+          <div className="mt-4 flex justify-end">
+            <Button type="button" variant="outline" disabled={busy || !note.trim()} onClick={() => run(async () => { const res = await addNote({ data: { requestId: r.id, body: note } }); if (res.ok) setNote(""); return res; }, "Note ajoutée.")} className="h-11 rounded-full px-5">Ajouter la note</Button>
           </div>
         </section>
       </div>
