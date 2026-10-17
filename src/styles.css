@@ -227,3 +227,19 @@
 .team-theme .team-panel { background: var(--team-panel); }
 .team-theme .team-mention { color: var(--team-mention); }
 .team-theme input { border: 1px solid var(--border); color: var(--foreground); }
+/* Aperçu membre dans l'interface équipe : rétablit les couleurs de l'espace membre. */
+.team-theme .member-preview {
+  --background: oklch(0.944 0.013 102.0);
+  --foreground: oklch(0.31 0.07 298);
+  --card: oklch(0.984 0.007 97.4);
+  --card-foreground: oklch(0.31 0.07 298);
+  --primary: oklch(0.400 0.100 299.6);
+  --primary-foreground: oklch(0.935 0.014 100);
+  --primary-light: oklch(0.405 0.077 298.9);
+  --muted-foreground: oklch(0.525 0.054 298.0);
+  --border: oklch(0.38 0.105 297 / 0.15);
+  --input: oklch(0.982 0.009 93);
+  --ring: oklch(0.38 0.105 297);
+  background: var(--background);
+  color: var(--foreground);
+}
