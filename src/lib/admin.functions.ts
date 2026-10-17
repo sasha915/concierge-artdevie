@@ -339,3 +339,14 @@ export const addRequestNote = createServerFn({ method: "POST" })
     if (error) return { ok: false as const, reason: "La note n’a pas pu être ajoutée." };
     return { ok: true as const };
   });
+
+export const listRequestableMembers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const ids = await adminIds(admin);
+    const { data } = await admin.from("profiles").select("id, full_name, email, plan, disabled_at").is("disabled_at", null).order("full_name");
+    return ((data ?? []) as Array<{ id: string; full_name: string; email: string | null; plan: string }>)
+      .filter((p) => !ids.includes(p.id))
+      .map(({ id, full_name, email, plan }) => ({ id, full_name, email, plan }));
+  });
