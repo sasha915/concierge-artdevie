@@ -278,3 +278,75 @@ export const getDashboard = createServerFn({ method: "GET" })
         .map(withName),
     };
   });
+
+// ---- Lot 2.1 : demande au nom d'un membre, notes internes ----
+
+const REQUEST_IMAGE: Record<string, string> = { Tables: "entree-de-nuit", "Séjours": "village-cotier", Transferts: "place-vendome", Soins: "bassin" };
+
+export const createRequestForMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({
+    memberId: z.string().uuid(),
+    category: z.enum(["Tables", "Séjours", "Transferts", "Soins"]),
+    title: z.string().trim().min(1).max(160),
+    description: z.string().trim().max(4000).optional().or(z.literal("")),
+    scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
+    scheduledTime: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal("")),
+    guests: z.number().int().min(1).max(999).nullable().optional(),
+    concierge: z.string().trim().min(1).max(60),
+  }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const ids = await adminIds(admin);
+    if (ids.includes(data.memberId)) return { ok: false as const, reason: "Ce compte appartient à l’équipe." };
+    const { data: member } = await admin.from("profiles").select("id, disabled_at").eq("id", data.memberId).maybeSingle();
+    if (!member) return { ok: false as const, reason: "Membre introuvable." };
+    const { data: row, error } = await admin.from("requests").insert({
+      user_id: data.memberId,
+      category: data.category,
+      status: "Nouvelle",
+      title: data.title,
+      description: data.description || "",
+      scheduled_date: data.scheduledDate || null,
+      scheduled_time: data.scheduledTime || null,
+      guests: data.guests ?? null,
+      concierge: data.concierge,
+      image_key: REQUEST_IMAGE[data.category] ?? "entree-de-nuit",
+    }).select("id").single();
+    if (error || !row) return { ok: false as const, reason: "La demande n’a pas pu être créée." };
+    return { ok: true as const, id: row.id as string };
+  });
+
+export const listRequestNotes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ requestId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { data: notes } = await admin.from("request_notes").select("id, author_id, body, created_at").eq("request_id", data.requestId).order("created_at", { ascending: true });
+    const rows = (notes ?? []) as Array<{ id: string; author_id: string; body: string; created_at: string }>;
+    const authorIds = [...new Set(rows.map((n) => n.author_id))];
+    const { data: authors } = authorIds.length ? await admin.from("profiles").select("id, full_name").in("id", authorIds) : { data: [] };
+    const names = new Map((authors ?? []).map((p: { id: string; full_name: string }) => [p.id, p.full_name]));
+    return rows.map((n) => ({ ...n, author_name: names.get(n.author_id) || "Équipe" }));
+  });
+
+export const addRequestNote = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ requestId: z.string().uuid(), body: z.string().trim().min(1).max(4000) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { error } = await admin.from("request_notes").insert({ request_id: data.requestId, author_id: (context as Ctx).userId, body: data.body });
+    if (error) return { ok: false as const, reason: "La note n’a pas pu être ajoutée." };
+    return { ok: true as const };
+  });
+
+export const listRequestableMembers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const ids = await adminIds(admin);
+    const { data } = await admin.from("profiles").select("id, full_name, email, plan, disabled_at").is("disabled_at", null).order("full_name");
+    return ((data ?? []) as Array<{ id: string; full_name: string; email: string | null; plan: string }>)
+      .filter((p) => !ids.includes(p.id))
+      .map(({ id, full_name, email, plan }) => ({ id, full_name, email, plan }));
+  });

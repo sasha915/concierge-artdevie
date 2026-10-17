@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Lock, LogOut } from "lucide-react";
+import { ArrowLeft, Lock, LogOut, Plus } from "lucide-react";
 import type { ReactNode } from "react";
 import { Logo } from "@/components/art-de-vie/app-shell";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,9 +42,10 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
           </Link>
           <span className="eyebrow mr-2 rounded-full border border-border px-3 py-1 text-[10px]">Équipe</span>
           {teamNav.map(({ to, label, exact }) => {
-            const active = exact ? pathname === to || pathname === `${to}/` : pathname.startsWith(to);
+            const active = exact ? pathname === to || pathname === `${to}/` : pathname.startsWith(to) && !pathname.startsWith("/admin/demandes/nouvelle");
             return <Link key={to} to={to} aria-current={active ? "page" : undefined} className={`${pill} ${active ? "bg-primary font-medium text-primary-foreground" : "hover:bg-primary/10"}`}>{label}</Link>;
           })}
+          <Link to="/admin/demandes/nouvelle" className={`${pill} bg-primary font-medium text-primary-foreground hover:bg-primary/90`}><Plus className="size-4" />Demande</Link>
           <Link to="/membership" className={`${pill} col-span-2 min-w-0 hover:bg-primary/10 sm:col-auto`}><ArrowLeft className="size-4 shrink-0" />Retour à l’espace membre</Link>
           <Button type="button" variant="outline" size="icon" title="Verrouiller l’administration" aria-label="Verrouiller l’administration" onClick={lockSession} className="size-11 rounded-full"><Lock className="size-4" /></Button>
           <Button type="button" variant="outline" size="icon" title="Se déconnecter" aria-label="Se déconnecter" onClick={signOut} className="size-11 rounded-full"><LogOut className="size-4" /></Button>

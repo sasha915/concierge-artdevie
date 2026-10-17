@@ -60,6 +60,11 @@ function Page() {
         </div>
       </section>
 
+      <Link to="/admin/demandes/nouvelle" className="team-glass mt-6 flex items-center justify-between gap-4 rounded-[28px] p-6 transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <span className="min-w-0"><span className="eyebrow team-mention block">( Demande pour un membre )</span><span className="mt-2 block text-[24px] leading-tight">Créer une demande au nom d’un membre</span></span>
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"><ArrowUpRight className="size-4" /></span>
+      </Link>
+
       <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-12">
         <section className="team-panel min-w-0 rounded-[28px] p-6 lg:col-span-7">
           <h2 className="eyebrow team-mention">( À traiter )</h2>
