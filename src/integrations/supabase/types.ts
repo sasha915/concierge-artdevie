@@ -157,6 +157,7 @@ export type Database = {
       }
       referrals: {
         Row: {
+          converted_member_id: string | null
           created_at: string
           email: string
           full_name: string
@@ -166,6 +167,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          converted_member_id?: string | null
           created_at?: string
           email: string
           full_name: string
@@ -175,6 +177,7 @@ export type Database = {
           status?: string
         }
         Update: {
+          converted_member_id?: string | null
           created_at?: string
           email?: string
           full_name?: string
