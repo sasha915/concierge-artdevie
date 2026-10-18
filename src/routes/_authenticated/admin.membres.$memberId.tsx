@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { EmptyState, StatusBadge } from "@/components/art-de-vie/cards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatShortDate, formatMonth, imageFor, initials } from "@/data/art-de-vie";
-import { memberDetailQuery, memberPaymentsQuery } from "@/lib/admin-queries";
+import { memberDetailQuery, memberParrainQuery, memberPaymentsQuery } from "@/lib/admin-queries";
 import { sendMemberInvite, setMemberDisabled, updateMember } from "@/lib/admin.functions";
 import { Field, PlanSelect } from "./admin.membres.index";
 
@@ -20,6 +20,7 @@ function Page() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery(memberDetailQuery(memberId));
   const { data: paymentsData } = useQuery(memberPaymentsQuery(memberId));
+  const { data: parrain } = useQuery(memberParrainQuery(memberId));
   const save = useServerFn(updateMember);
   const invite = useServerFn(sendMemberInvite);
   const toggle = useServerFn(setMemberDisabled);
@@ -107,6 +108,7 @@ function Page() {
         <span className={profile.disabled_at ? "rounded-full border border-primary/25 px-3 py-1 text-[10px] font-semibold text-muted-foreground" : "rounded-full bg-primary/10 px-3 py-1 text-[10px] font-semibold text-primary"}>{profile.disabled_at ? "Désactivé" : "Actif"}</span>
         <span className="text-[12px] text-muted-foreground">{profile.plan} · {profile.member_number}</span>
       </div>
+      {parrain && <p className="mt-3 text-[13px] text-muted-foreground">Parrainé par <Link to="/admin/membres/$memberId" params={{ memberId: parrain.id }} className="underline underline-offset-2 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{parrain.full_name}</Link></p>}
       <dl className="mt-4 grid min-w-0 gap-3 text-sm"><div><dt className="eyebrow team-mention">Adresse email</dt><dd className="mt-1 break-all">{profile.email || "—"}</dd></div>{profile.phone && <div><dt className="eyebrow team-mention">Téléphone</dt><dd className="mt-1">{profile.phone}</dd></div>}</dl>
       <div className="mt-4 flex flex-wrap gap-2">
         <Button variant="soft" size="sm" onClick={sendInvite}><Mail />Envoyer l’invitation</Button>
