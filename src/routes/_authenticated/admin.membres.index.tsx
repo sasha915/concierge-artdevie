@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, Lock, Mail, Plus, Search, UserMinus, UserPlus } from "lucide-react";
 import { AdminShell } from "@/components/art-de-vie/admin-shell";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/art-de-vie/cards";
 import { Title } from "@/components/art-de-vie/v3";
 import { membersQuery, type AdminMember } from "@/lib/admin-queries";
-import { createMember, sendMemberInvite, setMemberDisabled } from "@/lib/admin.functions";
+import { convertReferral, createMember, sendMemberInvite, setMemberDisabled } from "@/lib/admin.functions";
 import { lockAdmin } from "@/lib/admin-gate.functions";
 import { useNavigate } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_authenticated/admin/membres/")({ head: () => ({ meta: [{ title: "Membres — Équipe Art de Vie" }, { name: "description", content: "Gérez les membres invités de la conciergerie Art de Vie." }, { property: "og:title", content: "Membres — Équipe Art de Vie" }, { property: "og:description", content: "Gérez les membres invités de la conciergerie Art de Vie." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
+export const Route = createFileRoute("/_authenticated/admin/membres/")({ validateSearch: (search: Record<string, unknown>) => ({ nom: typeof search["nom"] === "string" ? search["nom"] : undefined, email: typeof search["email"] === "string" ? search["email"] : undefined, parrainage: typeof search["parrainage"] === "string" ? search["parrainage"] : undefined }), head: () => ({ meta: [{ title: "Membres — Équipe Art de Vie" }, { name: "description", content: "Gérez les membres invités de la conciergerie Art de Vie." }, { property: "og:title", content: "Membres — Équipe Art de Vie" }, { property: "og:description", content: "Gérez les membres invités de la conciergerie Art de Vie." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
 
 function Page() {
   const queryClient = useQueryClient();
@@ -25,6 +25,15 @@ function Page() {
   const toggle = useServerFn(setMemberDisabled);
   const lock = useServerFn(lockAdmin);
   const navigate = useNavigate();
+  const convert = useServerFn(convertReferral);
+  const prefill = Route.useSearch();
+
+  useEffect(() => {
+    if (!prefill.nom && !prefill.email) return;
+    setForm((f) => ({ ...f, fullName: prefill.nom ?? f.fullName, email: prefill.email ?? f.email }));
+    setOpen(true);
+  }, [prefill.nom, prefill.email]);
+
 
 
   const [search, setSearch] = useState("");
@@ -48,6 +57,11 @@ function Page() {
     try {
       const r = await create({ data: { ...form, plan: form.plan as "Essentiel" | "Signature" } });
       if (!r.ok) { setError(r.reason); return; }
+      if (prefill.parrainage) {
+        await convert({ data: { referralId: prefill.parrainage, memberId: r.id } });
+        await queryClient.invalidateQueries({ queryKey: ["admin", "referrals"] });
+        await navigate({ to: "/admin/membres", search: {} });
+      }
       setNotice(`${form.fullName} a été ajouté. Envoyez-lui son email d’invitation.`);
       setForm({ fullName: "", email: "", phone: "", plan: "Signature", conciergeReferent: "", conciergeWhatsapp: "" });
       setOpen(false);

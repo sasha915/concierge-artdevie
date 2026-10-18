@@ -1,17 +1,19 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Lock, LogOut, Plus } from "lucide-react";
 import type { ReactNode } from "react";
 import { Logo } from "@/components/art-de-vie/app-shell";
 import { supabase } from "@/integrations/supabase/client";
 import { lockAdmin } from "@/lib/admin-gate.functions";
+import { adminReferralsQuery } from "@/lib/admin-queries";
 import { Button } from "@/components/ui/button";
 
 const teamNav = [
   { to: "/admin", label: "Tableau de bord", exact: true },
   { to: "/admin/demandes", label: "Demandes", exact: false },
   { to: "/admin/membres", label: "Membres", exact: false },
+  { to: "/admin/parrainages", label: "Parrainages", exact: false },
 ] as const;
 
 const pill = "inline-flex h-11 items-center gap-2 rounded-full px-4 text-[14px] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
@@ -21,6 +23,8 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
   const queryClient = useQueryClient();
   const lock = useServerFn(lockAdmin);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { data: referrals = [] } = useQuery(adminReferralsQuery);
+  const pendingReferrals = referrals.filter((r) => r.status === "Invitation envoyée").length;
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -43,7 +47,7 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
           <span className="eyebrow mr-2 rounded-full border border-border px-3 py-1 text-[10px]">Équipe</span>
           {teamNav.map(({ to, label, exact }) => {
             const active = exact ? pathname === to || pathname === `${to}/` : pathname.startsWith(to) && !pathname.startsWith("/admin/demandes/nouvelle");
-            return <Link key={to} to={to} aria-current={active ? "page" : undefined} className={`${pill} ${active ? "bg-primary font-medium text-primary-foreground" : "hover:bg-primary/10"}`}>{label}</Link>;
+            return <Link key={to} to={to} aria-current={active ? "page" : undefined} className={`${pill} ${active ? "bg-primary font-medium text-primary-foreground" : "hover:bg-primary/10"}`}>{label}{to === "/admin/parrainages" && pendingReferrals > 0 && <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary-foreground px-1.5 text-[11px] font-semibold text-primary">{pendingReferrals}</span>}</Link>;
           })}
           <Link to="/admin/demandes/nouvelle" className={`${pill} bg-primary font-medium text-primary-foreground hover:bg-primary/90`}><Plus className="size-4" />Demande</Link>
           <Link to="/membership" className={`${pill} col-span-2 min-w-0 hover:bg-primary/10 sm:col-auto`}><ArrowLeft className="size-4 shrink-0" />Retour à l’espace membre</Link>

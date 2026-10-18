@@ -204,6 +204,24 @@ export const getRequestDetail = createServerFn({ method: "GET" })
     return { request, member: member ?? null };
   });
 
+// parrain d'un membre (lot 2.2)
+export const getMemberParrain = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { data: referral } = await admin
+      .from("referrals")
+      .select("inviter_id")
+      .eq("converted_member_id", data.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!referral) return null;
+    const { data: inviter } = await admin.from("profiles").select("id, full_name").eq("id", referral.inviter_id).maybeSingle();
+    return inviter ? { id: inviter.id as string, full_name: inviter.full_name as string } : null;
+  });
+
 export const updateRequestStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), status: requestStatus }).parse(input))
@@ -281,13 +299,13 @@ export const getDashboard = createServerFn({ method: "GET" })
 
 // ---- Lot 2.1 : demande au nom d'un membre, notes internes ----
 
-const REQUEST_IMAGE: Record<string, string> = { Tables: "entree-de-nuit", "Séjours": "village-cotier", Transferts: "place-vendome", Soins: "bassin" };
+const REQUEST_IMAGE: Record<string, string> = { Tables: "entree-de-nuit", "Séjours": "village-cotier", Transferts: "place-vendome", Soins: "bassin", "Sur mesure": "sur-mesure" };
 
 export const createRequestForMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({
     memberId: z.string().uuid(),
-    category: z.enum(["Tables", "Séjours", "Transferts", "Soins"]),
+    category: z.enum(["Tables", "Séjours", "Transferts", "Soins", "Sur mesure"]),
     title: z.string().trim().min(1).max(160),
     description: z.string().trim().max(4000).optional().or(z.literal("")),
     scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
@@ -349,4 +367,43 @@ export const listRequestableMembers = createServerFn({ method: "GET" })
     return ((data ?? []) as Array<{ id: string; full_name: string; email: string | null; plan: string }>)
       .filter((p) => !ids.includes(p.id))
       .map(({ id, full_name, email, plan }) => ({ id, full_name, email, plan }));
+  });
+
+// ---- Lot 2.2 : parrainages ----
+
+const referralStatus = z.enum(["Invitation envoyée", "Contacté", "Converti"]);
+
+export const listReferrals = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { data: referrals } = await admin
+      .from("referrals")
+      .select("id, inviter_id, full_name, email, message, status, converted_member_id, created_at")
+      .order("created_at", { ascending: false });
+    const rows = (referrals ?? []) as Array<{ id: string; inviter_id: string; full_name: string; email: string; message: string | null; status: string; converted_member_id: string | null; created_at: string }>;
+    const inviterIds = [...new Set(rows.map((r) => r.inviter_id))];
+    const { data: inviters } = inviterIds.length ? await admin.from("profiles").select("id, full_name").in("id", inviterIds) : { data: [] };
+    const names = new Map((inviters ?? []).map((p: { id: string; full_name: string }) => [p.id, p.full_name]));
+    return rows.map((r) => ({ ...r, inviter_name: names.get(r.inviter_id) ?? "" }));
+  });
+
+export const setReferralStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), status: referralStatus }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { error } = await admin.from("referrals").update({ status: data.status }).eq("id", data.id);
+    if (error) return { ok: false as const, reason: "Le statut n’a pas pu être modifié." };
+    return { ok: true as const };
+  });
+
+export const convertReferral = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ referralId: z.string().uuid(), memberId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { error } = await admin.from("referrals").update({ status: "Converti", converted_member_id: data.memberId }).eq("id", data.referralId);
+    if (error) return { ok: false as const, reason: "Le parrainage n’a pas pu être mis à jour." };
+    return { ok: true as const };
   });

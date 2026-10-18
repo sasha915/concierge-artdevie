@@ -17,6 +17,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAdminConnexionRouteImport } from './routes/_authenticated/admin-connexion'
 import { Route as AuthenticatedOffresRouteImport } from './routes/_authenticated/offres'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedAdminParrainagesRouteImport } from './routes/_authenticated/admin.parrainages'
 import { Route as AuthenticatedDemandesIndexRouteImport } from './routes/_authenticated/demandes.index'
 import { Route as AuthenticatedDemandesRequestIdRouteImport } from './routes/_authenticated/demandes.$requestId'
 import { Route as AuthenticatedDemandesNouvelleRouteImport } from './routes/_authenticated/demandes.nouvelle'
@@ -73,6 +74,12 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminParrainagesRoute =
+  AuthenticatedAdminParrainagesRouteImport.update({
+    id: '/parrainages',
+    path: '/parrainages',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedDemandesIndexRoute =
   AuthenticatedDemandesIndexRouteImport.update({
     id: '/demandes/',
@@ -170,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/admin-connexion': typeof AuthenticatedAdminConnexionRoute
   '/offres': typeof AuthenticatedOffresRoute
+  '/admin/parrainages': typeof AuthenticatedAdminParrainagesRoute
   '/demandes/$requestId': typeof AuthenticatedDemandesRequestIdRoute
   '/demandes/nouvelle': typeof AuthenticatedDemandesNouvelleRoute
   '/membership/factures': typeof AuthenticatedMembershipFacturesRoute
@@ -193,6 +201,7 @@ export interface FileRoutesByTo {
   '/admin-connexion': typeof AuthenticatedAdminConnexionRoute
   '/offres': typeof AuthenticatedOffresRoute
   '/': typeof AuthenticatedIndexRoute
+  '/admin/parrainages': typeof AuthenticatedAdminParrainagesRoute
   '/demandes/$requestId': typeof AuthenticatedDemandesRequestIdRoute
   '/demandes/nouvelle': typeof AuthenticatedDemandesNouvelleRoute
   '/membership/factures': typeof AuthenticatedMembershipFacturesRoute
@@ -219,6 +228,7 @@ export interface FileRoutesById {
   '/_authenticated/admin-connexion': typeof AuthenticatedAdminConnexionRoute
   '/_authenticated/offres': typeof AuthenticatedOffresRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/admin/parrainages': typeof AuthenticatedAdminParrainagesRoute
   '/_authenticated/demandes/$requestId': typeof AuthenticatedDemandesRequestIdRoute
   '/_authenticated/demandes/nouvelle': typeof AuthenticatedDemandesNouvelleRoute
   '/_authenticated/membership/factures': typeof AuthenticatedMembershipFacturesRoute
@@ -245,6 +255,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin-connexion'
     | '/offres'
+    | '/admin/parrainages'
     | '/demandes/$requestId'
     | '/demandes/nouvelle'
     | '/membership/factures'
@@ -268,6 +279,7 @@ export interface FileRouteTypes {
     | '/admin-connexion'
     | '/offres'
     | '/'
+    | '/admin/parrainages'
     | '/demandes/$requestId'
     | '/demandes/nouvelle'
     | '/membership/factures'
@@ -293,6 +305,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin-connexion'
     | '/_authenticated/offres'
     | '/_authenticated/'
+    | '/_authenticated/admin/parrainages'
     | '/_authenticated/demandes/$requestId'
     | '/_authenticated/demandes/nouvelle'
     | '/_authenticated/membership/factures'
@@ -375,6 +388,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/parrainages': {
+      id: '/_authenticated/admin/parrainages'
+      path: '/parrainages'
+      fullPath: '/admin/parrainages'
+      preLoaderRoute: typeof AuthenticatedAdminParrainagesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/demandes/': {
@@ -486,6 +506,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminParrainagesRoute: typeof AuthenticatedAdminParrainagesRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminDemandesRequestIdRoute: typeof AuthenticatedAdminDemandesRequestIdRoute
   AuthenticatedAdminDemandesNouvelleRoute: typeof AuthenticatedAdminDemandesNouvelleRoute
@@ -495,6 +516,7 @@ interface AuthenticatedAdminRouteChildren {
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminParrainagesRoute: AuthenticatedAdminParrainagesRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAdminDemandesRequestIdRoute:
     AuthenticatedAdminDemandesRequestIdRoute,

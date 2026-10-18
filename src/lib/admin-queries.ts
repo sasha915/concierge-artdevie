@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { listMembers, getMemberDetail, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames } from "@/lib/admin.functions";
+import { listMembers, getMemberDetail, getMemberParrain, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames, listReferrals } from "@/lib/admin.functions";
 import type { Invoice, RequestItem } from "@/data/art-de-vie";
 
 export type AdminMember = {
@@ -75,3 +75,26 @@ export const teamNamesQuery = queryOptions({
   queryKey: ["admin", "team-names"],
   queryFn: async (): Promise<string[]> => (await listTeamNames()) as string[],
 });
+
+export type AdminReferral = {
+  id: string;
+  inviter_id: string;
+  inviter_name: string;
+  full_name: string;
+  email: string;
+  message: string | null;
+  status: string;
+  converted_member_id: string | null;
+  created_at: string;
+};
+
+export const adminReferralsQuery = queryOptions({
+  queryKey: ["admin", "referrals"],
+  queryFn: async (): Promise<AdminReferral[]> => (await listReferrals()) as AdminReferral[],
+});
+
+export const memberParrainQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["admin", "member", id, "parrain"],
+    queryFn: async (): Promise<{ id: string; full_name: string } | null> => (await getMemberParrain({ data: { id } })) as { id: string; full_name: string } | null,
+  });
