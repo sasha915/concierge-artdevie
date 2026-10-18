@@ -30,6 +30,7 @@ const CATS = [
   { name: "Séjours", imageKey: "village-cotier" },
   { name: "Transferts", imageKey: "place-vendome" },
   { name: "Soins", imageKey: "bassin" },
+  { name: "Sur mesure", imageKey: "sur-mesure" },
 ] as const;
 type Cat = (typeof CATS)[number]["name"];
 const UNASSIGNED = "À attribuer";
