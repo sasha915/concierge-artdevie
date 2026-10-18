@@ -281,13 +281,13 @@ export const getDashboard = createServerFn({ method: "GET" })
 
 // ---- Lot 2.1 : demande au nom d'un membre, notes internes ----
 
-const REQUEST_IMAGE: Record<string, string> = { Tables: "entree-de-nuit", "Séjours": "village-cotier", Transferts: "place-vendome", Soins: "bassin" };
+const REQUEST_IMAGE: Record<string, string> = { Tables: "entree-de-nuit", "Séjours": "village-cotier", Transferts: "place-vendome", Soins: "bassin", "Sur mesure": "sur-mesure" };
 
 export const createRequestForMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({
     memberId: z.string().uuid(),
-    category: z.enum(["Tables", "Séjours", "Transferts", "Soins"]),
+    category: z.enum(["Tables", "Séjours", "Transferts", "Soins", "Sur mesure"]),
     title: z.string().trim().min(1).max(160),
     description: z.string().trim().max(4000).optional().or(z.literal("")),
     scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
