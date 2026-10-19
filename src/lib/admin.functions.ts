@@ -200,7 +200,7 @@ export const listMemberPayments = createServerFn({ method: "GET" })
 // ---- Lot 1.1 : demandes (équipe) ----
 
 const requestStatus = z.enum(["Nouvelle", "En cours", "Confirmée", "Terminée", "Annulée"]);
-const requestCols = "id, user_id, category, status, title, description, scheduled_date, scheduled_time, guests, concierge, image_key, created_at, team_reply, team_reply_at";
+const requestCols = "id, user_id, category, status, title, description, scheduled_date, scheduled_time, guests, concierge, concierge_id, image_key, created_at, team_reply, team_reply_at";
 
 export const listAllRequests = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

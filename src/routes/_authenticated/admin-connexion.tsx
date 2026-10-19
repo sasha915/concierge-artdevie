@@ -36,7 +36,7 @@ function Page() {
     try {
       const r = await unlock({ data: { password } });
       if (!r.ok) {
-        setError(r.reason === "not_configured" ? "L’accès administration n’est pas encore configuré." : "Mot de passe de l’équipe incorrect.");
+        setError(r.reason === "not_configured" ? "L’accès équipe n’est pas encore configuré." : "Mot de passe de l’équipe incorrect.");
         return;
       }
       await navigate({ to: "/admin", replace: true });
@@ -58,8 +58,8 @@ function Page() {
         <Input id="admin-password" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-2" />
       </div>
       {error && <p className="rounded-2xl bg-primary/10 p-4 text-xs leading-5 text-primary">{error}</p>}
-      <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>{busy ? "Vérification…" : "Accéder à l’administration"}</Button>
+      <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>{busy ? "Vérification…" : "Accéder à l’espace équipe"}</Button>
     </form>
-    <p className="mt-8 text-center text-[12px] text-muted-foreground">La session administration se referme automatiquement après deux heures.</p>
+    <p className="mt-8 text-center text-[12px] text-muted-foreground">La session équipe se referme automatiquement après deux heures.</p>
   </div></AppShell>;
 }
