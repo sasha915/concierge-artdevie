@@ -3,6 +3,7 @@ import { MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { formatDate, imageFor, type Offer, type RequestItem, type RequestStatus } from "@/data/art-de-vie";
+import logoBeige from "@/assets/logo-beige.svg";
 import { ArrowCircle, StatusTimeline } from "./v3";
 
 const statusClass: Record<RequestStatus, string> = {
@@ -35,7 +36,7 @@ function formatRequestDate(item: RequestItem) {
 }
 
 export function Photo({ src, alt, category, hero = false, eager = false, className = "" }: { src?: string | undefined; alt: string; category?: string; hero?: boolean; eager?: boolean; className?: string }) {
-  return <div className={cn("relative overflow-hidden bg-primary-deep", className)}>{src ? <img src={src} alt={alt} width={1024} height={1280} loading={eager ? "eager" : "lazy"} className="h-full w-full object-cover" /> : <span className="absolute inset-0 flex items-center justify-center px-5 text-center font-display text-[38px] italic text-primary-foreground/80">{category ?? alt}</span>}{src && <div className={cn("pointer-events-none absolute inset-0", hero ? "photo-hero-overlay" : "photo-card-overlay")} />}</div>;
+  return <div className={cn("relative overflow-hidden bg-primary-deep", className)}>{src ? <img src={src} alt={alt} width={1024} height={1280} loading={eager ? "eager" : "lazy"} className="h-full w-full object-cover" /> : <>{category === "Sur mesure" && <img src={logoBeige} alt="" aria-hidden="true" className="pointer-events-none absolute -bottom-6 -right-6 h-[70%] w-auto max-w-none opacity-[0.06]" />}<span className="absolute inset-0 flex items-center justify-center px-5 text-center font-display text-[38px] italic text-primary-foreground/80">{category ?? alt}</span></>}{src && <div className={cn("pointer-events-none absolute inset-0", hero ? "photo-hero-overlay" : "photo-card-overlay")} />}</div>;
 }
 
 export function OfferCard({ offer, compact = false }: { offer: Offer; compact?: boolean }) {

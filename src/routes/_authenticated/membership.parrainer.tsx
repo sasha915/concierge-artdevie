@@ -66,7 +66,7 @@ function Page() {
                 <p className="v3-card-title truncate text-[19px] text-primary">{r.full_name}</p>
                 <p className="mt-1 truncate text-[12px] text-muted-foreground">{r.email} · {formatShortDate(r.created_at.slice(0, 10))}</p>
               </div>
-              <span className="shrink-0 rounded-full bg-primary/10 px-[13px] py-[5px] text-[12px] font-medium text-primary">{r.status}</span>
+              <span className="shrink-0 rounded-full bg-primary/10 px-[13px] py-[5px] text-[12px] font-medium text-primary">{r.status === "Converti" ? "Devenu membre" : r.status}</span>
             </div>
           ))}
         </div>
