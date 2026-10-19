@@ -20,3 +20,4 @@
 - [x] Équipe lot 1.1 : colonnes team_reply, verrouillage des écritures membres, fonctions serveur équipe
 - [x] Équipe lot 1.2 : fiche membre selon equipe_3 ; captures isolées avec données réelles à 390/1280/1440 px, aucun débordement ; build automatique OK ; contrôle d’accès inchangé
 - [ ] Équipe lot 1.2 : vérification authentifiée des trois pages (bloquée : aucune session autorisée disponible) et résultat distinct du typage complet (non fourni par les contrôles automatiques)
+- [x] Équipe lot 3.1 : rôles administrateur / concierge, /admin/equipe, concierge_id, garde-fou dernier administrateur
