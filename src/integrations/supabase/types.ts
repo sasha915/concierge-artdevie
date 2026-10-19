@@ -224,6 +224,7 @@ export type Database = {
         Row: {
           category: string
           concierge: string
+          concierge_id: string | null
           created_at: string
           description: string
           guests: number | null
@@ -240,6 +241,7 @@ export type Database = {
         Insert: {
           category?: string
           concierge?: string
+          concierge_id?: string | null
           created_at?: string
           description?: string
           guests?: number | null
@@ -256,6 +258,7 @@ export type Database = {
         Update: {
           category?: string
           concierge?: string
+          concierge_id?: string | null
           created_at?: string
           description?: string
           guests?: number | null
@@ -304,9 +307,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_team: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "member"
+      app_role: "admin" | "member" | "concierge"
       request_status:
         | "Nouvelle"
         | "En cours"
@@ -440,7 +444,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "member"],
+      app_role: ["admin", "member", "concierge"],
       request_status: [
         "Nouvelle",
         "En cours",

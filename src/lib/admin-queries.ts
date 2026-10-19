@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { listMembers, getMemberDetail, getMemberParrain, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames, listReferrals } from "@/lib/admin.functions";
+import { listMembers, getMemberDetail, getMemberParrain, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames, listReferrals, listTeam, type TeamRole } from "@/lib/admin.functions";
 import type { Invoice, RequestItem } from "@/data/art-de-vie";
 
 export type AdminMember = {
@@ -25,7 +25,7 @@ export const isAdminQuery = queryOptions({
   queryFn: async (): Promise<boolean> => {
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) return false;
-    const { data, error } = await supabase.rpc("has_role", { _user_id: auth.user.id, _role: "admin" });
+    const { data, error } = await supabase.rpc("is_team", { _user_id: auth.user.id });
     if (error) return false;
     return data === true;
   },
@@ -71,9 +71,28 @@ export const requestDetailQuery = (id: string) =>
       (await getRequestDetail({ data: { id } })) as { request: Omit<AdminRequest, "member_name"> | null; member: (Omit<AdminMember, "requests_count" | "invoices_count" | "concierge_whatsapp">) | null },
   });
 
+export type TeamMemberOption = { id: string; name: string; role: TeamRole };
 export const teamNamesQuery = queryOptions({
   queryKey: ["admin", "team-names"],
-  queryFn: async (): Promise<string[]> => (await listTeamNames()) as string[],
+  queryFn: async (): Promise<TeamMemberOption[]> => await listTeamNames(),
+});
+
+/** Rôle d'équipe du compte connecté (admin, concierge ou null). Lit uniquement ses propres rôles. */
+export const teamRoleQuery = queryOptions({
+  queryKey: ["team-role"],
+  queryFn: async (): Promise<TeamRole | null> => {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) return null;
+    const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", auth.user.id);
+    if (error) return null;
+    const roles = (data ?? []).map((r) => r.role as string);
+    return roles.includes("admin") ? "admin" : roles.includes("concierge") ? "concierge" : null;
+  },
+});
+
+export const teamQuery = queryOptions({
+  queryKey: ["admin", "team"],
+  queryFn: () => listTeam(),
 });
 
 export type AdminReferral = {

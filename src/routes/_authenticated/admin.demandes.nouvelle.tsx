@@ -52,7 +52,8 @@ function Page() {
   const [time, setTime] = useState("");
   const [guests, setGuests] = useState("");
   const [description, setDescription] = useState("");
-  const [concierge, setConcierge] = useState(UNASSIGNED);
+  const [conciergeId, setConcierge] = useState("");
+  const concierge = team.find((t) => t.id === conciergeId)?.name ?? UNASSIGNED;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,7 +73,7 @@ function Page() {
     if (!memberId) { setError("Choisissez un membre."); return; }
     setBusy(true); setError(null);
     try {
-      const res = await create({ data: { memberId, category, title, description, scheduledDate: date, scheduledTime: time, guests: guests ? Number(guests) : null, concierge } });
+      const res = await create({ data: { memberId, category, title, description, scheduledDate: date, scheduledTime: time, guests: guests ? Number(guests) : null, conciergeId: conciergeId || null } });
       if (!res.ok) { setError(res.reason); return; }
       await qc.invalidateQueries({ queryKey: ["admin"] });
       await navigate({ to: "/admin/demandes/$requestId", params: { requestId: res.id }, search: { cree: true } });
@@ -127,8 +128,9 @@ function Page() {
           <Field id="g" label={guestsLabel}><Input id="g" type="number" min="1" value={guests} onChange={(e) => setGuests(e.target.value)} placeholder="2" /></Field>
           <Field id="p" label="Précisions" full><Textarea id="p" rows={5} maxLength={4000} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Envies, contraintes ou attentions particulières…" /></Field>
           <Field id="c" label="Concierge en charge" full>
-            <select id="c" value={concierge} onChange={(e) => setConcierge(e.target.value)} className={select}>
-              {[...new Set([UNASSIGNED, ...team])].map((n) => <option key={n} value={n}>{n}</option>)}
+            <select id="c" value={conciergeId} onChange={(e) => setConcierge(e.target.value)} className={select}>
+              <option value="">{UNASSIGNED}</option>
+              {team.map((t) => <option key={t.id} value={t.id}>{t.name} · {t.role === "admin" ? "Administrateur" : "Concierge"}</option>)}
             </select>
           </Field>
         </section>

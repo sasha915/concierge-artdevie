@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { MessageCircle } from "lucide-react";
@@ -11,7 +12,13 @@ import { formatDate, formatShortDate, imageFor, initials, type Offer, type Profi
 import { offersQuery, profileQuery, requestsQuery } from "@/lib/adv-queries";
 import vendome from "@/assets/v3/place-vendome.jpg.asset.json";
 
-export const Route = createFileRoute("/_authenticated/")({ head: () => ({ meta: [{ title: "Accueil — Art de Vie" }, { name: "description", content: "Votre conciergerie privée, demandes et privilèges." }, { property: "og:title", content: "Accueil — Art de Vie" }, { property: "og:description", content: "Votre conciergerie privée, demandes et privilèges." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Home });
+export const Route = createFileRoute("/_authenticated/")({ beforeLoad: async () => {
+  // Comptes d'équipe : pas d'accueil membre ni de carte, direction l'espace équipe.
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return;
+  const { data } = await supabase.rpc("is_team", { _user_id: auth.user.id });
+  if (data === true) throw redirect({ to: "/admin-connexion", replace: true });
+}, head: () => ({ meta: [{ title: "Accueil — Art de Vie" }, { name: "description", content: "Votre conciergerie privée, demandes et privilèges." }, { property: "og:title", content: "Accueil — Art de Vie" }, { property: "og:description", content: "Votre conciergerie privée, demandes et privilèges." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Home });
 
 function CurrentRequest({ item }: { item: RequestItem }) {
   return <Link to="/demandes/$requestId" params={{ requestId: item.id }} className="dark-glass block rounded-[24px] p-4 transition-transform active:scale-[0.98] lg:w-[400px] lg:max-w-full lg:p-5">

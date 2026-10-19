@@ -27,6 +27,8 @@ function Page() {
   const navigate = useNavigate();
   const convert = useServerFn(convertReferral);
   const prefill = Route.useSearch();
+  const { teamRole } = Route.useRouteContext();
+  const isAdmin = teamRole === "admin";
 
   useEffect(() => {
     if (!prefill.nom && !prefill.email) return;
@@ -102,7 +104,7 @@ function Page() {
       </div>
       <div className="grid grid-cols-2 items-center gap-2 sm:flex">
         <Button variant="outline" onClick={lockSession}><Lock />Verrouiller</Button>
-        <Button variant="primary" onClick={() => setOpen((v) => !v)}><Plus />Nouveau membre</Button>
+        {isAdmin && <Button variant="primary" onClick={() => setOpen((v) => !v)}><Plus />Nouveau membre</Button>}
       </div>
     </header>
 
@@ -114,7 +116,7 @@ function Page() {
     {notice && <p className="mt-4 rounded-2xl bg-primary/10 p-4 text-xs leading-5 text-primary">{notice}</p>}
     {error && <p className="mt-4 rounded-2xl border border-primary/25 p-4 text-xs leading-5 text-primary">{error}</p>}
 
-    {open && <form className="mt-[22px] rounded-card bg-card p-5 sm:p-7" onSubmit={submitCreate}>
+    {isAdmin && open && <form className="mt-[22px] rounded-card bg-card p-5 sm:p-7" onSubmit={submitCreate}>
       <h2 className="font-display text-[22px] font-medium text-primary">Créer un membre</h2>
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
         <Field label="Nom complet"><Input value={form.fullName} onChange={(e) => set("fullName", e.target.value)} required maxLength={80} placeholder="Ex. Élise Marchand" /></Field>
@@ -140,10 +142,10 @@ function Page() {
                 <span className={m.disabled_at ? "shrink-0 rounded-full border border-primary/25 px-3 py-1 text-[10px] font-semibold text-muted-foreground" : "shrink-0 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-semibold text-primary"}>{m.disabled_at ? "Désactivé" : "Actif"}</span>
               </div>
               <p className="mt-3 text-[12px] text-muted-foreground">{m.plan} · {m.member_number}</p>
-              <p className="mt-1 text-[12px] text-muted-foreground">{m.requests_count} demande(s) · {m.invoices_count} facture(s)</p>
+              <p className="mt-1 text-[12px] text-muted-foreground">{m.requests_count} demande(s){isAdmin ? ` · ${m.invoices_count} facture(s)` : ""}</p>
               <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-primary/10 pt-4">
-                <Button variant="soft" size="sm" onClick={() => sendInvite(m)}><Mail />Invitation</Button>
-                <Button variant="outline" size="sm" onClick={() => toggleDisabled(m)}>{m.disabled_at ? <UserPlus /> : <UserMinus />}{m.disabled_at ? "Réactiver" : "Désactiver"}</Button>
+                {isAdmin && <><Button variant="soft" size="sm" onClick={() => sendInvite(m)}><Mail />Invitation</Button>
+                <Button variant="outline" size="sm" onClick={() => toggleDisabled(m)}>{m.disabled_at ? <UserPlus /> : <UserMinus />}{m.disabled_at ? "Réactiver" : "Désactiver"}</Button></>}
                 <Button asChild variant="soft" size="sm" className="ml-auto"><Link to="/admin/membres/$memberId" params={{ memberId: m.id }}>Fiche<ChevronRight /></Link></Button>
               </div>
             </article>)}

@@ -6,13 +6,40 @@ import { mollie, mollieKey, statusLabel, type MolliePayment } from "./mollie.ser
 
 type Ctx = { supabase: any; userId: string };
 
-async function assertAdmin(context: Ctx) {
-  const { data, error } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-  if (error || data !== true) throw new Error("Forbidden");
+export type TeamRole = "admin" | "concierge";
+
+/** Rôle d'équipe de l'appelant, vérifié avec sa propre session (RLS : il lit ses propres rôles). */
+async function teamRoleOf(context: Ctx): Promise<TeamRole | null> {
+  const { data, error } = await context.supabase.from("user_roles").select("role").eq("user_id", context.userId);
+  if (error) return null;
+  const roles = (data ?? []).map((r: { role: string }) => r.role);
+  return roles.includes("admin") ? "admin" : roles.includes("concierge") ? "concierge" : null;
+}
+
+async function unlockedAdminClient() {
   const { requireAdminUnlocked } = await import("./admin-gate.server");
   await requireAdminUnlocked();
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return supabaseAdmin;
+}
+
+/** Administrateur ou concierge, session d'équipe déverrouillée. */
+async function assertTeam(context: Ctx) {
+  const role = await teamRoleOf(context);
+  if (!role) throw new Error("Forbidden");
+  return { admin: await unlockedAdminClient(), role };
+}
+
+/** Administrateur seul, session d'équipe déverrouillée. */
+async function assertAdmin(context: Ctx) {
+  const role = await teamRoleOf(context);
+  if (role !== "admin") throw new Error("Forbidden");
+  return unlockedAdminClient();
+}
+
+async function teamIds(admin: any): Promise<string[]> {
+  const { data } = await admin.from("user_roles").select("user_id").in("role", ["admin", "concierge"]);
+  return [...new Set((data ?? []).map((r: { user_id: string }) => r.user_id))] as string[];
 }
 
 function originOf(): string {
@@ -31,7 +58,7 @@ const memberFields = {
 export const listMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const { admin, role } = await assertTeam(context as Ctx);
     const [{ data: profiles }, { data: requests }, { data: invoices }] = await Promise.all([
       admin.from("profiles").select("id, full_name, email, phone, plan, role_label, member_number, member_since, valid_until, disabled_at, concierge_referent, concierge_whatsapp").order("member_since", { ascending: false }),
       admin.from("requests").select("user_id"),
@@ -41,10 +68,11 @@ export const listMembers = createServerFn({ method: "GET" })
       (rows ?? []).reduce<Record<string, number>>((acc, r) => ({ ...acc, [r.user_id]: (acc[r.user_id] ?? 0) + 1 }), {});
     const rc = countBy(requests as { user_id: string }[] | null);
     const ic = countBy(invoices as { user_id: string }[] | null);
-    return (profiles ?? []).map((p: Record<string, unknown>) => ({
+    const team = await teamIds(admin);
+    return (profiles ?? []).filter((p: Record<string, unknown>) => !team.includes(p['id'] as string)).map((p: Record<string, unknown>) => ({
       ...p,
       requests_count: rc[p['id'] as string] ?? 0,
-      invoices_count: ic[p['id'] as string] ?? 0,
+      invoices_count: role === "admin" ? ic[p['id'] as string] ?? 0 : 0,
     }));
   });
 
@@ -52,13 +80,13 @@ export const getMemberDetail = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const { admin, role } = await assertTeam(context as Ctx);
     const [{ data: profile }, { data: requests }, { data: invoices }] = await Promise.all([
       admin.from("profiles").select("id, full_name, email, phone, plan, role_label, member_number, member_since, valid_until, disabled_at, concierge_referent, concierge_whatsapp").eq("id", data.id).maybeSingle(),
       admin.from("requests").select("id, category, status, title, description, scheduled_date, scheduled_time, concierge, image_key").eq("user_id", data.id).order("created_at", { ascending: false }),
       admin.from("invoices").select("id, number, kind, issued_on, amount_cents, status").eq("user_id", data.id).order("issued_on", { ascending: false }),
     ]);
-    return { profile: profile ?? null, requests: requests ?? [], invoices: invoices ?? [] };
+    return { profile: profile ?? null, requests: requests ?? [], invoices: role === "admin" ? invoices ?? [] : [] };
   });
 
 export const createMember = createServerFn({ method: "POST" })
@@ -172,12 +200,12 @@ export const listMemberPayments = createServerFn({ method: "GET" })
 // ---- Lot 1.1 : demandes (équipe) ----
 
 const requestStatus = z.enum(["Nouvelle", "En cours", "Confirmée", "Terminée", "Annulée"]);
-const requestCols = "id, user_id, category, status, title, description, scheduled_date, scheduled_time, guests, concierge, image_key, created_at, team_reply, team_reply_at";
+const requestCols = "id, user_id, category, status, title, description, scheduled_date, scheduled_time, guests, concierge, concierge_id, image_key, created_at, team_reply, team_reply_at";
 
 export const listAllRequests = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const { admin, role } = await assertTeam(context as Ctx);
     const [{ data: requests }, { data: profiles }] = await Promise.all([
       admin.from("requests").select(requestCols).order("created_at", { ascending: false }),
       admin.from("profiles").select("id, full_name, email, plan"),
@@ -193,7 +221,7 @@ export const getRequestDetail = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const { admin, role } = await assertTeam(context as Ctx);
     const { data: request } = await admin.from("requests").select(requestCols).eq("id", data.id).maybeSingle();
     if (!request) return { request: null, member: null };
     const { data: member } = await admin
@@ -209,7 +237,7 @@ export const getMemberParrain = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const { admin, role } = await assertTeam(context as Ctx);
     const { data: referral } = await admin
       .from("referrals")
       .select("inviter_id")
@@ -226,7 +254,7 @@ export const updateRequestStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), status: requestStatus }).parse(input))
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const { admin, role } = await assertTeam(context as Ctx);
     const { error } = await admin.from("requests").update({ status: data.status }).eq("id", data.id);
     if (error) return { ok: false as const, reason: "Le statut n’a pas pu être modifié." };
     return { ok: true as const };
@@ -234,10 +262,12 @@ export const updateRequestStatus = createServerFn({ method: "POST" })
 
 export const setRequestConcierge = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), concierge: z.string().trim().min(1).max(60) }).parse(input))
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), conciergeId: z.string().uuid().nullable() }).parse(input))
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
-    const { error } = await admin.from("requests").update({ concierge: data.concierge }).eq("id", data.id);
+    const { admin } = await assertTeam(context as Ctx);
+    const resolved = await resolveConcierge(admin, data.conciergeId);
+    if (!resolved) return { ok: false as const, reason: "Ce compte ne fait pas partie de l’équipe." };
+    const { error } = await admin.from("requests").update(resolved).eq("id", data.id);
     if (error) return { ok: false as const, reason: "L’attribution a échoué." };
     return { ok: true as const };
   });
@@ -246,34 +276,42 @@ export const setRequestReply = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), reply: z.string().max(4000) }).parse(input))
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const { admin, role } = await assertTeam(context as Ctx);
     const { replyUpdate } = await import("./request-rules");
     const { error } = await admin.from("requests").update(replyUpdate(data.reply)).eq("id", data.id);
     if (error) return { ok: false as const, reason: "La réponse n’a pas pu être enregistrée." };
     return { ok: true as const };
   });
 
-async function adminIds(admin: any): Promise<string[]> {
-  const { data } = await admin.from("user_roles").select("user_id").eq("role", "admin");
-  return (data ?? []).map((r: { user_id: string }) => r.user_id);
+
+const UNASSIGNED = "À attribuer";
+async function resolveConcierge(admin: any, id: string | null): Promise<{ concierge: string; concierge_id: string | null } | null> {
+  if (!id) return { concierge: UNASSIGNED, concierge_id: null };
+  if (!(await teamIds(admin)).includes(id)) return null;
+  const { data } = await admin.from("profiles").select("full_name").eq("id", id).maybeSingle();
+  return { concierge: (data?.full_name as string | undefined)?.trim() || "Équipe", concierge_id: id };
 }
 
 export const listTeamNames = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const admin = await assertAdmin(context as Ctx);
-    const ids = await adminIds(admin);
-    if (!ids.length) return [] as string[];
-    const { data } = await admin.from("profiles").select("full_name").in("id", ids);
-    return [...new Set((data ?? []).map((p: { full_name: string }) => p.full_name.trim()).filter(Boolean))].sort() as string[];
+    const { admin, role } = await assertTeam(context as Ctx);
+    const { data: roles } = await admin.from("user_roles").select("user_id, role").in("role", ["admin", "concierge"]);
+    const rows = (roles ?? []) as Array<{ user_id: string; role: TeamRole }>;
+    if (!rows.length) return [] as Array<{ id: string; name: string; role: TeamRole }>;
+    const { data } = await admin.from("profiles").select("id, full_name").in("id", rows.map((r) => r.user_id));
+    const names = new Map((data ?? []).map((p: { id: string; full_name: string }) => [p.id, p.full_name.trim()]));
+    const byId = new Map<string, TeamRole>();
+    for (const r of rows) if (byId.get(r.user_id) !== "admin") byId.set(r.user_id, r.role);
+    return [...byId].map(([id, r]) => ({ id, name: (names.get(id) as string) || "Équipe", role: r })).sort((a, b) => a.name.localeCompare(b.name, "fr"));
   });
 
 export const getDashboard = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const { admin, role } = await assertTeam(context as Ctx);
     const today = new Date().toISOString().slice(0, 10);
-    const ids = await adminIds(admin);
+    const ids = await teamIds(admin);
     const [{ data: requests }, { data: profiles }] = await Promise.all([
       admin.from("requests").select("id, user_id, title, category, status, concierge, scheduled_date, scheduled_time, created_at").order("created_at", { ascending: true }),
       admin.from("profiles").select("id, full_name, disabled_at"),
@@ -311,14 +349,16 @@ export const createRequestForMember = createServerFn({ method: "POST" })
     scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
     scheduledTime: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal("")),
     guests: z.number().int().min(1).max(999).nullable().optional(),
-    concierge: z.string().trim().min(1).max(60),
+    conciergeId: z.string().uuid().nullable(),
   }).parse(input))
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
-    const ids = await adminIds(admin);
+    const { admin, role } = await assertTeam(context as Ctx);
+    const ids = await teamIds(admin);
     if (ids.includes(data.memberId)) return { ok: false as const, reason: "Ce compte appartient à l’équipe." };
     const { data: member } = await admin.from("profiles").select("id, disabled_at").eq("id", data.memberId).maybeSingle();
     if (!member) return { ok: false as const, reason: "Membre introuvable." };
+    const resolved = await resolveConcierge(admin, data.conciergeId);
+    if (!resolved) return { ok: false as const, reason: "Ce compte ne fait pas partie de l’équipe." };
     const { data: row, error } = await admin.from("requests").insert({
       user_id: data.memberId,
       category: data.category,
@@ -328,7 +368,7 @@ export const createRequestForMember = createServerFn({ method: "POST" })
       scheduled_date: data.scheduledDate || null,
       scheduled_time: data.scheduledTime || null,
       guests: data.guests ?? null,
-      concierge: data.concierge,
+      ...resolved,
       image_key: REQUEST_IMAGE[data.category] ?? "entree-de-nuit",
     }).select("id").single();
     if (error || !row) return { ok: false as const, reason: "La demande n’a pas pu être créée." };
@@ -339,7 +379,7 @@ export const listRequestNotes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ requestId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const { admin, role } = await assertTeam(context as Ctx);
     const { data: notes } = await admin.from("request_notes").select("id, author_id, body, created_at").eq("request_id", data.requestId).order("created_at", { ascending: true });
     const rows = (notes ?? []) as Array<{ id: string; author_id: string; body: string; created_at: string }>;
     const authorIds = [...new Set(rows.map((n) => n.author_id))];
@@ -352,7 +392,7 @@ export const addRequestNote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ requestId: z.string().uuid(), body: z.string().trim().min(1).max(4000) }).parse(input))
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const { admin, role } = await assertTeam(context as Ctx);
     const { error } = await admin.from("request_notes").insert({ request_id: data.requestId, author_id: (context as Ctx).userId, body: data.body });
     if (error) return { ok: false as const, reason: "La note n’a pas pu être ajoutée." };
     return { ok: true as const };
@@ -361,8 +401,8 @@ export const addRequestNote = createServerFn({ method: "POST" })
 export const listRequestableMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const admin = await assertAdmin(context as Ctx);
-    const ids = await adminIds(admin);
+    const { admin, role } = await assertTeam(context as Ctx);
+    const ids = await teamIds(admin);
     const { data } = await admin.from("profiles").select("id, full_name, email, plan, disabled_at").is("disabled_at", null).order("full_name");
     return ((data ?? []) as Array<{ id: string; full_name: string; email: string | null; plan: string }>)
       .filter((p) => !ids.includes(p.id))
@@ -403,7 +443,82 @@ export const convertReferral = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ referralId: z.string().uuid(), memberId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const admin = await assertAdmin(context as Ctx);
+    if ((await teamIds(admin)).includes(data.memberId)) return { ok: false as const, reason: "Ce compte appartient à l’équipe." };
     const { error } = await admin.from("referrals").update({ status: "Converti", converted_member_id: data.memberId }).eq("id", data.referralId);
     if (error) return { ok: false as const, reason: "Le parrainage n’a pas pu être mis à jour." };
     return { ok: true as const };
+  });
+
+// ---- Lot 3.1 : rôles d'équipe ----
+
+export const getMyTeamRole = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => teamRoleOf(context as Ctx));
+
+export const listTeam = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { data: roles } = await admin.from("user_roles").select("user_id, role, created_at").in("role", ["admin", "concierge"]).order("created_at");
+    const rows = (roles ?? []) as Array<{ user_id: string; role: TeamRole; created_at: string }>;
+    const ids = [...new Set(rows.map((r) => r.user_id))];
+    const { data: profiles } = ids.length ? await admin.from("profiles").select("id, full_name, email").in("id", ids) : { data: [] };
+    const byId = new Map((profiles ?? []).map((p: { id: string; full_name: string; email: string | null }) => [p.id, p]));
+    return ids.map((id) => {
+      const own = rows.filter((r) => r.user_id === id);
+      const p = byId.get(id) as { full_name: string; email: string | null } | undefined;
+      return { id, full_name: p?.full_name ?? "", email: p?.email ?? null, role: (own.some((r) => r.role === "admin") ? "admin" : "concierge") as TeamRole, since: own[0]!.created_at, is_self: id === (context as Ctx).userId };
+    });
+  });
+
+/** role = null : retirer de l'équipe (le compte redevient un compte membre ordinaire). */
+export const setTeamRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ userId: z.string().uuid(), role: z.enum(["admin", "concierge"]).nullable() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    if (data.userId === (context as Ctx).userId) return { ok: false as const, reason: "Vous ne pouvez pas modifier votre propre rôle." };
+    const { data: current } = await admin.from("user_roles").select("role").eq("user_id", data.userId).in("role", ["admin", "concierge"]);
+    const roles = (current ?? []).map((r: { role: string }) => r.role);
+    if (!roles.length) return { ok: false as const, reason: "Ce compte ne fait pas partie de l’équipe." };
+    if (roles.includes("admin") && data.role !== "admin") {
+      const { count } = await admin.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "admin");
+      if ((count ?? 0) <= 1) return { ok: false as const, reason: "Il doit toujours rester au moins un administrateur." };
+    }
+    if (data.role && !roles.includes(data.role)) {
+      const { error } = await admin.from("user_roles").insert({ user_id: data.userId, role: data.role });
+      if (error) return { ok: false as const, reason: "Le rôle n’a pas pu être modifié." };
+    }
+    const remove = (["admin", "concierge"] as const).filter((r) => r !== data.role && roles.includes(r));
+    if (remove.length) {
+      const { error } = await admin.from("user_roles").delete().eq("user_id", data.userId).in("role", remove);
+      if (error) return { ok: false as const, reason: /administrateur/.test(error.message) ? "Il doit toujours rester au moins un administrateur." : "Le rôle n’a pas pu être modifié." };
+    }
+    return { ok: true as const };
+  });
+
+export const inviteColleague = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ fullName: z.string().trim().min(2).max(80), email: z.string().trim().email().max(160), role: z.enum(["admin", "concierge"]) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const email = data.email.toLowerCase();
+    const { data: created, error } = await admin.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      password: crypto.randomUUID() + crypto.randomUUID(),
+      user_metadata: { full_name: data.fullName },
+    });
+    if (error || !created.user) {
+      const already = /already|exist|registered/i.test(error?.message ?? "");
+      return { ok: false as const, reason: already ? "Cette adresse correspond déjà à un compte." : "La création du compte a échoué." };
+    }
+    const id = created.user.id;
+    await admin.from("profiles").update({ full_name: data.fullName, role_label: "Équipe Art de Vie", concierge_referent: null, concierge_whatsapp: null }).eq("id", id);
+    const { error: roleError } = await admin.from("user_roles").insert({ user_id: id, role: data.role });
+    if (roleError) return { ok: false as const, reason: "Le compte a été créé, mais le rôle n’a pas pu être attribué." };
+    const origin = originOf();
+    const { error: mailError } = await admin.auth.resetPasswordForEmail(email, origin ? { redirectTo: `${origin}/reset-password` } : {});
+    if (mailError) return { ok: true as const, id, mailed: false };
+    return { ok: true as const, id, mailed: true };
   });

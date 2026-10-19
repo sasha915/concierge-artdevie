@@ -72,7 +72,8 @@ function Page() {
   if (isLoading) return <AdminShell><Skeleton className="h-[480px] rounded-[28px] bg-primary/10" /></AdminShell>;
   if (!r) return <AdminShell><p className="team-panel rounded-[28px] p-6 text-muted-foreground">Cette demande est introuvable.</p></AdminShell>;
 
-  const conciergeOptions = [...new Set([UNASSIGNED, ...team, r.concierge])];
+  const legacyName = !r.concierge_id && r.concierge !== UNASSIGNED ? r.concierge : null;
+  const conciergeValue = r.concierge_id ?? (legacyName ? "legacy" : "");
   const guestsLabel = r.category === "Tables" ? "Couverts" : "Personnes";
 
   return <AdminShell>
@@ -142,9 +143,11 @@ function Page() {
         <section className="team-panel rounded-[28px] p-6">
           <h2 className="eyebrow team-mention">( Concierge en charge )</h2>
           <label htmlFor="concierge" className="sr-only">Concierge en charge</label>
-          <select id="concierge" value={r.concierge} disabled={busy} onChange={(e) => run(() => setConcierge({ data: { id: r.id, concierge: e.target.value } }), `Demande attribuée à ${e.target.value}.`)}
+          <select id="concierge" value={conciergeValue} disabled={busy} onChange={(e) => { const id = e.target.value || null; if (id === "legacy") return; const name = team.find((t) => t.id === id)?.name ?? UNASSIGNED; run(() => setConcierge({ data: { id: r.id, conciergeId: id } }), id ? `Demande attribuée à ${name}.` : "Demande remise « À attribuer »."); }}
             className="mt-4 h-12 w-full rounded-2xl border border-border bg-card px-4 text-[15px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            {conciergeOptions.map((n) => <option key={n} value={n}>{n}</option>)}
+            <option value="">{UNASSIGNED}</option>
+            {legacyName && <option value="legacy" disabled>{legacyName}</option>}
+            {team.map((t) => <option key={t.id} value={t.id}>{t.name} · {t.role === "admin" ? "Administrateur" : "Concierge"}</option>)}
           </select>
         </section>
 

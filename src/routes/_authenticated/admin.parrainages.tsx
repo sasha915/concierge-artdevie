@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -12,6 +12,7 @@ import { adminReferralsQuery, type AdminReferral } from "@/lib/admin-queries";
 import { setReferralStatus } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/parrainages")({
+  beforeLoad: ({ context }) => { if (context.teamRole !== "admin") throw redirect({ to: "/admin" }); },
   head: () => ({ meta: [
     { title: "Parrainages — Équipe Art de Vie" },
     { name: "description", content: "Suivi des parrainages entre membres de la conciergerie." },
