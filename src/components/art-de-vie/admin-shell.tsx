@@ -6,14 +6,15 @@ import type { ReactNode } from "react";
 import { Logo } from "@/components/art-de-vie/app-shell";
 import { supabase } from "@/integrations/supabase/client";
 import { lockAdmin } from "@/lib/admin-gate.functions";
-import { adminReferralsQuery } from "@/lib/admin-queries";
+import { adminReferralsQuery, teamRoleQuery } from "@/lib/admin-queries";
 import { Button } from "@/components/ui/button";
 
 const teamNav = [
   { to: "/admin", label: "Tableau de bord", exact: true },
   { to: "/admin/demandes", label: "Demandes", exact: false },
   { to: "/admin/membres", label: "Membres", exact: false },
-  { to: "/admin/parrainages", label: "Parrainages", exact: false },
+  { to: "/admin/parrainages", label: "Parrainages", exact: false, adminOnly: true },
+  { to: "/admin/equipe", label: "Équipe", exact: false, adminOnly: true },
 ] as const;
 
 const pill = "inline-flex h-11 items-center gap-2 rounded-full px-4 text-[14px] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
@@ -23,7 +24,9 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
   const queryClient = useQueryClient();
   const lock = useServerFn(lockAdmin);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { data: referrals = [] } = useQuery(adminReferralsQuery);
+  const { data: teamRole = null } = useQuery(teamRoleQuery);
+  const isAdmin = teamRole === "admin";
+  const { data: referrals = [] } = useQuery({ ...adminReferralsQuery, enabled: isAdmin });
   const pendingReferrals = referrals.filter((r) => r.status === "Invitation envoyée").length;
 
   async function signOut() {
@@ -45,13 +48,13 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
             <Logo inverse className="h-[22px] w-auto" />
           </Link>
           <span className="eyebrow mr-2 rounded-full border border-border px-3 py-1 text-[10px]">Équipe</span>
-          {teamNav.map(({ to, label, exact }) => {
+          {teamNav.filter((item) => isAdmin || !("adminOnly" in item)).map(({ to, label, exact }) => {
             const active = exact ? pathname === to || pathname === `${to}/` : pathname.startsWith(to) && !pathname.startsWith("/admin/demandes/nouvelle");
             return <Link key={to} to={to} aria-current={active ? "page" : undefined} className={`${pill} ${active ? "bg-primary font-medium text-primary-foreground" : "hover:bg-primary/10"}`}>{label}{to === "/admin/parrainages" && pendingReferrals > 0 && <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary-foreground px-1.5 text-[11px] font-semibold text-primary">{pendingReferrals}</span>}</Link>;
           })}
           <Link to="/admin/demandes/nouvelle" className={`${pill} bg-primary font-medium text-primary-foreground hover:bg-primary/90`}><Plus className="size-4" />Demande</Link>
           <Link to="/membership" className={`${pill} col-span-2 min-w-0 hover:bg-primary/10 sm:col-auto`}><ArrowLeft className="size-4 shrink-0" />Retour à l’espace membre</Link>
-          <Button type="button" variant="outline" size="icon" title="Verrouiller l’administration" aria-label="Verrouiller l’administration" onClick={lockSession} className="size-11 rounded-full"><Lock className="size-4" /></Button>
+          <Button type="button" variant="outline" size="icon" title="Verrouiller l’espace équipe" aria-label="Verrouiller l’espace équipe" onClick={lockSession} className="size-11 rounded-full"><Lock className="size-4" /></Button>
           <Button type="button" variant="outline" size="icon" title="Se déconnecter" aria-label="Se déconnecter" onClick={signOut} className="size-11 rounded-full"><LogOut className="size-4" /></Button>
         </nav>
       </div>
