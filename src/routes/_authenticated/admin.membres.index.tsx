@@ -15,7 +15,7 @@ import { convertReferral, createMember, sendMemberInvite, setMemberDisabled } fr
 import { lockAdmin } from "@/lib/admin-gate.functions";
 import { useNavigate } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_authenticated/admin/membres/")({ validateSearch: (search: Record<string, unknown>) => ({ nom: typeof search["nom"] === "string" ? search["nom"] : undefined, email: typeof search["email"] === "string" ? search["email"] : undefined, parrainage: typeof search["parrainage"] === "string" ? search["parrainage"] : undefined }), head: () => ({ meta: [{ title: "Membres — Équipe Art de Vie" }, { name: "description", content: "Gérez les membres invités de la conciergerie Art de Vie." }, { property: "og:title", content: "Membres — Équipe Art de Vie" }, { property: "og:description", content: "Gérez les membres invités de la conciergerie Art de Vie." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
+export const Route = createFileRoute("/_authenticated/admin/membres/")({ validateSearch: (search: Record<string, unknown>): { nom?: string; email?: string; parrainage?: string } => ({ nom: typeof search["nom"] === "string" ? search["nom"] : undefined, email: typeof search["email"] === "string" ? search["email"] : undefined, parrainage: typeof search["parrainage"] === "string" ? search["parrainage"] : undefined }), head: () => ({ meta: [{ title: "Membres — Équipe Art de Vie" }, { name: "description", content: "Gérez les membres invités de la conciergerie Art de Vie." }, { property: "og:title", content: "Membres — Équipe Art de Vie" }, { property: "og:description", content: "Gérez les membres invités de la conciergerie Art de Vie." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
 
 function Page() {
   const queryClient = useQueryClient();
@@ -60,7 +60,7 @@ function Page() {
       if (prefill.parrainage) {
         await convert({ data: { referralId: prefill.parrainage, memberId: r.id } });
         await queryClient.invalidateQueries({ queryKey: ["admin", "referrals"] });
-        await navigate({ to: "/admin/membres", search: {} });
+        await navigate({ to: "/admin/membres"});
       }
       setNotice(`${form.fullName} a été ajouté. Envoyez-lui son email d’invitation.`);
       setForm({ fullName: "", email: "", phone: "", plan: "Signature", conciergeReferent: "", conciergeWhatsapp: "" });
