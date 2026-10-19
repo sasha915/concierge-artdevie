@@ -143,7 +143,7 @@ function Page() {
         <section className="team-panel rounded-[28px] p-6">
           <h2 className="eyebrow team-mention">( Concierge en charge )</h2>
           <label htmlFor="concierge" className="sr-only">Concierge en charge</label>
-          <select id="concierge" value={conciergeValue} disabled={busy} onChange={(e) => { const id = e.target.value || null; if (id === "legacy") return; const name = team.find((t) => t.id === id)?.name ?? UNASSIGNED; run(() => setConcierge({ data: { id: r.id, conciergeId: id } }), id ? `Demande attribuée à ${name}.` : "Demande remise « À attribuer ».`); }}
+          <select id="concierge" value={conciergeValue} disabled={busy} onChange={(e) => { const id = e.target.value || null; if (id === "legacy") return; const name = team.find((t) => t.id === id)?.name ?? UNASSIGNED; run(() => setConcierge({ data: { id: r.id, conciergeId: id } }), id ? `Demande attribuée à ${name}.` : "Demande remise « À attribuer »."); }}
             className="mt-4 h-12 w-full rounded-2xl border border-border bg-card px-4 text-[15px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <option value="">{UNASSIGNED}</option>
             {legacyName && <option value="legacy" disabled>{legacyName}</option>}

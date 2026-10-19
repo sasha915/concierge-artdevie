@@ -18,6 +18,7 @@ export type RequestItem = {
   scheduled_time: string | null;
   guests: number | null;
   concierge: string;
+  concierge_id?: string | null;
   image_key: string;
   team_reply?: string | null;
   team_reply_at?: string | null;
