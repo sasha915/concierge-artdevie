@@ -85,6 +85,13 @@
       "when": 1792417678060,
       "tag": "0011_add_concierge_role",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792417695804,
+      "tag": "0012_team_roles_and_concierge_id",
+      "breakpoints": true
     }
   ]
 }
