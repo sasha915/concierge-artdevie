@@ -19,7 +19,9 @@ function Page() {
   const { memberId } = Route.useParams();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery(memberDetailQuery(memberId));
-  const { data: paymentsData } = useQuery(memberPaymentsQuery(memberId));
+  const { teamRole } = Route.useRouteContext();
+  const isAdmin = teamRole === "admin";
+  const { data: paymentsData } = useQuery({ ...memberPaymentsQuery(memberId), enabled: isAdmin });
   const { data: parrain } = useQuery(memberParrainQuery(memberId));
   const save = useServerFn(updateMember);
   const invite = useServerFn(sendMemberInvite);
@@ -90,7 +92,7 @@ function Page() {
           <p className="mt-1 text-sm">{profile.full_name}</p>
           <div className="mt-6 grid grid-cols-2 gap-4 border-t border-border pt-4 text-xs text-muted-foreground"><p>Membre depuis<br /><span className="text-primary">{formatMonth(profile.member_since)}</span></p><p className="text-right">Validité<br /><span className="text-primary">{formatMonth(profile.valid_until)}</span></p></div>
         </section>
-      <form className="team-panel mt-5 min-w-0 rounded-card p-5 sm:p-7" onSubmit={submit}>
+      {isAdmin && <form className="team-panel mt-5 min-w-0 rounded-card p-5 sm:p-7" onSubmit={submit}>
         <h2 className="eyebrow team-mention">Informations</h2>
         <div className="mt-5 grid min-w-0 gap-5">
           <Field label="Nom complet"><Input value={form.fullName} onChange={(e) => set("fullName", e.target.value)} required maxLength={80} /></Field>
@@ -101,7 +103,7 @@ function Page() {
           <Field label="WhatsApp du concierge"><Input value={form.conciergeWhatsapp} onChange={(e) => set("conciergeWhatsapp", e.target.value)} maxLength={30} /></Field>
         </div>
         <Button type="submit" variant="primary" size="lg" className="mt-5 w-full lg:w-auto" disabled={busy}>{busy ? "Enregistrement…" : "Enregistrer"}</Button>
-      </form>
+      </form>}
       </aside>
       <div className="min-w-0">
       <div className="flex flex-wrap items-center gap-2">
@@ -110,10 +112,10 @@ function Page() {
       </div>
       {parrain && <p className="mt-3 text-[13px] text-muted-foreground">Parrainé par <Link to="/admin/membres/$memberId" params={{ memberId: parrain.id }} className="underline underline-offset-2 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{parrain.full_name}</Link></p>}
       <dl className="mt-4 grid min-w-0 gap-3 text-sm"><div><dt className="eyebrow team-mention">Adresse email</dt><dd className="mt-1 break-all">{profile.email || "—"}</dd></div>{profile.phone && <div><dt className="eyebrow team-mention">Téléphone</dt><dd className="mt-1">{profile.phone}</dd></div>}</dl>
-      <div className="mt-4 flex flex-wrap gap-2">
+      {isAdmin && <div className="mt-4 flex flex-wrap gap-2">
         <Button variant="soft" size="sm" onClick={sendInvite}><Mail />Envoyer l’invitation</Button>
         <Button variant="outline" size="sm" onClick={toggleDisabled}>{profile.disabled_at ? <UserPlus /> : <UserMinus />}{profile.disabled_at ? "Réactiver" : "Désactiver"}</Button>
-      </div>
+      </div>}
 
       {notice && <p className="mt-4 rounded-2xl bg-primary/10 p-4 text-xs leading-5 text-primary">{notice}</p>}
       {error && <p className="mt-4 rounded-2xl border border-primary/25 p-4 text-xs leading-5 text-primary">{error}</p>}
@@ -133,7 +135,7 @@ function Page() {
                 </div>)}
               </div>}
         </section>
-        <section className="team-panel min-w-0 rounded-card p-5">
+        {isAdmin && <section className="team-panel min-w-0 rounded-card p-5">
           <h2 className="eyebrow text-primary-light">Ses factures</h2>
           {(data?.invoices ?? []).length === 0 ? <p className="mt-3 rounded-card bg-card p-5 text-[13px] text-muted-foreground">Aucune facture.</p>
             : <div className="mt-3 overflow-hidden rounded-card bg-card">
@@ -146,10 +148,10 @@ function Page() {
                   <span className="col-start-2 justify-self-end rounded-full bg-primary px-[13px] py-[5px] text-[11px] font-medium text-primary-foreground">{i.status}</span>
                 </div>)}
               </div>}
-        </section>
+        </section>}
       </div>
 
-      <section className="team-panel mt-5 min-w-0 rounded-card p-5">
+      {isAdmin && <section className="team-panel mt-5 min-w-0 rounded-card p-5">
         <h2 className="eyebrow text-primary-light">Paiements Mollie</h2>
         {paymentsData && !paymentsData.configured
           ? <p className="mt-3 rounded-card bg-card p-5 text-[13px] text-muted-foreground">Le paiement en ligne n'est pas encore configuré.</p>
@@ -167,7 +169,7 @@ function Page() {
                     : "rounded-full border border-primary/25 px-[13px] py-[5px] text-[11px] font-medium text-muted-foreground"}>{p.status}</span>
                 </div>)}
               </div>}
-      </section>
+      </section>}
       </div>
       </div>
     </>}
