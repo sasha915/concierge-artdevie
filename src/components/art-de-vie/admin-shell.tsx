@@ -13,6 +13,7 @@ const teamNav = [
   { to: "/admin", label: "Tableau de bord", exact: true },
   { to: "/admin/demandes", label: "Demandes", exact: false },
   { to: "/admin/membres", label: "Membres", exact: false },
+  { to: "/admin/offres", label: "Offres", exact: false, adminOnly: true },
   { to: "/admin/parrainages", label: "Parrainages", exact: false, adminOnly: true },
   { to: "/admin/equipe", label: "Équipe", exact: false, adminOnly: true },
 ] as const;

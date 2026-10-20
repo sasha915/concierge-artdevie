@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { listMembers, getMemberDetail, getMemberParrain, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames, listReferrals, listTeam, type TeamRole } from "@/lib/admin.functions";
+import { listMembers, getMemberDetail, getMemberParrain, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames, listReferrals, listTeam, listOffersAdmin, type TeamRole } from "@/lib/admin.functions";
 import type { Invoice, RequestItem } from "@/data/art-de-vie";
 
 export type AdminMember = {
@@ -117,3 +117,8 @@ export const memberParrainQuery = (id: string) =>
     queryKey: ["admin", "member", id, "parrain"],
     queryFn: async (): Promise<{ id: string; full_name: string } | null> => (await getMemberParrain({ data: { id } })) as { id: string; full_name: string } | null,
   });
+
+export const adminOffersQuery = queryOptions({
+  queryKey: ["admin", "offers"],
+  queryFn: () => listOffersAdmin(),
+});
