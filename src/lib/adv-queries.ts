@@ -20,10 +20,18 @@ export const offersQuery = queryOptions({
   queryFn: async (): Promise<Offer[]> => {
     const { data, error } = await supabase
       .from("offers")
-      .select("id, category, promo, title, partner, place, validity, image_key")
+      .select("id, category, promo, title, partner, place, validity, image_key, image_url")
+      .eq("published", true)
       .order("sort_order", { ascending: true });
     if (error) throw error;
-    return (data ?? []) as Offer[];
+    const rows = data ?? [];
+    const paths = rows.map((o) => o.image_url).filter((p): p is string => !!p);
+    const signed: Record<string, string> = {};
+    if (paths.length) {
+      const { data: s } = await supabase.storage.from("offer-images").createSignedUrls(paths, 3600);
+      for (const x of s ?? []) if (x.path && x.signedUrl) signed[x.path] = x.signedUrl;
+    }
+    return rows.map((o) => ({ ...o, image_url: o.image_url ? signed[o.image_url] ?? null : null })) as Offer[];
   },
 });
 

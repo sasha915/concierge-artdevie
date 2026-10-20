@@ -8,7 +8,7 @@ import { EmptyState, Photo, StatusBadge } from "@/components/art-de-vie/cards";
 import { ArrowCircle, Counter, PillAction, StatusTimeline, Title } from "@/components/art-de-vie/v3";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatDate, formatShortDate, imageFor, initials, type Offer, type Profile, type RequestItem } from "@/data/art-de-vie";
+import { formatDate, formatShortDate, imageFor, offerImage, initials, type Offer, type Profile, type RequestItem } from "@/data/art-de-vie";
 import { offersQuery, profileQuery, requestsQuery } from "@/lib/adv-queries";
 import vendome from "@/assets/v3/place-vendome.jpg.asset.json";
 
@@ -35,7 +35,7 @@ function MiniMember({ profile }: { profile: Profile | null | undefined }) {
 
 function HomeOffer({ offer }: { offer: Offer }) {
   return <Link to="/offres" className="relative block h-[336px] w-[252px] shrink-0 overflow-hidden rounded-card text-primary-foreground transition-transform active:scale-[0.98] lg:h-[460px] lg:w-full lg:min-w-0">
-    <Photo src={imageFor(offer.image_key)} alt={offer.title} category={offer.category} className="absolute inset-0 h-full" />
+    <Photo src={offerImage(offer)} alt={offer.title} category={offer.category} className="absolute inset-0 h-full" />
     <div className="absolute inset-x-4 top-4 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2"><span className="dark-glass w-fit rounded-full px-3 py-2 text-[11px] font-medium uppercase tracking-[0.13em]">{offer.category}</span><ArrowCircle diagonal /></div>
     <div className="absolute inset-x-5 bottom-5"><h3 className="v3-card-title text-[25px] lg:text-[28px] xl:text-[32px]">{offer.title}</h3><p className="mt-2 text-[13px]">{offer.partner}</p></div>
   </Link>;
