@@ -522,3 +522,86 @@ export const inviteColleague = createServerFn({ method: "POST" })
     if (mailError) return { ok: true as const, id, mailed: false };
     return { ok: true as const, id, mailed: true };
   });
+
+// ---------- Offres (administrateurs) ----------
+export const OFFER_CATEGORIES = ["Restaurant", "Bien-être", "Culture", "Voyage"] as const;
+const offerSchema = z.object({
+  title: z.string().trim().min(1).max(120),
+  partner: z.string().trim().min(1).max(120),
+  category: z.enum(OFFER_CATEGORIES),
+  place: z.string().trim().min(1).max(120),
+  promo: z.string().trim().min(1).max(80),
+  validity: z.string().trim().min(1).max(80),
+  image_url: z.string().trim().max(300).nullable(),
+});
+export type OfferInput = z.infer<typeof offerSchema>;
+export type AdminOffer = OfferInput & { id: string; image_key: string; published: boolean; sort_order: number; preview_url: string | null };
+
+export const listOffersAdmin = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<AdminOffer[]> => {
+    const admin = await assertAdmin(context as Ctx);
+    const { data, error } = await admin.from("offers").select("id, title, partner, category, place, promo, validity, image_key, image_url, published, sort_order").order("sort_order", { ascending: true });
+    if (error) throw new Error("Lecture des offres impossible.");
+    const rows = data ?? [];
+    const paths = rows.map((o) => o.image_url).filter((p): p is string => !!p);
+    const signed: Record<string, string> = {};
+    if (paths.length) {
+      const { data: s } = await admin.storage.from("offer-images").createSignedUrls(paths, 3600);
+      for (const x of s ?? []) if (x.path && x.signedUrl) signed[x.path] = x.signedUrl;
+    }
+    return rows.map((o) => ({ ...o, category: o.category as OfferInput["category"], preview_url: o.image_url ? signed[o.image_url] ?? null : null }));
+  });
+
+export const createOffer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: OfferInput) => offerSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { data: last } = await admin.from("offers").select("sort_order").order("sort_order", { ascending: false }).limit(1).maybeSingle();
+    const { data: row, error } = await admin.from("offers").insert({ ...data, sort_order: (last?.sort_order ?? 0) + 1, published: true }).select("id").single();
+    if (error) return { ok: false as const, reason: "La création de l’offre a échoué." };
+    return { ok: true as const, id: row.id as string };
+  });
+
+export const updateOffer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: OfferInput & { id: string }) => offerSchema.extend({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { id, ...fields } = data;
+    const { error } = await admin.from("offers").update(fields).eq("id", id);
+    if (error) return { ok: false as const, reason: "La modification de l’offre a échoué." };
+    return { ok: true as const };
+  });
+
+export const setOfferPublished = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string; published: boolean }) => z.object({ id: z.string().uuid(), published: z.boolean() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { error } = await admin.from("offers").update({ published: data.published }).eq("id", data.id);
+    if (error) return { ok: false as const, reason: "L’opération a échoué." };
+    return { ok: true as const };
+  });
+
+const IMAGE_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+export const uploadOfferImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: FormData) => {
+    if (!(input instanceof FormData)) throw new Error("Format invalide.");
+    const file = input.get("file");
+    if (!(file instanceof File)) throw new Error("Aucun fichier.");
+    return { file };
+  })
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const ext = IMAGE_TYPES[data.file.type];
+    if (!ext) return { ok: false as const, reason: "Formats acceptés : JPEG, PNG ou WebP." };
+    if (data.file.size > 5 * 1024 * 1024) return { ok: false as const, reason: "La photo dépasse 5 Mo." };
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error } = await admin.storage.from("offer-images").upload(path, await data.file.arrayBuffer(), { contentType: data.file.type, upsert: false });
+    if (error) return { ok: false as const, reason: "L’envoi de la photo a échoué." };
+    const { data: s } = await admin.storage.from("offer-images").createSignedUrl(path, 3600);
+    return { ok: true as const, path, previewUrl: s?.signedUrl ?? null };
+  });
