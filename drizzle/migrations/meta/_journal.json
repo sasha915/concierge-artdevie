@@ -92,6 +92,13 @@
       "when": 1792417695804,
       "tag": "0012_team_roles_and_concierge_id",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792506021614,
+      "tag": "0013_offers_publication_and_images",
+      "breakpoints": true
     }
   ]
 }

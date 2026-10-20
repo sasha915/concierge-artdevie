@@ -33,6 +33,7 @@ export type Offer = {
   place: string;
   validity: string;
   image_key: string;
+  image_url?: string | null;
 };
 
 export type Invoice = {
@@ -73,6 +74,11 @@ const images: Record<string, string> = {
 
 export function imageFor(key: string | null | undefined): string | undefined {
   return key ? images[key] : undefined;
+}
+
+/** Photo d'une offre : photo envoyée par l'équipe, sinon photo par code. */
+export function offerImage(offer: Pick<Offer, "image_key" | "image_url">): string | undefined {
+  return offer.image_url || imageFor(offer.image_key);
 }
 
 export function formatDate(iso: string | null | undefined): string {
