@@ -99,6 +99,13 @@
       "when": 1792506021614,
       "tag": "0013_offers_publication_and_images",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792572463025,
+      "tag": "0014_new_member_without_demo_concierge",
+      "breakpoints": true
     }
   ]
 }
