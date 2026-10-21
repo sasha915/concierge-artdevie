@@ -60,7 +60,7 @@ function Page() {
     <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-[1180px] flex-col px-5 pb-[max(32px,env(safe-area-inset-bottom))] pt-[max(24px,env(safe-area-inset-top))] sm:px-8 lg:px-12">
       <Logo inverse className="h-[24px] w-auto self-center lg:self-start" />
       <div className="my-auto grid items-end gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_440px] lg:gap-12">
-        <div className="lg:min-w-0"><p className="eyebrow text-primary-foreground/80">Espace membre</p><Title italic={italic} className={`mt-5 text-[58px] lg:leading-[0.96] lg:[&_em]:whitespace-nowrap ${start ? "lg:text-[clamp(64px,9.2vw,132px)]" : "lg:text-[72px] xl:text-[96px]"}`}>{start}{start ? " " : ""}</Title><p className="mt-5 max-w-sm text-[14px] leading-5 lg:text-[18px] lg:leading-7">Connectez-vous pour accéder à votre espace membre.</p></div>
+        <div className="lg:min-w-0"><p className="eyebrow text-primary-foreground/80">Espace membre</p><Title italic={italic} className={`mt-5 text-[58px] lg:leading-[0.96] lg:[&_em]:whitespace-nowrap lg:text-[clamp(64px,9.2vw,132px)]`}>{start}{start ? " " : ""}</Title><p className="mt-5 max-w-sm text-[14px] leading-5 lg:text-[18px] lg:leading-7">Connectez-vous pour accéder à votre espace membre.</p></div>
         <form className="dark-glass rounded-card p-5 sm:p-7" onSubmit={submit}>
           <div><Label htmlFor="email" className="eyebrow text-primary-foreground/80">Email</Label><Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@exemple.fr" className="mt-2" /></div>
           <div className="mt-5"><Label htmlFor="password" className="eyebrow text-primary-foreground/80">Mot de passe</Label><Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-2" /></div>
@@ -70,7 +70,7 @@ function Page() {
           <PillAction type="submit" light className="mt-5 w-full" disabled={busy}>{busy ? "Connexion en cours" : "Se connecter"}</PillAction>
         </form>
       </div>
-      <p className="text-center text-[13px] leading-5 text-primary-foreground/80 lg:text-left">Pas encore membre ? <span className="font-medium text-primary-foreground">Demander une invitation : [ADRESSE À CONFIRMER]</span></p>
+      <p className="text-center text-[13px] leading-5 text-primary-foreground/80 lg:text-left">Pas encore membre ? <span className="font-medium text-primary-foreground">Demander une invitation : 58 avenue de Wagram, 75017 Paris</span></p>
     </div>
   </main>;
 }
