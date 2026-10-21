@@ -48,18 +48,12 @@ function Page() {
         <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher un membre ou une demande…" className={`${control} w-full pl-10 placeholder:text-muted-foreground`} />
       </label>
-      <label className="min-w-0 flex-1 sm:flex-none"><span className="sr-only">Catégorie</span>
-        <select value={category} onChange={(e) => setCategory(e.target.value)} className={`${control} w-full`}>
-          <option value="">Toutes catégories</option>
-          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-      </label>
-      <label className="min-w-0 flex-1 sm:flex-none"><span className="sr-only">Concierge</span>
-        <select value={concierge} onChange={(e) => setConcierge(e.target.value)} className={`${control} w-full`}>
-          <option value="">Tous les concierges</option>
-          {concierges.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-      </label>
+      <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Filtrer par catégorie">
+        {["", ...categories].map((c) => <button key={c || "all"} type="button" onClick={() => setCategory(c)} aria-pressed={category === c} className={`h-9 shrink-0 rounded-full px-4 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${category === c ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground hover:text-foreground"}`}>{c || "Toutes catégories"}</button>)}
+      </div>
+      <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Filtrer par concierge">
+        {["", ...concierges].map((c) => <button key={c || "all"} type="button" onClick={() => setConcierge(c)} aria-pressed={concierge === c} className={`h-9 shrink-0 rounded-full px-4 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${concierge === c ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground hover:text-foreground"}`}>{c || "Tous les concierges"}</button>)}
+      </div>
     </div>
 
     {isLoading ? <div className="mt-6 grid gap-4 lg:grid-cols-5">{STATUSES.map((s) => <Skeleton key={s} className="h-[320px] rounded-[28px] bg-primary/10" />)}</div>
