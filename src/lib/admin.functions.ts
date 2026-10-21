@@ -255,8 +255,12 @@ export const updateRequestStatus = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), status: requestStatus }).parse(input))
   .handler(async ({ data, context }) => {
     const { admin, role } = await assertTeam(context as Ctx);
+    const { data: before } = await admin.from("requests").select("status").eq("id", data.id).maybeSingle();
     const { error } = await admin.from("requests").update({ status: data.status }).eq("id", data.id);
     if (error) return { ok: false as const, reason: "Le statut n’a pas pu être modifié." };
+    if (before && before.status !== data.status) {
+      await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: "statut changé", detail: `${before.status} → ${data.status}` });
+    }
     return { ok: true as const };
   });
 
@@ -269,6 +273,7 @@ export const setRequestConcierge = createServerFn({ method: "POST" })
     if (!resolved) return { ok: false as const, reason: "Ce compte ne fait pas partie de l’équipe." };
     const { error } = await admin.from("requests").update(resolved).eq("id", data.id);
     if (error) return { ok: false as const, reason: "L’attribution a échoué." };
+    await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: "attribuée", detail: resolved.concierge_id ? resolved.concierge : null });
     return { ok: true as const };
   });
 
@@ -280,6 +285,7 @@ export const setRequestReply = createServerFn({ method: "POST" })
     const { replyUpdate } = await import("./request-rules");
     const { error } = await admin.from("requests").update(replyUpdate(data.reply)).eq("id", data.id);
     if (error) return { ok: false as const, reason: "La réponse n’a pas pu être enregistrée." };
+    await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: data.reply.trim() ? "réponse publiée" : "réponse retirée", detail: null });
     return { ok: true as const };
   });
 
