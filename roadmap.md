@@ -21,3 +21,4 @@
 - [x] Équipe lot 1.2 : fiche membre selon equipe_3 ; captures isolées avec données réelles à 390/1280/1440 px, aucun débordement ; build automatique OK ; contrôle d’accès inchangé
 - [ ] Équipe lot 1.2 : vérification authentifiée des trois pages (bloquée : aucune session autorisée disponible) et résultat distinct du typage complet (non fourni par les contrôles automatiques)
 - [x] Équipe lot 3.1 : rôles administrateur / concierge, /admin/equipe, concierge_id, garde-fou dernier administrateur
+- [x] Corrections hors programme : adresse Connexion, titre Connexion uniforme, handle_new_member sans concierge fictif, filtres pilules /admin/demandes ; secret webhook en vault bloqué (accès secrets refusé à l'agent)
