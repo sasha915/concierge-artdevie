@@ -194,6 +194,65 @@ export type Database = {
         }
         Relationships: []
       }
+      reply_templates: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      request_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          detail: string | null
+          id: string
+          kind: string
+          request_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          detail?: string | null
+          id?: string
+          kind: string
+          request_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          detail?: string | null
+          id?: string
+          kind?: string
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       request_notes: {
         Row: {
           author_id: string
