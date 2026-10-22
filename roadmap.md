@@ -1,4 +1,5 @@
 # Art de Vie roadmap
+- [ ] Équipe lot 4.1 : fonctions historique/réponses types, historique du détail, filtres personnels, gestion des modèles ; tests sans modifier de demandes ; lot 4.2 exclu
 - [x] Design system and shared shell
 - [x] Ten screens and static content
 - [x] Navigation and interactive filters/forms
