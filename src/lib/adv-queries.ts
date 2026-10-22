@@ -162,3 +162,24 @@ export const recurringRequestsQuery = queryOptions({
     return (data ?? []) as MemberRecurring[];
   },
 });
+
+// ---- Lot 6.4 ----
+export const welcomeQuery = queryOptions({
+  queryKey: ["welcome"],
+  queryFn: () => import("./messages.functions").then(({ getMyWelcome }) => getMyWelcome()),
+  staleTime: 5 * 60_000,
+});
+
+/** Demandes du membre retenues pour le relevé : Confirmées ou Terminées, dotées d'un montant. */
+export const statementSourceQuery = queryOptions({
+  queryKey: ["statement-source"],
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from("requests")
+      .select("id, title, status, amount_cents, scheduled_date, created_at")
+      .in("status", ["Confirmée", "Terminée"])
+      .not("amount_cents", "is", null);
+    if (error) throw error;
+    return (data ?? []) as Array<{ id: string; title: string; status: string; amount_cents: number | null; scheduled_date: string | null; created_at: string }>;
+  },
+});

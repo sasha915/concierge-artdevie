@@ -179,3 +179,63 @@ export const setRecurringPaused = createServerFn({ method: "POST" })
     if (error) return { ok: false as const, reason: "Le changement n’a pas pu être enregistré." };
     return { ok: true as const };
   });
+
+// ---- Lot 6.4 : questionnaire d'accueil ----
+
+const choiceList = z.array(z.string().max(80)).max(20);
+
+/** Réponses du membre au questionnaire, et s'il l'a déjà terminé. Les notes de l'équipe ne sont jamais renvoyées. */
+export const getMyWelcome = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const [{ data: profile }, { data: roles }] = await Promise.all([
+      context.supabase.from("profiles").select("onboarded_at").eq("id", context.userId).maybeSingle(),
+      context.supabase.from("user_roles").select("role").eq("user_id", context.userId),
+    ]);
+    const isTeam = (roles ?? []).some((r: { role: string }) => r.role === "admin" || r.role === "concierge");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: prefs } = await supabaseAdmin
+      .from("member_preferences")
+      .select("tables_choix, sejours_choix, transferts_choix, dates_membre")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    return {
+      onboarded: !!profile?.onboarded_at,
+      isTeam,
+      answers: {
+        tables_choix: (prefs?.tables_choix ?? []) as string[],
+        sejours_choix: (prefs?.sejours_choix ?? []) as string[],
+        transferts_choix: (prefs?.transferts_choix ?? []) as string[],
+        dates_membre: (prefs?.dates_membre ?? "") as string,
+      },
+    };
+  });
+
+/** Enregistre les réponses ; complete marque le questionnaire comme terminé (il ne se présente plus à la connexion). */
+export const saveMyWelcome = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({
+    tables_choix: choiceList,
+    sejours_choix: choiceList,
+    transferts_choix: choiceList,
+    dates_membre: z.string().max(2000),
+    complete: z.boolean(),
+  }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { cleanChoices } = await import("./member-rules");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const now = new Date().toISOString();
+    const { error } = await supabaseAdmin.from("member_preferences").upsert({
+      user_id: context.userId,
+      tables_choix: cleanChoices("tables_choix", data.tables_choix),
+      sejours_choix: cleanChoices("sejours_choix", data.sejours_choix),
+      transferts_choix: cleanChoices("transferts_choix", data.transferts_choix),
+      dates_membre: data.dates_membre.trim(),
+      member_updated_at: now,
+    }, { onConflict: "user_id" });
+    if (error) return { ok: false as const, reason: "Vos réponses n’ont pas pu être enregistrées." };
+    if (data.complete) {
+      await supabaseAdmin.from("profiles").update({ onboarded_at: now }).eq("id", context.userId).is("onboarded_at", null);
+    }
+    return { ok: true as const };
+  });

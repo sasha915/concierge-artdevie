@@ -15,8 +15,10 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminConnexionRouteImport } from './routes/_authenticated/admin-connexion'
+import { Route as AuthenticatedBienvenueRouteImport } from './routes/_authenticated/bienvenue'
 import { Route as AuthenticatedOffresRouteImport } from './routes/_authenticated/offres'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedAdminAgendaRouteImport } from './routes/_authenticated/admin.agenda'
 import { Route as AuthenticatedAdminEquipeRouteImport } from './routes/_authenticated/admin.equipe'
 import { Route as AuthenticatedAdminOffresRouteImport } from './routes/_authenticated/admin.offres'
 import { Route as AuthenticatedAdminParrainagesRouteImport } from './routes/_authenticated/admin.parrainages'
@@ -30,6 +32,8 @@ import { Route as AuthenticatedMembershipFacturesRouteImport } from './routes/_a
 import { Route as AuthenticatedMembershipHistoriqueRouteImport } from './routes/_authenticated/membership.historique'
 import { Route as AuthenticatedMembershipInformationsRouteImport } from './routes/_authenticated/membership.informations'
 import { Route as AuthenticatedMembershipParrainerRouteImport } from './routes/_authenticated/membership.parrainer'
+import { Route as AuthenticatedMembershipPreferencesRouteImport } from './routes/_authenticated/membership.preferences'
+import { Route as AuthenticatedMembershipReleveRouteImport } from './routes/_authenticated/membership.releve'
 import { Route as ApiPublicMollieWebhookRouteImport } from './routes/api/public/mollie-webhook'
 import { Route as ApiPublicNotifyConciergeRouteImport } from './routes/api/public/notify-concierge'
 import { Route as AuthenticatedAdminDemandesIndexRouteImport } from './routes/_authenticated/admin.demandes.index'
@@ -70,6 +74,11 @@ const AuthenticatedAdminConnexionRoute =
     path: '/admin-connexion',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedBienvenueRoute = AuthenticatedBienvenueRouteImport.update({
+  id: '/bienvenue',
+  path: '/bienvenue',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedOffresRoute = AuthenticatedOffresRouteImport.update({
   id: '/offres',
   path: '/offres',
@@ -80,6 +89,12 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminAgendaRoute =
+  AuthenticatedAdminAgendaRouteImport.update({
+    id: '/agenda',
+    path: '/agenda',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminEquipeRoute =
   AuthenticatedAdminEquipeRouteImport.update({
     id: '/equipe',
@@ -158,6 +173,18 @@ const AuthenticatedMembershipParrainerRoute =
     path: '/membership/parrainer',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMembershipPreferencesRoute =
+  AuthenticatedMembershipPreferencesRouteImport.update({
+    id: '/membership/preferences',
+    path: '/membership/preferences',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedMembershipReleveRoute =
+  AuthenticatedMembershipReleveRouteImport.update({
+    id: '/membership/releve',
+    path: '/membership/releve',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicMollieWebhookRoute = ApiPublicMollieWebhookRouteImport.update({
   id: '/api/public/mollie-webhook',
   path: '/api/public/mollie-webhook',
@@ -218,7 +245,9 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/admin-connexion': typeof AuthenticatedAdminConnexionRoute
+  '/bienvenue': typeof AuthenticatedBienvenueRoute
   '/offres': typeof AuthenticatedOffresRoute
+  '/admin/agenda': typeof AuthenticatedAdminAgendaRoute
   '/admin/equipe': typeof AuthenticatedAdminEquipeRoute
   '/admin/offres': typeof AuthenticatedAdminOffresRoute
   '/admin/parrainages': typeof AuthenticatedAdminParrainagesRoute
@@ -230,6 +259,8 @@ export interface FileRoutesByFullPath {
   '/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
   '/membership/informations': typeof AuthenticatedMembershipInformationsRoute
   '/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
+  '/membership/preferences': typeof AuthenticatedMembershipPreferencesRoute
+  '/membership/releve': typeof AuthenticatedMembershipReleveRoute
   '/api/public/mollie-webhook': typeof ApiPublicMollieWebhookRoute
   '/api/public/notify-concierge': typeof ApiPublicNotifyConciergeRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -247,8 +278,10 @@ export interface FileRoutesByTo {
   '/connexion': typeof ConnexionRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin-connexion': typeof AuthenticatedAdminConnexionRoute
+  '/bienvenue': typeof AuthenticatedBienvenueRoute
   '/offres': typeof AuthenticatedOffresRoute
   '/': typeof AuthenticatedIndexRoute
+  '/admin/agenda': typeof AuthenticatedAdminAgendaRoute
   '/admin/equipe': typeof AuthenticatedAdminEquipeRoute
   '/admin/offres': typeof AuthenticatedAdminOffresRoute
   '/admin/parrainages': typeof AuthenticatedAdminParrainagesRoute
@@ -260,6 +293,8 @@ export interface FileRoutesByTo {
   '/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
   '/membership/informations': typeof AuthenticatedMembershipInformationsRoute
   '/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
+  '/membership/preferences': typeof AuthenticatedMembershipPreferencesRoute
+  '/membership/releve': typeof AuthenticatedMembershipReleveRoute
   '/api/public/mollie-webhook': typeof ApiPublicMollieWebhookRoute
   '/api/public/notify-concierge': typeof ApiPublicNotifyConciergeRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -280,8 +315,10 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/admin-connexion': typeof AuthenticatedAdminConnexionRoute
+  '/_authenticated/bienvenue': typeof AuthenticatedBienvenueRoute
   '/_authenticated/offres': typeof AuthenticatedOffresRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/admin/agenda': typeof AuthenticatedAdminAgendaRoute
   '/_authenticated/admin/equipe': typeof AuthenticatedAdminEquipeRoute
   '/_authenticated/admin/offres': typeof AuthenticatedAdminOffresRoute
   '/_authenticated/admin/parrainages': typeof AuthenticatedAdminParrainagesRoute
@@ -293,6 +330,8 @@ export interface FileRoutesById {
   '/_authenticated/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
   '/_authenticated/membership/informations': typeof AuthenticatedMembershipInformationsRoute
   '/_authenticated/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
+  '/_authenticated/membership/preferences': typeof AuthenticatedMembershipPreferencesRoute
+  '/_authenticated/membership/releve': typeof AuthenticatedMembershipReleveRoute
   '/api/public/mollie-webhook': typeof ApiPublicMollieWebhookRoute
   '/api/public/notify-concierge': typeof ApiPublicNotifyConciergeRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -314,7 +353,9 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admin'
     | '/admin-connexion'
+    | '/bienvenue'
     | '/offres'
+    | '/admin/agenda'
     | '/admin/equipe'
     | '/admin/offres'
     | '/admin/parrainages'
@@ -326,6 +367,8 @@ export interface FileRouteTypes {
     | '/membership/historique'
     | '/membership/informations'
     | '/membership/parrainer'
+    | '/membership/preferences'
+    | '/membership/releve'
     | '/api/public/mollie-webhook'
     | '/api/public/notify-concierge'
     | '/admin/'
@@ -343,8 +386,10 @@ export interface FileRouteTypes {
     | '/connexion'
     | '/reset-password'
     | '/admin-connexion'
+    | '/bienvenue'
     | '/offres'
     | '/'
+    | '/admin/agenda'
     | '/admin/equipe'
     | '/admin/offres'
     | '/admin/parrainages'
@@ -356,6 +401,8 @@ export interface FileRouteTypes {
     | '/membership/historique'
     | '/membership/informations'
     | '/membership/parrainer'
+    | '/membership/preferences'
+    | '/membership/releve'
     | '/api/public/mollie-webhook'
     | '/api/public/notify-concierge'
     | '/admin'
@@ -375,8 +422,10 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_authenticated/admin'
     | '/_authenticated/admin-connexion'
+    | '/_authenticated/bienvenue'
     | '/_authenticated/offres'
     | '/_authenticated/'
+    | '/_authenticated/admin/agenda'
     | '/_authenticated/admin/equipe'
     | '/_authenticated/admin/offres'
     | '/_authenticated/admin/parrainages'
@@ -388,6 +437,8 @@ export interface FileRouteTypes {
     | '/_authenticated/membership/historique'
     | '/_authenticated/membership/informations'
     | '/_authenticated/membership/parrainer'
+    | '/_authenticated/membership/preferences'
+    | '/_authenticated/membership/releve'
     | '/api/public/mollie-webhook'
     | '/api/public/notify-concierge'
     | '/_authenticated/admin/'
@@ -454,6 +505,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminConnexionRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/bienvenue': {
+      id: '/_authenticated/bienvenue'
+      path: '/bienvenue'
+      fullPath: '/bienvenue'
+      preLoaderRoute: typeof AuthenticatedBienvenueRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/offres': {
       id: '/_authenticated/offres'
       path: '/offres'
@@ -466,6 +524,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/agenda': {
+      id: '/_authenticated/admin/agenda'
+      path: '/agenda'
+      fullPath: '/admin/agenda'
+      preLoaderRoute: typeof AuthenticatedAdminAgendaRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/equipe': {
@@ -559,6 +624,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMembershipParrainerRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/membership/preferences': {
+      id: '/_authenticated/membership/preferences'
+      path: '/membership/preferences'
+      fullPath: '/membership/preferences'
+      preLoaderRoute: typeof AuthenticatedMembershipPreferencesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/membership/releve': {
+      id: '/_authenticated/membership/releve'
+      path: '/membership/releve'
+      fullPath: '/membership/releve'
+      preLoaderRoute: typeof AuthenticatedMembershipReleveRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/mollie-webhook': {
       id: '/api/public/mollie-webhook'
       path: '/api/public/mollie-webhook'
@@ -626,6 +705,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAgendaRoute: typeof AuthenticatedAdminAgendaRoute
   AuthenticatedAdminEquipeRoute: typeof AuthenticatedAdminEquipeRoute
   AuthenticatedAdminOffresRoute: typeof AuthenticatedAdminOffresRoute
   AuthenticatedAdminParrainagesRoute: typeof AuthenticatedAdminParrainagesRoute
@@ -639,6 +719,7 @@ interface AuthenticatedAdminRouteChildren {
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAgendaRoute: AuthenticatedAdminAgendaRoute,
   AuthenticatedAdminEquipeRoute: AuthenticatedAdminEquipeRoute,
   AuthenticatedAdminOffresRoute: AuthenticatedAdminOffresRoute,
   AuthenticatedAdminParrainagesRoute: AuthenticatedAdminParrainagesRoute,
@@ -660,6 +741,7 @@ const AuthenticatedAdminRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAdminConnexionRoute: typeof AuthenticatedAdminConnexionRoute
+  AuthenticatedBienvenueRoute: typeof AuthenticatedBienvenueRoute
   AuthenticatedOffresRoute: typeof AuthenticatedOffresRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedDemandesRequestIdRoute: typeof AuthenticatedDemandesRequestIdRoute
@@ -669,6 +751,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMembershipHistoriqueRoute: typeof AuthenticatedMembershipHistoriqueRoute
   AuthenticatedMembershipInformationsRoute: typeof AuthenticatedMembershipInformationsRoute
   AuthenticatedMembershipParrainerRoute: typeof AuthenticatedMembershipParrainerRoute
+  AuthenticatedMembershipPreferencesRoute: typeof AuthenticatedMembershipPreferencesRoute
+  AuthenticatedMembershipReleveRoute: typeof AuthenticatedMembershipReleveRoute
   AuthenticatedDemandesIndexRoute: typeof AuthenticatedDemandesIndexRoute
   AuthenticatedMembershipIndexRoute: typeof AuthenticatedMembershipIndexRoute
   AuthenticatedDemandesRequestIdModifierRoute: typeof AuthenticatedDemandesRequestIdModifierRoute
@@ -678,6 +762,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAdminConnexionRoute: AuthenticatedAdminConnexionRoute,
+  AuthenticatedBienvenueRoute: AuthenticatedBienvenueRoute,
   AuthenticatedOffresRoute: AuthenticatedOffresRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedDemandesRequestIdRoute: AuthenticatedDemandesRequestIdRoute,
@@ -689,6 +774,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMembershipInformationsRoute:
     AuthenticatedMembershipInformationsRoute,
   AuthenticatedMembershipParrainerRoute: AuthenticatedMembershipParrainerRoute,
+  AuthenticatedMembershipPreferencesRoute:
+    AuthenticatedMembershipPreferencesRoute,
+  AuthenticatedMembershipReleveRoute: AuthenticatedMembershipReleveRoute,
   AuthenticatedDemandesIndexRoute: AuthenticatedDemandesIndexRoute,
   AuthenticatedMembershipIndexRoute: AuthenticatedMembershipIndexRoute,
   AuthenticatedDemandesRequestIdModifierRoute:

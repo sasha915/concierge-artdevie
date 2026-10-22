@@ -85,7 +85,10 @@ function Page() {
         </section>
 
         <section className="team-glass min-w-0 rounded-[28px] p-6 lg:col-span-5">
-          <h2 className="eyebrow team-mention">( Prochaines prestations )</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="eyebrow team-mention">( Prochaines prestations )</h2>
+            <Link to="/admin/agenda" className="inline-flex h-11 items-center gap-2 rounded-full border border-border px-4 text-[13px] transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Voir l’agenda<ArrowUpRight className="size-4" /></Link>
+          </div>
           {data.upcoming.length === 0 ? <p className="mt-6 text-[14px] text-muted-foreground">Aucune prestation datée à venir.</p>
             : <ul className="mt-4">{data.upcoming.map((r) => {
                 const d = new Date(`${r.scheduled_date}T00:00:00`);

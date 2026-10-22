@@ -19,6 +19,7 @@ import {
   type RequestItem,
 } from "@/data/art-de-vie";
 import { offersQuery, profileQuery, requestsQuery } from "@/lib/adv-queries";
+import { WELCOME_LATER_KEY } from "@/components/art-de-vie/welcome";
 import vendome from "@/assets/v3/place-vendome.jpg.asset.json";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -28,6 +29,13 @@ export const Route = createFileRoute("/_authenticated/")({
     if (!auth.user) return;
     const { data } = await supabase.rpc("is_team", { _user_id: auth.user.id });
     if (data === true) throw redirect({ to: "/admin-connexion", replace: true });
+    // Lot 6.4 : questionnaire d'accueil tant qu'il n'est pas terminé, sauf « Plus tard » pendant la session.
+    let later = false;
+    try { later = sessionStorage.getItem(WELCOME_LATER_KEY) === "1"; } catch { /* stockage indisponible */ }
+    if (!later) {
+      const { data: profile } = await supabase.from("profiles").select("onboarded_at").eq("id", auth.user.id).maybeSingle();
+      if (profile && !profile.onboarded_at) throw redirect({ to: "/bienvenue", replace: true });
+    }
   },
   head: () => ({
     meta: [

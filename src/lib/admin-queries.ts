@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { listMembers, getMemberDetail, getMemberParrain, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames, listReferrals, listTeam, listOffersAdmin, listRequestEvents, listReplyTemplates, getRequestBilling, getMemberPreferences, listRequestMessages, listRequestFiles, listRequestChanges, getRequestReview, listMemberReviews, listRequestProposals, type TeamRole } from "@/lib/admin.functions";
+import { listMembers, getMemberDetail, getMemberParrain, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames, listReferrals, listTeam, listOffersAdmin, listRequestEvents, listReplyTemplates, getRequestBilling, getMemberPreferences, listRequestMessages, listRequestFiles, listRequestChanges, getRequestReview, listMemberReviews, listRequestProposals, getAgenda, getMemberStatement, type TeamRole } from "@/lib/admin.functions";
 import type { Invoice, RequestItem } from "@/data/art-de-vie";
 
 export type AdminMember = {
@@ -182,4 +182,14 @@ export const memberReviewsQuery = (memberId: string) => queryOptions({
 export const requestProposalsQuery = (requestId: string) => queryOptions({
   queryKey: ["admin", "request", requestId, "proposals"],
   queryFn: () => listRequestProposals({ data: { requestId } }),
+});
+
+export const agendaQuery = (from: string, to: string) => queryOptions({
+  queryKey: ["admin", "agenda", from, to],
+  queryFn: () => getAgenda({ data: { from, to } }),
+});
+
+export const memberStatementQuery = (id: string, month: string) => queryOptions({
+  queryKey: ["admin", "member", id, "statement", month],
+  queryFn: () => getMemberStatement({ data: { id, month } }),
 });

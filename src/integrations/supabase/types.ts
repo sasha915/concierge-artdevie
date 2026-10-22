@@ -117,6 +117,11 @@ export type Database = {
       }
       member_preferences: {
         Row: {
+          tables_choix: string[]
+          sejours_choix: string[]
+          transferts_choix: string[]
+          dates_membre: string
+          member_updated_at: string | null
           calendrier: string
           dates_cles: string
           sejours: string
@@ -127,6 +132,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          tables_choix?: string[]
+          sejours_choix?: string[]
+          transferts_choix?: string[]
+          dates_membre?: string
+          member_updated_at?: string | null
           calendrier?: string
           dates_cles?: string
           sejours?: string
@@ -137,6 +147,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          tables_choix?: string[]
+          sejours_choix?: string[]
+          transferts_choix?: string[]
+          dates_membre?: string
+          member_updated_at?: string | null
           calendrier?: string
           dates_cles?: string
           sejours?: string
@@ -206,6 +221,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          onboarded_at: string | null
           concierge_referent: string | null
           concierge_whatsapp: string | null
           created_at: string
@@ -226,6 +242,7 @@ export type Database = {
           valid_until: string
         }
         Insert: {
+          onboarded_at?: string | null
           concierge_referent?: string | null
           concierge_whatsapp?: string | null
           created_at?: string
@@ -246,6 +263,7 @@ export type Database = {
           valid_until?: string
         }
         Update: {
+          onboarded_at?: string | null
           concierge_referent?: string | null
           concierge_whatsapp?: string | null
           created_at?: string

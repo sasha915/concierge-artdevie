@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { ChevronLeft, Mail, UserMinus, UserPlus } from "lucide-react";
+import { ChevronLeft, Download, Mail, UserMinus, UserPlus } from "lucide-react";
+import { toast } from "sonner";
 import { AdminShell, TeamStatus } from "@/components/art-de-vie/admin-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,8 @@ import { EmptyState, StatusBadge } from "@/components/art-de-vie/cards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatShortDate, formatMonth, imageFor, initials } from "@/data/art-de-vie";
 import { memberDetailQuery, memberParrainQuery, memberPaymentsQuery, memberPreferencesQuery, memberReviewsQuery } from "@/lib/admin-queries";
-import { saveMemberPreferences, sendMemberInvite, setMemberDisabled, updateMember } from "@/lib/admin.functions";
+import { getMemberStatement, saveMemberPreferences, sendMemberInvite, setMemberDisabled, updateMember, type MemberAnswers as Answers } from "@/lib/admin.functions";
+import { monthLabel, shiftMonth, WELCOME_STEPS } from "@/lib/member-rules";
 import { Textarea } from "@/components/ui/textarea";
 import { Field, PlanSelect } from "./admin.membres.index";
 
@@ -117,6 +119,8 @@ function Page() {
         <Button variant="soft" size="sm" onClick={sendInvite}><Mail />Envoyer l’invitation</Button>
         <Button variant="outline" size="sm" onClick={toggleDisabled}>{profile.disabled_at ? <UserPlus /> : <UserMinus />}{profile.disabled_at ? "Réactiver" : "Désactiver"}</Button>
       </div>}
+
+      <StatementButton memberId={profile.id} />
 
       {notice && <p className="mt-4 rounded-2xl bg-primary/10 p-4 text-xs leading-5 text-primary">{notice}</p>}
       {error && <p className="mt-4 rounded-2xl border border-primary/25 p-4 text-xs leading-5 text-primary">{error}</p>}
@@ -242,6 +246,7 @@ function PreferencesBlock({ memberId }: { memberId: string }) {
       : <>
           {filled.length === 0 ? <p className="mt-4 text-[13px] text-muted-foreground">Aucune préférence consignée.</p>
             : <dl className="mt-4 grid min-w-0 gap-3 text-sm">{filled.map((f) => <div key={f.key} className="min-w-0"><dt className="eyebrow team-mention">{f.label}</dt><dd className="mt-1 whitespace-pre-line break-words">{data[f.key]}</dd></div>)}</dl>}
+          <MemberAnswers answers={data.answers} />
           {data.updated_at && <p className="mt-3 text-[12px] text-muted-foreground">Mis à jour le {formatShortDate(data.updated_at.slice(0, 10))}{data.updated_by_name ? ` par ${data.updated_by_name}` : ""}</p>}
           <Button type="button" variant="outline" size="sm" className="mt-4" onClick={start}>Modifier</Button>
         </>}
@@ -262,4 +267,49 @@ function ReviewsBlock({ memberId }: { memberId: string }) {
           </Link>
         </li>)}</ul>}
   </section>;
+}
+
+/** Lot 6.4 : réponses du membre au questionnaire « Faisons connaissance. », en lecture seule. */
+function MemberAnswers({ answers }: { answers: Answers }) {
+  const groups = WELCOME_STEPS.map((step) => ({ label: step.eyebrow, values: answers[step.key] })).filter((g) => g.values.length > 0);
+  const hasDates = answers.dates_membre.trim().length > 0;
+  return <div className="mt-5 border-t border-border pt-4">
+    <h3 className="eyebrow team-mention">Réponses du membre</h3>
+    {groups.length === 0 && !hasDates ? <p className="mt-2 text-[13px] text-muted-foreground">Le membre n’a pas encore répondu au questionnaire d’accueil.</p>
+      : <dl className="mt-3 grid min-w-0 gap-3 text-sm">
+          {groups.map((g) => <div key={g.label} className="min-w-0"><dt className="eyebrow team-mention">{g.label}</dt><dd className="mt-2 flex flex-wrap gap-1.5">{g.values.map((v) => <span key={v} className="rounded-full border border-border px-3 py-1 text-[12px]">{v}</span>)}</dd></div>)}
+          {hasDates && <div className="min-w-0"><dt className="eyebrow team-mention">Dates à retenir</dt><dd className="mt-1 whitespace-pre-line break-words">{answers.dates_membre}</dd></div>}
+        </dl>}
+    {answers.member_updated_at && <p className="mt-3 text-[12px] text-muted-foreground">Répondu le {formatShortDate(answers.member_updated_at.slice(0, 10))}</p>}
+  </div>;
+}
+
+/** Lot 6.4 : « Relevé du mois », même document que celui du membre. */
+function StatementButton({ memberId }: { memberId: string }) {
+  const current = new Date().toISOString().slice(0, 7);
+  const [month, setMonth] = useState(current);
+  const [busy, setBusy] = useState(false);
+  const fetchStatement = useServerFn(getMemberStatement);
+  const options = Array.from({ length: 12 }, (_, i) => shiftMonth(current, -i));
+
+  async function download() {
+    setBusy(true);
+    try {
+      const data = await fetchStatement({ data: { id: memberId, month } });
+      const { downloadStatement } = await import("@/lib/statement-pdf");
+      await downloadStatement({ month, memberName: data.member_name, memberNumber: data.member_number, lines: data.lines });
+    } catch {
+      toast.error("Le relevé n’a pas pu être préparé.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return <div className="mt-4 flex flex-wrap items-center gap-2">
+    <label htmlFor="statement-month" className="sr-only">Mois du relevé</label>
+    <select id="statement-month" value={month} onChange={(e) => setMonth(e.target.value)} className="h-11 rounded-full border border-border bg-transparent px-4 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      {options.map((m) => <option key={m} value={m} className="text-black">{monthLabel(m)}</option>)}
+    </select>
+    <Button type="button" variant="soft" size="sm" disabled={busy} onClick={() => void download()}><Download />Relevé du mois</Button>
+  </div>;
 }

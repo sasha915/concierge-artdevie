@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CircleUserRound, FileText, Gift, History, LogOut, MessageCircle, ShieldCheck } from "lucide-react";
+import { CircleUserRound, FileText, Gift, History, LogOut, MessageCircle, ReceiptText, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppShell, TopBar } from "@/components/art-de-vie/app-shell";
 import { Photo } from "@/components/art-de-vie/cards";
@@ -32,7 +32,7 @@ function AccountTile({
   dark = false,
   photo,
 }: {
-  to: "/membership/informations" | "/membership/factures" | "/membership/historique" | "/membership/parrainer";
+  to: "/membership/informations" | "/membership/factures" | "/membership/historique" | "/membership/parrainer" | "/membership/preferences" | "/membership/releve";
   icon: React.ReactNode;
   label: string;
   dark?: boolean;
@@ -144,6 +144,11 @@ function Page() {
                 icon={<Gift className="size-5" />}
                 photo={imageFor("bassin")}
               />
+            </div>
+            {/* Lot 6.4 : bloc ajouté, sous les tuiles existantes. */}
+            <div className="mt-3 grid grid-cols-2 gap-3 lg:mt-4 lg:grid-cols-4 lg:gap-4">
+              <AccountTile to="/membership/preferences" label="Mes préférences" icon={<Sparkles className="size-5" />} />
+              <AccountTile to="/membership/releve" label="Mon relevé" icon={<ReceiptText className="size-5" />} />
             </div>
             {isAdmin ? (
               <Button asChild variant="outline" size="lg" className="mt-4 w-full lg:hidden">

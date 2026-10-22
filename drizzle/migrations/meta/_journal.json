@@ -169,6 +169,13 @@
       "when": 1792685692948,
       "tag": "0023_recurring_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792686298190,
+      "tag": "0024_welcome_questionnaire",
+      "breakpoints": true
     }
   ]
 }

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 const teamNav = [
   { to: "/admin", label: "Tableau de bord", exact: true },
   { to: "/admin/demandes", label: "Demandes", exact: false },
+  { to: "/admin/agenda", label: "Agenda", exact: false },
   { to: "/admin/membres", label: "Membres", exact: false },
   { to: "/admin/offres", label: "Offres", exact: false, adminOnly: true },
   { to: "/admin/parrainages", label: "Parrainages", exact: false, adminOnly: true },
@@ -64,13 +65,19 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
   );
 }
 
+const STATUS_CLASS: Record<string, string> = {
+  "Nouvelle": "border border-primary text-primary",
+  "En cours": "bg-primary/18 text-primary",
+  "Confirmée": "bg-[var(--team-confirmed)] text-primary-foreground",
+  "Terminée": "bg-primary text-primary-deep",
+  "Annulée": "border border-dashed border-border team-mention",
+};
+
+/** Style d'un statut de demande dans l'interface équipe (pastilles, agenda). */
+export function teamStatusClass(status: string): string {
+  return STATUS_CLASS[status] ?? "border border-border";
+}
+
 export function TeamStatus({ status }: { status: string }) {
-  const cls: Record<string, string> = {
-    "Nouvelle": "border border-primary text-primary",
-    "En cours": "bg-primary/18 text-primary",
-    "Confirmée": "bg-[var(--team-confirmed)] text-primary-foreground",
-    "Terminée": "bg-primary text-primary-deep",
-    "Annulée": "border border-dashed border-border team-mention",
-  };
-  return <span className={`inline-flex shrink-0 rounded-full px-3 py-1 text-[11px] font-medium ${cls[status] ?? "border border-border"}`}>{status}</span>;
+  return <span className={`inline-flex shrink-0 rounded-full px-3 py-1 text-[11px] font-medium ${teamStatusClass(status)}`}>{status}</span>;
 }

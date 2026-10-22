@@ -807,22 +807,26 @@ const preferenceFields = {
   dates_cles: z.string().max(2000),
   calendrier: z.string().max(2000),
 };
-export type MemberPreferences = { tables: string; sejours: string; transferts: string; dates_cles: string; calendrier: string; updated_at: string | null; updated_by_name: string | null };
+export type MemberAnswers = { tables_choix: string[]; sejours_choix: string[]; transferts_choix: string[]; dates_membre: string; member_updated_at: string | null };
+export type MemberPreferences = { tables: string; sejours: string; transferts: string; dates_cles: string; calendrier: string; updated_at: string | null; updated_by_name: string | null; answers: MemberAnswers };
 
 export const getMemberPreferences = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }): Promise<MemberPreferences> => {
     const { admin } = await assertTeam(context as Ctx);
-    const { data: row, error } = await admin.from("member_preferences").select("tables, sejours, transferts, dates_cles, calendrier, updated_at, updated_by").eq("user_id", data.id).maybeSingle();
+    const { data: row, error } = await admin.from("member_preferences").select("tables, sejours, transferts, dates_cles, calendrier, updated_at, updated_by, tables_choix, sejours_choix, transferts_choix, dates_membre, member_updated_at").eq("user_id", data.id).maybeSingle();
     if (error) throw new Error("Les préférences n’ont pas pu être chargées.");
-    if (!row) return { tables: "", sejours: "", transferts: "", dates_cles: "", calendrier: "", updated_at: null, updated_by_name: null };
+    if (!row) return { tables: "", sejours: "", transferts: "", dates_cles: "", calendrier: "", updated_at: null, updated_by_name: null, answers: { tables_choix: [], sejours_choix: [], transferts_choix: [], dates_membre: "", member_updated_at: null } };
     let updatedByName: string | null = null;
     if (row.updated_by) {
       const { data: author } = await admin.from("profiles").select("full_name").eq("id", row.updated_by).maybeSingle();
       updatedByName = author?.full_name?.trim() || "Équipe";
     }
-    return { tables: row.tables, sejours: row.sejours, transferts: row.transferts, dates_cles: row.dates_cles, calendrier: row.calendrier, updated_at: row.updated_at, updated_by_name: updatedByName };
+    return {
+      tables: row.tables, sejours: row.sejours, transferts: row.transferts, dates_cles: row.dates_cles, calendrier: row.calendrier, updated_at: row.updated_at, updated_by_name: updatedByName,
+      answers: { tables_choix: row.tables_choix ?? [], sejours_choix: row.sejours_choix ?? [], transferts_choix: row.transferts_choix ?? [], dates_membre: row.dates_membre ?? "", member_updated_at: row.member_updated_at ?? null },
+    };
   });
 
 export const saveMemberPreferences = createServerFn({ method: "POST" })
@@ -1076,4 +1080,78 @@ export const withdrawProposal = createServerFn({ method: "POST" })
     if (error || !row) return { ok: false as const, reason: "Le membre a déjà répondu à cette proposition." };
     await admin.from("request_events").insert({ request_id: row.request_id, actor_id: (context as Ctx).userId, kind: "proposition retirée", detail: null });
     return { ok: true as const };
+  });
+
+// ---- Lot 6.3 : agenda de l'équipe ----
+
+export type AgendaItem = {
+  key: string;
+  kind: "demande" | "echeance";
+  date: string;
+  time: string | null;
+  title: string;
+  status: string;
+  member_id: string;
+  member_name: string;
+  concierge_id: string | null;
+  request_id: string | null;
+};
+
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+/** Prestations datées (hors annulées) et échéances récurrentes à venir, entre deux dates incluses. */
+export const getAgenda = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ from: isoDate, to: isoDate }).refine((v) => v.from <= v.to).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { occurrencesBetween } = await import("./agenda-rules");
+    const today = new Date().toISOString().slice(0, 10);
+    const [{ data: requests, error }, { data: rules }, { data: profiles }] = await Promise.all([
+      admin.from("requests").select("id, user_id, title, status, scheduled_date, scheduled_time, concierge_id, recurring_id, created_at").gte("scheduled_date", data.from).lte("scheduled_date", data.to).neq("status", "Annulée"),
+      admin.from("recurring_requests").select("id, user_id, title, rhythm, start_date, dates, end_date, paused, last_occurrence, scheduled_time").eq("paused", false),
+      admin.from("profiles").select("id, full_name"),
+    ]);
+    if (error) throw new Error("L’agenda n’a pas pu être chargé.");
+    const names = new Map((profiles ?? []).map((p: { id: string; full_name: string }) => [p.id, p.full_name]));
+    const items: AgendaItem[] = (requests ?? []).map((r: any) => ({
+      key: r.id, kind: "demande" as const, date: r.scheduled_date, time: r.scheduled_time ? String(r.scheduled_time).slice(0, 5) : null,
+      title: r.title, status: r.status, member_id: r.user_id, member_name: names.get(r.user_id) ?? "", concierge_id: r.concierge_id ?? null, request_id: r.id,
+    }));
+    const ruleList = (rules ?? []) as Array<any>;
+    if (ruleList.length > 0) {
+      // Dernière demande de chaque série : sert de lien et donne le concierge habituel.
+      const { data: lastRequests } = await admin.from("requests").select("id, recurring_id, concierge_id, scheduled_date, created_at").in("recurring_id", ruleList.map((r) => r.id)).order("created_at", { ascending: false });
+      const latest = new Map<string, { id: string; concierge_id: string | null }>();
+      for (const r of (lastRequests ?? []) as Array<{ id: string; recurring_id: string; concierge_id: string | null }>) if (!latest.has(r.recurring_id)) latest.set(r.recurring_id, r);
+      const from = data.from > today ? data.from : today;
+      for (const rule of ruleList) {
+        if (from > data.to) break;
+        const last = latest.get(rule.id) ?? null;
+        for (const date of occurrencesBetween({ ...rule, dates: rule.dates ?? [] }, from, data.to)) {
+          items.push({
+            key: `${rule.id}:${date}`, kind: "echeance", date, time: rule.scheduled_time ? String(rule.scheduled_time).slice(0, 5) : null,
+            title: rule.title, status: "À venir", member_id: rule.user_id, member_name: names.get(rule.user_id) ?? "", concierge_id: last?.concierge_id ?? null, request_id: last?.id ?? null,
+          });
+        }
+      }
+    }
+    items.sort((a, b) => `${a.date}${a.time ?? "99"}`.localeCompare(`${b.date}${b.time ?? "99"}`) || a.title.localeCompare(b.title));
+    return { items, me: (context as Ctx).userId };
+  });
+
+// ---- Lot 6.4 : relevé du mois d'un membre ----
+
+export const getMemberStatement = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), month: z.string().regex(/^\d{4}-\d{2}$/) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { statementLines, STATEMENT_STATUSES } = await import("./member-rules");
+    const [{ data: member }, { data: rows, error }] = await Promise.all([
+      admin.from("profiles").select("full_name, member_number").eq("id", data.id).maybeSingle(),
+      admin.from("requests").select("id, title, status, amount_cents, scheduled_date, created_at").eq("user_id", data.id).in("status", [...STATEMENT_STATUSES]).not("amount_cents", "is", null),
+    ]);
+    if (error || !member) throw new Error("Le relevé n’a pas pu être chargé.");
+    return { member_name: member.full_name as string, member_number: member.member_number as string, lines: statementLines(rows ?? [], data.month) };
   });
