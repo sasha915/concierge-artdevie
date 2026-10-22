@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { listMembers, getMemberDetail, getMemberParrain, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames, listReferrals, listTeam, listOffersAdmin, listRequestEvents, listReplyTemplates, getRequestBilling, type TeamRole } from "@/lib/admin.functions";
+import { listMembers, getMemberDetail, getMemberParrain, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames, listReferrals, listTeam, listOffersAdmin, listRequestEvents, listReplyTemplates, getRequestBilling, getMemberPreferences, type TeamRole } from "@/lib/admin.functions";
 import type { Invoice, RequestItem } from "@/data/art-de-vie";
 
 export type AdminMember = {
@@ -145,4 +145,9 @@ export const teamSelfQuery = queryOptions({
 export const requestBillingQuery = (id: string) => queryOptions({
   queryKey: ["admin", "request", id, "billing"],
   queryFn: () => getRequestBilling({ data: { id } }),
+});
+
+export const memberPreferencesQuery = (id: string) => queryOptions({
+  queryKey: ["admin", "member", id, "preferences"],
+  queryFn: () => getMemberPreferences({ data: { id } }),
 });

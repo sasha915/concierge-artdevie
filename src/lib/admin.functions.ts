@@ -330,7 +330,9 @@ export const getDashboard = createServerFn({ method: "GET" })
     const withName = (r: (typeof rows)[number]) => ({ ...r, member_name: names.get(r.user_id) ?? "" });
     const open = rows.filter((r) => ["Nouvelle", "En cours", "Confirmée"].includes(r.status));
     const last = rows[rows.length - 1];
+    const watch = await dashboardWatch(admin, role, rows.map(withName), ids, names);
     return {
+      watch,
       openCount: open.length,
       unassignedCount: open.filter((r) => r.concierge === "À attribuer").length,
       activeMembers: (profiles ?? []).filter((p: { id: string; disabled_at: string | null }) => !p.disabled_at && !ids.includes(p.id)).length,
@@ -757,4 +759,66 @@ export const createRequestInvoice = createServerFn({ method: "POST" })
     if (error || !invoice) return { ok: false as const, reason: error?.code === "23505" ? "Une facture existe déjà pour cette demande." : "La facture n’a pas pu être créée." };
     await admin.from("request_events").insert({ request_id: request.id, actor_id: (context as Ctx).userId, kind: "facture créée", detail: invoice.number });
     return { ok: true as const, number: invoice.number as string };
+  });
+
+// ---- Lot 4.3 : « À surveiller », préférences du membre ----
+
+async function dashboardWatch(admin: any, role: TeamRole, rows: Array<{ id: string; title: string; status: string; created_at: string; member_name: string }>, teamIdList: string[], names: Map<string, string>) {
+  const { isStaleRequest, isRenewalDue, waitingLabel, FAILED_INVOICE_STATUSES } = await import("./watch-rules");
+  const staleRequests = rows.filter((r) => isStaleRequest(r)).map((r) => ({ id: r.id, title: r.title, member_name: r.member_name, waiting: waitingLabel(r.created_at) }));
+  const { data: members } = await admin.from("profiles").select("id, full_name, valid_until, disabled_at");
+  const renewals = ((members ?? []) as Array<{ id: string; full_name: string; valid_until: string | null; disabled_at: string | null }>)
+    .filter((m) => !m.disabled_at && !teamIdList.includes(m.id) && isRenewalDue(m.valid_until))
+    .sort((a, b) => (a.valid_until ?? "").localeCompare(b.valid_until ?? ""))
+    .map((m) => ({ id: m.id, full_name: m.full_name, valid_until: m.valid_until as string }));
+  if (role !== "admin") return { staleRequests, renewals, failedInvoices: null, receivedReferrals: null };
+  const [{ data: invoices }, { data: referrals }] = await Promise.all([
+    admin.from("invoices").select("id, number, user_id, amount_cents, status, issued_on").in("status", [...FAILED_INVOICE_STATUSES]).order("issued_on", { ascending: false }),
+    admin.from("referrals").select("id, full_name, inviter_id, created_at").eq("status", "Invitation envoyée").order("created_at", { ascending: true }),
+  ]);
+  return {
+    staleRequests,
+    renewals,
+    failedInvoices: ((invoices ?? []) as Array<{ id: string; number: string; user_id: string; amount_cents: number; status: string }>).map((i) => ({ ...i, member_name: names.get(i.user_id) ?? "" })),
+    receivedReferrals: ((referrals ?? []) as Array<{ id: string; full_name: string; inviter_id: string; created_at: string }>).map((r) => ({ id: r.id, full_name: r.full_name, inviter_name: names.get(r.inviter_id) ?? "", created_at: r.created_at })),
+  };
+}
+
+const preferenceFields = {
+  tables: z.string().max(2000),
+  sejours: z.string().max(2000),
+  transferts: z.string().max(2000),
+  dates_cles: z.string().max(2000),
+  calendrier: z.string().max(2000),
+};
+export type MemberPreferences = { tables: string; sejours: string; transferts: string; dates_cles: string; calendrier: string; updated_at: string | null; updated_by_name: string | null };
+
+export const getMemberPreferences = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }): Promise<MemberPreferences> => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { data: row, error } = await admin.from("member_preferences").select("tables, sejours, transferts, dates_cles, calendrier, updated_at, updated_by").eq("user_id", data.id).maybeSingle();
+    if (error) throw new Error("Les préférences n’ont pas pu être chargées.");
+    if (!row) return { tables: "", sejours: "", transferts: "", dates_cles: "", calendrier: "", updated_at: null, updated_by_name: null };
+    let updatedByName: string | null = null;
+    if (row.updated_by) {
+      const { data: author } = await admin.from("profiles").select("full_name").eq("id", row.updated_by).maybeSingle();
+      updatedByName = author?.full_name?.trim() || "Équipe";
+    }
+    return { tables: row.tables, sejours: row.sejours, transferts: row.transferts, dates_cles: row.dates_cles, calendrier: row.calendrier, updated_at: row.updated_at, updated_by_name: updatedByName };
+  });
+
+export const saveMemberPreferences = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), ...preferenceFields }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const ids = await teamIds(admin);
+    if (ids.includes(data.id)) return { ok: false as const, reason: "Ce compte appartient à l’équipe." };
+    const { id, ...fields } = data;
+    const trimmed = Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, v.trim()]));
+    const { error } = await admin.from("member_preferences").upsert({ user_id: id, ...trimmed, updated_at: new Date().toISOString(), updated_by: (context as Ctx).userId }, { onConflict: "user_id" });
+    if (error) return { ok: false as const, reason: "Les préférences n’ont pas pu être enregistrées." };
+    return { ok: true as const };
   });

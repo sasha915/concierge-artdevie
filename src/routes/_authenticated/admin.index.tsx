@@ -5,7 +5,8 @@ import { ArrowUpRight } from "lucide-react";
 import { AdminShell, TeamStatus } from "@/components/art-de-vie/admin-shell";
 import { Title } from "@/components/art-de-vie/v3";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatShortDate } from "@/data/art-de-vie";
+import { formatAmount, formatShortDate } from "@/data/art-de-vie";
+import { STALE_REQUEST_HOURS, RENEWAL_WINDOW_DAYS } from "@/lib/watch-rules";
 import { profileQuery } from "@/lib/adv-queries";
 import { getDashboard } from "@/lib/admin.functions";
 
@@ -60,6 +61,8 @@ function Page() {
         </div>
       </section>
 
+      <WatchBlock watch={data.watch} />
+
       <Link to="/admin/demandes/nouvelle" className="team-glass mt-6 flex items-center justify-between gap-4 rounded-[28px] p-6 transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <span className="min-w-0"><span className="eyebrow team-mention block">( Demande pour un membre )</span><span className="mt-2 block text-[24px] leading-tight">Créer une demande au nom d’un membre</span></span>
         <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"><ArrowUpRight className="size-4" /></span>
@@ -98,4 +101,47 @@ function Page() {
       </div>
     </>}
   </AdminShell>;
+}
+
+type Watch = Awaited<ReturnType<typeof getDashboard>>["watch"];
+
+const watchLink = "flex items-center gap-4 rounded-2xl py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+function WatchRow({ title, meta, signal }: { title: string; meta: string; signal: string }) {
+  return <>
+    <div className="min-w-0 flex-1"><p className="truncate text-[17px]">{title}</p><p className="mt-1 truncate text-[13px] text-muted-foreground">{meta}</p></div>
+    <span className="shrink-0 rounded-full border border-dashed border-border px-3 py-1 text-[12px]">{signal}</span>
+  </>;
+}
+
+function WatchGroup({ title, children, count }: { title: string; children: React.ReactNode; count: number }) {
+  if (count === 0) return null;
+  return <div className="min-w-0">
+    <h3 className="flex items-center gap-2 text-[15px] font-medium">{title}<span className="inline-flex size-6 items-center justify-center rounded-full border border-border text-[12px]">{count}</span></h3>
+    <ul className="mt-2">{children}</ul>
+  </div>;
+}
+
+function WatchBlock({ watch }: { watch: Watch }) {
+  const failed = watch.failedInvoices ?? [];
+  const referrals = watch.receivedReferrals ?? [];
+  const total = watch.staleRequests.length + watch.renewals.length + failed.length + referrals.length;
+  return <section aria-labelledby="watch-title" className="team-panel mt-6 min-w-0 rounded-[28px] p-6">
+    <h2 id="watch-title" className="eyebrow team-mention">( À surveiller )</h2>
+    {total === 0 ? <p className="mt-4 text-[14px] text-muted-foreground">Rien à signaler pour le moment.</p>
+      : <div className="mt-4 grid min-w-0 gap-6 lg:grid-cols-2">
+        <WatchGroup title={`Demandes sans prise en charge depuis plus de ${STALE_REQUEST_HOURS} h`} count={watch.staleRequests.length}>
+          {watch.staleRequests.map((r) => <li key={r.id} className="border-b border-border last:border-0"><Link to="/admin/demandes/$requestId" params={{ requestId: r.id }} className={watchLink}><WatchRow title={r.title} meta={r.member_name || "Membre"} signal={`En attente · ${r.waiting}`} /></Link></li>)}
+        </WatchGroup>
+        <WatchGroup title={`Adhésions à échéance sous ${RENEWAL_WINDOW_DAYS} jours`} count={watch.renewals.length}>
+          {watch.renewals.map((m) => <li key={m.id} className="border-b border-border last:border-0"><Link to="/admin/membres/$memberId" params={{ memberId: m.id }} className={watchLink}><WatchRow title={m.full_name || "Membre"} meta="Adhésion" signal={formatShortDate(m.valid_until)} /></Link></li>)}
+        </WatchGroup>
+        <WatchGroup title="Factures en échec de paiement" count={failed.length}>
+          {failed.map((i) => <li key={i.id} className="border-b border-border last:border-0"><Link to="/admin/membres/$memberId" params={{ memberId: i.user_id }} className={watchLink}><WatchRow title={i.number} meta={`${i.member_name || "Membre"} · ${formatAmount(i.amount_cents)}`} signal={i.status} /></Link></li>)}
+        </WatchGroup>
+        <WatchGroup title="Parrainages reçus" count={referrals.length}>
+          {referrals.map((r) => <li key={r.id} className="border-b border-border last:border-0"><Link to="/admin/parrainages" className={watchLink}><WatchRow title={r.full_name} meta={r.inviter_name ? `Recommandé par ${r.inviter_name}` : "Parrainage"} signal="Reçu" /></Link></li>)}
+        </WatchGroup>
+      </div>}
+  </section>;
 }

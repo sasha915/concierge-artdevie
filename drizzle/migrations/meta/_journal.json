@@ -120,6 +120,13 @@
       "when": 1792679890513,
       "tag": "0016_request_amounts_and_invoices",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792684173738,
+      "tag": "0017_member_preferences",
+      "breakpoints": true
     }
   ]
 }

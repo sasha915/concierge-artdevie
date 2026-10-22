@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input";
 import { EmptyState, StatusBadge } from "@/components/art-de-vie/cards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatShortDate, formatMonth, imageFor, initials } from "@/data/art-de-vie";
-import { memberDetailQuery, memberParrainQuery, memberPaymentsQuery } from "@/lib/admin-queries";
-import { sendMemberInvite, setMemberDisabled, updateMember } from "@/lib/admin.functions";
+import { memberDetailQuery, memberParrainQuery, memberPaymentsQuery, memberPreferencesQuery } from "@/lib/admin-queries";
+import { saveMemberPreferences, sendMemberInvite, setMemberDisabled, updateMember } from "@/lib/admin.functions";
+import { Textarea } from "@/components/ui/textarea";
 import { Field, PlanSelect } from "./admin.membres.index";
 
 export const Route = createFileRoute("/_authenticated/admin/membres/$memberId")({ head: () => ({ meta: [{ title: "Fiche membre — Art de Vie" }, { name: "description", content: "Détail d’un membre, ses demandes et ses factures." }, { property: "og:title", content: "Fiche membre — Art de Vie" }, { property: "og:description", content: "Détail d’un membre, ses demandes et ses factures." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
@@ -120,6 +121,8 @@ function Page() {
       {notice && <p className="mt-4 rounded-2xl bg-primary/10 p-4 text-xs leading-5 text-primary">{notice}</p>}
       {error && <p className="mt-4 rounded-2xl border border-primary/25 p-4 text-xs leading-5 text-primary">{error}</p>}
 
+      <PreferencesBlock memberId={profile.id} />
+
       <div className="mt-6 grid min-w-0 gap-5">
         <section className="team-panel min-w-0 rounded-card p-5">
           <h2 className="eyebrow text-primary-light">Ses demandes</h2>
@@ -174,4 +177,73 @@ function Page() {
       </div>
     </>}
   </AdminShell>;
+}
+
+const PREFERENCE_FIELDS = [
+  { key: "tables", label: "À table" },
+  { key: "sejours", label: "Séjours" },
+  { key: "transferts", label: "Transferts" },
+  { key: "dates_cles", label: "Dates clés" },
+  { key: "calendrier", label: "Calendrier" },
+] as const;
+type PreferenceKey = (typeof PREFERENCE_FIELDS)[number]["key"];
+type PreferenceForm = Record<PreferenceKey, string>;
+
+function PreferencesBlock({ memberId }: { memberId: string }) {
+  const queryClient = useQueryClient();
+  const { data, isLoading, isError } = useQuery(memberPreferencesQuery(memberId));
+  const save = useServerFn(saveMemberPreferences);
+  const [editing, setEditing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const empty: PreferenceForm = { tables: "", sejours: "", transferts: "", dates_cles: "", calendrier: "" };
+  const [form, setForm] = useState<PreferenceForm>(empty);
+
+  function start() {
+    if (!data) return;
+    setForm({ tables: data.tables, sejours: data.sejours, transferts: data.transferts, dates_cles: data.dates_cles, calendrier: data.calendrier });
+    setMessage(null);
+    setEditing(true);
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true); setMessage(null);
+    try {
+      const r = await save({ data: { id: memberId, ...form } });
+      if (!r.ok) { setMessage({ ok: false, text: r.reason }); return; }
+      setEditing(false);
+      setMessage({ ok: true, text: "Les préférences ont été enregistrées." });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "member", memberId, "preferences"] });
+    } catch { setMessage({ ok: false, text: "L’enregistrement a échoué." }); } finally { setBusy(false); }
+  }
+
+  const filled = data ? PREFERENCE_FIELDS.filter((f) => data[f.key].trim()) : [];
+
+  return <section aria-labelledby="preferences-title" className="team-panel mt-6 min-w-0 rounded-card p-5">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <h2 id="preferences-title" className="eyebrow text-primary-light">Préférences et habitudes</h2>
+      <span className="rounded-full border border-dashed border-border px-3 py-1 text-[11px]">Interne</span>
+    </div>
+    <p className="mt-2 text-[12px] text-muted-foreground">Aucune donnée de santé n’est consignée dans cette fiche.</p>
+    {isLoading ? <Skeleton className="mt-4 h-24 bg-primary/10" />
+      : isError || !data ? <p role="alert" className="mt-4 text-[13px] text-muted-foreground">Les préférences n’ont pas pu être chargées.</p>
+      : editing ? <form onSubmit={submit} className="mt-4 grid min-w-0 gap-4">
+          {PREFERENCE_FIELDS.map((f) => <div key={f.key} className="min-w-0">
+            <label htmlFor={`pref-${f.key}`} className="eyebrow text-muted-foreground">{f.label}</label>
+            <Textarea id={`pref-${f.key}`} value={form[f.key]} maxLength={2000} rows={2} onChange={(e) => setForm((v) => ({ ...v, [f.key]: e.target.value }))} className="mt-2 min-h-[64px]" />
+          </div>)}
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" variant="primary" size="sm" disabled={busy}>{busy ? "Enregistrement…" : "Enregistrer"}</Button>
+            <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => setEditing(false)}>Annuler</Button>
+          </div>
+        </form>
+      : <>
+          {filled.length === 0 ? <p className="mt-4 text-[13px] text-muted-foreground">Aucune préférence consignée.</p>
+            : <dl className="mt-4 grid min-w-0 gap-3 text-sm">{filled.map((f) => <div key={f.key} className="min-w-0"><dt className="eyebrow team-mention">{f.label}</dt><dd className="mt-1 whitespace-pre-line break-words">{data[f.key]}</dd></div>)}</dl>}
+          {data.updated_at && <p className="mt-3 text-[12px] text-muted-foreground">Mis à jour le {formatShortDate(data.updated_at.slice(0, 10))}{data.updated_by_name ? ` par ${data.updated_by_name}` : ""}</p>}
+          <Button type="button" variant="outline" size="sm" className="mt-4" onClick={start}>Modifier</Button>
+        </>}
+    {message && <p role="status" className={`mt-3 rounded-2xl p-3 text-xs leading-5 text-primary ${message.ok ? "bg-primary/10" : "border border-primary/25"}`}>{message.text}</p>}
+  </section>;
 }

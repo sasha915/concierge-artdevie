@@ -70,6 +70,47 @@ export type Database = {
           },
         ]
       }
+      member_preferences: {
+        Row: {
+          calendrier: string
+          dates_cles: string
+          sejours: string
+          tables: string
+          transferts: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+        }
+        Insert: {
+          calendrier?: string
+          dates_cles?: string
+          sejours?: string
+          tables?: string
+          transferts?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+        }
+        Update: {
+          calendrier?: string
+          dates_cles?: string
+          sejours?: string
+          tables?: string
+          transferts?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offers: {
         Row: {
           category: string

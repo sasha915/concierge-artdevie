@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { formatShortDate, type RequestStatus } from "@/data/art-de-vie";
 import { allRequestsQuery, teamSelfQuery } from "@/lib/admin-queries";
+import { isStaleRequest, waitingLabel } from "@/lib/watch-rules";
 import { matchesRequestFilters } from "@/lib/team-request-rules";
 
 export const Route = createFileRoute("/_authenticated/admin/demandes/")({
@@ -75,7 +76,7 @@ function Page() {
             {items.length === 0 ? <p className="mt-4 rounded-2xl border border-dashed border-border p-5 text-center text-[13px] text-muted-foreground">Aucune demande.</p>
               : <ul className="mt-4 grid gap-3">{items.map((r) => <li key={r.id}>
                   <Link to="/admin/demandes/$requestId" params={{ requestId: r.id }} className="block rounded-2xl bg-primary-deep/60 p-4 transition-colors hover:bg-primary-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                    <p className="eyebrow team-mention text-[10px]">{r.category}</p>
+                    <div className="flex flex-wrap items-center justify-between gap-2"><p className="eyebrow team-mention text-[10px]">{r.category}</p>{isStaleRequest(r) && <span className="rounded-full border border-dashed border-border px-2 py-0.5 text-[11px]">En attente · {waitingLabel(r.created_at)}</span>}</div>
                     <p className="mt-2 break-words text-[19px] leading-tight">{r.title}</p>
                     <p className="mt-2 text-[13px] text-muted-foreground">{r.member_name || "Membre"}</p>
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-[12px]">
