@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { RequestItem } from "@/data/art-de-vie";
 import { teamNamesQuery } from "@/lib/admin-queries";
 import { createRequestForMember, listRequestableMembers } from "@/lib/admin.functions";
+import { RHYTHMS, type Rhythm } from "@/lib/planning-rules";
 
 export const Route = createFileRoute("/_authenticated/admin/demandes/nouvelle")({
   head: () => ({ meta: [
@@ -53,6 +54,10 @@ function Page() {
   const [guests, setGuests] = useState("");
   const [description, setDescription] = useState("");
   const [conciergeId, setConcierge] = useState("");
+  const [rhythm, setRhythm] = useState<"aucune" | Rhythm>("aucune");
+  const [extraDates, setExtraDates] = useState<string[]>([]);
+  const [nextDate, setNextDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const concierge = team.find((t) => t.id === conciergeId)?.name ?? UNASSIGNED;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +78,7 @@ function Page() {
     if (!memberId) { setError("Choisissez un membre."); return; }
     setBusy(true); setError(null);
     try {
-      const res = await create({ data: { memberId, category, title, description, scheduledDate: date, scheduledTime: time, guests: guests ? Number(guests) : null, conciergeId: conciergeId || null } });
+      const res = await create({ data: { memberId, category, title, description, scheduledDate: date, scheduledTime: time, guests: guests ? Number(guests) : null, conciergeId: conciergeId || null, recurrence: rhythm === "aucune" ? null : { rhythm, dates: extraDates, endDate: endDate || null } } });
       if (!res.ok) { setError(res.reason); return; }
       await qc.invalidateQueries({ queryKey: ["admin"] });
       await navigate({ to: "/admin/demandes/$requestId", params: { requestId: res.id }, search: { cree: true } });
@@ -127,6 +132,20 @@ function Page() {
           <Field id="h" label="Heure"><Input id="h" type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
           <Field id="g" label={guestsLabel}><Input id="g" type="number" min="1" value={guests} onChange={(e) => setGuests(e.target.value)} placeholder="2" /></Field>
           <Field id="p" label="Précisions" full><Textarea id="p" rows={5} maxLength={4000} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Envies, contraintes ou attentions particulières…" /></Field>
+          <Field id="rec" label="Récurrence" full>
+            <select id="rec" value={rhythm} onChange={(e) => setRhythm(e.target.value as "aucune" | Rhythm)} className="h-12 w-full rounded-2xl border border-border bg-card px-4 text-[15px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              {RHYTHMS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+            </select>
+            {rhythm !== "aucune" && <div className="mt-3 grid gap-3">
+              {!date && <p className="text-[12px]">Indiquez la date souhaitée : c’est la première échéance.</p>}
+              {rhythm === "dates" && <div>
+                <div className="flex gap-2"><Input type="date" aria-label="Ajouter une date" value={nextDate} onChange={(e) => setNextDate(e.target.value)} /><Button type="button" variant="outline" className="h-11 rounded-full" onClick={() => { if (nextDate && !extraDates.includes(nextDate)) setExtraDates([...extraDates, nextDate].sort()); setNextDate(""); }}>Ajouter</Button></div>
+                {extraDates.length > 0 && <ul className="mt-2 flex flex-wrap gap-2">{extraDates.map((d) => <li key={d}><button type="button" onClick={() => setExtraDates(extraDates.filter((x) => x !== d))} className="h-9 rounded-full border border-border px-3 text-[12px]" aria-label={`Retirer le ${d}`}>{new Date(`${d}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} ×</button></li>)}</ul>}
+              </div>}
+              <label className="text-[12px]">Date de fin (facultative)<Input type="date" className="mt-2" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></label>
+              <p className="text-[12px] text-muted-foreground">Chaque échéance crée une demande sept jours avant sa date.</p>
+            </div>}
+          </Field>
           <Field id="c" label="Concierge en charge" full>
             <select id="c" value={conciergeId} onChange={(e) => setConcierge(e.target.value)} className={select}>
               <option value="">{UNASSIGNED}</option>

@@ -365,6 +365,7 @@ export const createRequestForMember = createServerFn({ method: "POST" })
     scheduledTime: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal("")),
     guests: z.number().int().min(1).max(999).nullable().optional(),
     conciergeId: z.string().uuid().nullable(),
+    recurrence: z.object({ rhythm: z.enum(["hebdomadaire", "mensuelle", "dates"]), dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(60), endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable() }).nullable().optional(),
   }).parse(input))
   .handler(async ({ data, context }) => {
     const { admin, role } = await assertTeam(context as Ctx);
@@ -374,6 +375,7 @@ export const createRequestForMember = createServerFn({ method: "POST" })
     if (!member) return { ok: false as const, reason: "Membre introuvable." };
     const resolved = await resolveConcierge(admin, data.conciergeId);
     if (!resolved) return { ok: false as const, reason: "Ce compte ne fait pas partie de l’équipe." };
+    if (data.recurrence && !data.scheduledDate) return { ok: false as const, reason: "Indiquez la date de la première échéance pour une demande récurrente." };
     const { data: row, error } = await admin.from("requests").insert({
       user_id: data.memberId,
       category: data.category,
@@ -389,6 +391,11 @@ export const createRequestForMember = createServerFn({ method: "POST" })
     if (error || !row) return { ok: false as const, reason: "La demande n’a pas pu être créée." };
     const { error: eventError } = await admin.from("request_events").insert({ request_id: row.id, actor_id: context.userId, kind: "créée par l'équipe", detail: null });
     if (eventError) return { ok: false as const, reason: "La demande a été créée, mais son historique n’a pas pu être enregistré. Ne la recréez pas." };
+    if (data.recurrence) {
+      const { createRecurringRule } = await import("./recurring.server");
+      const rec = await createRecurringRule(admin, { id: row.id, user_id: data.memberId, category: data.category, title: data.title, description: data.description || "", guests: data.guests ?? null, scheduled_date: data.scheduledDate || null, scheduled_time: data.scheduledTime || null, image_key: REQUEST_IMAGE[data.category] ?? "entree-de-nuit" }, data.recurrence, context.userId);
+      if (!rec.ok) return { ok: false as const, reason: `La demande a été créée, mais pas sa récurrence : ${rec.reason}` };
+    }
     return { ok: true as const, id: row.id as string };
   });
 
@@ -1021,4 +1028,52 @@ export const listMemberReviews = createServerFn({ method: "GET" })
     const { data: requests } = ids.length ? await admin.from("requests").select("id, title").in("id", ids) : { data: [] };
     const titles = new Map((requests ?? []).map((r: { id: string; title: string }) => [r.id, r.title]));
     return (reviews ?? []).map((r) => ({ ...r, title: titles.get(r.request_id) ?? "Demande" }));
+  });
+
+// ---- Lot 6.1 : proposition à valider ----
+
+export type TeamProposal = { id: string; status: string; created_at: string; decided_at: string | null; options: Array<{ id: string; label: string; detail: string; estimate_cents: number | null; chosen: boolean }> };
+
+export const listRequestProposals = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ requestId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }): Promise<TeamProposal[]> => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { data: proposals, error } = await admin.from("request_proposals").select("id, status, created_at, decided_at").eq("request_id", data.requestId).order("created_at", { ascending: false });
+    if (error) throw new Error("Les propositions n’ont pas pu être chargées.");
+    const ids = (proposals ?? []).map((p) => p.id);
+    const { data: options } = ids.length ? await admin.from("request_proposal_options").select("id, proposal_id, label, detail, estimate_cents, chosen, sort_order").in("proposal_id", ids).order("sort_order") : { data: [] };
+    return (proposals ?? []).map((p) => ({ ...p, options: (options ?? []).filter((o: { proposal_id: string }) => o.proposal_id === p.id).map(({ id, label, detail, estimate_cents, chosen }: { id: string; label: string; detail: string; estimate_cents: number | null; chosen: boolean }) => ({ id, label, detail, estimate_cents, chosen })) }));
+  });
+
+export const sendProposal = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({
+    requestId: z.string().uuid(),
+    options: z.array(z.object({ label: z.string().trim().min(1).max(160), detail: z.string().trim().max(2000), estimateCents: z.number().int().min(0).max(100_000_000).nullable() })).min(1).max(6),
+  }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { data: proposal, error } = await admin.from("request_proposals").insert({ request_id: data.requestId, created_by: (context as Ctx).userId }).select("id").single();
+    if (error || !proposal) return { ok: false as const, reason: error?.code === "23505" ? "Une proposition attend déjà la réponse du membre." : "La proposition n’a pas pu être envoyée." };
+    const { error: optionsError } = await admin.from("request_proposal_options").insert(data.options.map((o, i) => ({ proposal_id: proposal.id, label: o.label, detail: o.detail, estimate_cents: o.estimateCents, sort_order: i })));
+    if (optionsError) {
+      await admin.from("request_proposals").delete().eq("id", proposal.id);
+      return { ok: false as const, reason: "La proposition n’a pas pu être envoyée." };
+    }
+    await admin.from("request_events").insert({ request_id: data.requestId, actor_id: (context as Ctx).userId, kind: "proposition envoyée", detail: `${data.options.length} option${data.options.length > 1 ? "s" : ""}` });
+    await notifyMember(admin, data.requestId, "proposition", (title) => `Votre conciergerie vous propose ${data.options.length > 1 ? `${data.options.length} options` : "une option"} pour « ${title} ».`);
+    return { ok: true as const };
+  });
+
+/** Retire une proposition restée sans réponse (erreur de saisie, situation changée). */
+export const withdrawProposal = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { data: row, error } = await admin.from("request_proposals").delete().eq("id", data.id).eq("status", "en attente").select("request_id").maybeSingle();
+    if (error || !row) return { ok: false as const, reason: "Le membre a déjà répondu à cette proposition." };
+    await admin.from("request_events").insert({ request_id: row.request_id, actor_id: (context as Ctx).userId, kind: "proposition retirée", detail: null });
+    return { ok: true as const };
   });

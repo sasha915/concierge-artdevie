@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { listMembers, getMemberDetail, getMemberParrain, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames, listReferrals, listTeam, listOffersAdmin, listRequestEvents, listReplyTemplates, getRequestBilling, getMemberPreferences, listRequestMessages, listRequestFiles, listRequestChanges, getRequestReview, listMemberReviews, type TeamRole } from "@/lib/admin.functions";
+import { listMembers, getMemberDetail, getMemberParrain, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames, listReferrals, listTeam, listOffersAdmin, listRequestEvents, listReplyTemplates, getRequestBilling, getMemberPreferences, listRequestMessages, listRequestFiles, listRequestChanges, getRequestReview, listMemberReviews, listRequestProposals, type TeamRole } from "@/lib/admin.functions";
 import type { Invoice, RequestItem } from "@/data/art-de-vie";
 
 export type AdminMember = {
@@ -177,4 +177,9 @@ export const requestReviewQuery = (requestId: string) => queryOptions({
 export const memberReviewsQuery = (memberId: string) => queryOptions({
   queryKey: ["admin", "member", memberId, "reviews"],
   queryFn: () => listMemberReviews({ data: { memberId } }),
+});
+
+export const requestProposalsQuery = (requestId: string) => queryOptions({
+  queryKey: ["admin", "request", requestId, "proposals"],
+  queryFn: () => listRequestProposals({ data: { requestId } }),
 });

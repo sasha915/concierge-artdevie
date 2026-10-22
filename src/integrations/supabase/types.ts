@@ -267,6 +267,71 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_requests: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          dates: string[]
+          description: string
+          end_date: string | null
+          guests: number | null
+          id: string
+          image_key: string
+          last_occurrence: string | null
+          paused: boolean
+          rhythm: string
+          scheduled_time: string | null
+          start_date: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          dates?: string[]
+          description?: string
+          end_date?: string | null
+          guests?: number | null
+          id?: string
+          image_key?: string
+          last_occurrence?: string | null
+          paused?: boolean
+          rhythm: string
+          scheduled_time?: string | null
+          start_date?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          dates?: string[]
+          description?: string
+          end_date?: string | null
+          guests?: number | null
+          id?: string
+          image_key?: string
+          last_occurrence?: string | null
+          paused?: boolean
+          rhythm?: string
+          scheduled_time?: string | null
+          start_date?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       referrals: {
         Row: {
           converted_member_id: string | null
@@ -511,6 +576,79 @@ export type Database = {
           },
         ]
       }
+      request_proposal_options: {
+        Row: {
+          chosen: boolean
+          detail: string
+          estimate_cents: number | null
+          id: string
+          label: string
+          proposal_id: string
+          sort_order: number
+        }
+        Insert: {
+          chosen?: boolean
+          detail?: string
+          estimate_cents?: number | null
+          id?: string
+          label: string
+          proposal_id: string
+          sort_order?: number
+        }
+        Update: {
+          chosen?: boolean
+          detail?: string
+          estimate_cents?: number | null
+          id?: string
+          label?: string
+          proposal_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_proposal_options_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "request_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      request_proposals: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          id: string
+          request_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          id?: string
+          request_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          id?: string
+          request_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_proposals_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       request_reviews: {
         Row: {
           comment: string
@@ -554,6 +692,7 @@ export type Database = {
           guests: number | null
           id: string
           image_key: string
+          recurring_id: string | null
           scheduled_date: string | null
           scheduled_time: string | null
           status: Database["public"]["Enums"]["request_status"]
@@ -572,6 +711,7 @@ export type Database = {
           guests?: number | null
           id?: string
           image_key?: string
+          recurring_id?: string | null
           scheduled_date?: string | null
           scheduled_time?: string | null
           status?: Database["public"]["Enums"]["request_status"]
@@ -590,6 +730,7 @@ export type Database = {
           guests?: number | null
           id?: string
           image_key?: string
+          recurring_id?: string | null
           scheduled_date?: string | null
           scheduled_time?: string | null
           status?: Database["public"]["Enums"]["request_status"]
@@ -598,7 +739,15 @@ export type Database = {
           title?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "requests_recurring_id_fkey"
+            columns: ["recurring_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -633,6 +782,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      generate_recurring_requests: { Args: { _today?: string }; Returns: number }
       is_team: { Args: { _user_id: string }; Returns: boolean }
       mark_request_notifications_read: { Args: { _request_id: string }; Returns: undefined }
       next_invoice_number: { Args: never; Returns: string }

@@ -130,3 +130,35 @@ export const requestReviewMemberQuery = (requestId: string) => queryOptions({
     return (data ?? null) as MemberReview | null;
   },
 });
+
+export type MemberProposal = { id: string; status: string; created_at: string; options: Array<{ id: string; label: string; detail: string; estimate_cents: number | null; chosen: boolean; sort_order: number }> };
+/** Dernière proposition de la demande, avec ses options (RLS : ses seules demandes). */
+export const requestProposalMemberQuery = (requestId: string) => queryOptions({
+  queryKey: ["requests", requestId, "proposal"],
+  queryFn: async (): Promise<MemberProposal | null> => {
+    const { data, error } = await supabase
+      .from("request_proposals")
+      .select("id, status, created_at, options:request_proposal_options(id, label, detail, estimate_cents, chosen, sort_order)")
+      .eq("request_id", requestId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    const p = data as unknown as MemberProposal;
+    return { ...p, options: [...(p.options ?? [])].sort((a, b) => a.sort_order - b.sort_order) };
+  },
+});
+
+export type MemberRecurring = { id: string; category: string; title: string; rhythm: string; start_date: string | null; dates: string[]; end_date: string | null; paused: boolean; last_occurrence: string | null; scheduled_time: string | null };
+export const recurringRequestsQuery = queryOptions({
+  queryKey: ["recurring"],
+  queryFn: async (): Promise<MemberRecurring[]> => {
+    const { data, error } = await supabase
+      .from("recurring_requests")
+      .select("id, category, title, rhythm, start_date, dates, end_date, paused, last_occurrence, scheduled_time")
+      .order("created_at");
+    if (error) throw error;
+    return (data ?? []) as MemberRecurring[];
+  },
+});

@@ -11,6 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { requestsQuery } from "@/lib/adv-queries";
+import { RHYTHMS, rhythmLabel, type Rhythm } from "@/lib/planning-rules";
+import { createRecurringFromRequest } from "@/lib/messages.functions";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import bassin from "@/assets/v3/bassin.jpg.asset.json";
 import entree from "@/assets/v3/entree-de-nuit.jpg.asset.json";
@@ -47,6 +51,7 @@ export const Route = createFileRoute("/_authenticated/demandes/nouvelle")({
 
 function Page() {
   const navigate = useNavigate();
+  const createRecurring = useServerFn(createRecurringFromRequest);
   const { offer, renew } = Route.useSearch();
   const queryClient = useQueryClient();
   const { data: previous = [] } = useQuery(requestsQuery);
@@ -60,6 +65,11 @@ function Page() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
+  const [rhythm, setRhythm] = useState<"aucune" | Rhythm>("aucune");
+  const [extraDates, setExtraDates] = useState<string[]>([]);
+  const [nextDate, setNextDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [stepError, setStepError] = useState<string | null>(null);
 
   // « Renouveler cette demande » : catégorie, prestation, couverts et précisions repris, date laissée vide.
   const [renewed, setRenewed] = useState(false);
@@ -102,6 +112,15 @@ function Page() {
     if (error || !data) {
       setError("L’envoi a échoué. Réessayez dans un instant.");
       return;
+    }
+    if (rhythm !== "aucune") {
+      try {
+        const rec = await createRecurring({ data: { requestId: data.id, recurrence: { rhythm, dates: extraDates, endDate: endDate || null } } });
+        if (!rec.ok) toast.error(`Votre demande est transmise, mais pas sa récurrence : ${rec.reason}`);
+      } catch {
+        toast.error("Votre demande est transmise, mais sa récurrence n’a pas pu être enregistrée.");
+      }
+      await queryClient.invalidateQueries({ queryKey: ["recurring"] });
     }
     await queryClient.invalidateQueries({ queryKey: ["requests"] });
     setCreatedId(data.id);
@@ -233,6 +252,9 @@ function Page() {
               className="mt-6 rounded-card bg-card p-4 sm:p-7 lg:col-span-8 lg:mt-0 lg:p-8"
               onSubmit={(e) => {
                 e.preventDefault();
+                if (rhythm !== "aucune" && !date) { setStepError("Indiquez la date de la première échéance."); return; }
+                if (rhythm === "dates" && extraDates.length === 0) { setStepError("Ajoutez au moins une autre date."); return; }
+                setStepError(null);
                 setStep(3);
               }}
             >
@@ -270,7 +292,48 @@ function Page() {
                     placeholder="Vos envies, contraintes ou attentions particulières…"
                   />
                 </Field>
+                <Field label="Récurrence" desktopFull>
+                  <select
+                    value={rhythm}
+                    onChange={(e) => setRhythm(e.target.value as "aucune" | Rhythm)}
+                    className="v3-field flex w-full py-1 text-base focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
+                  >
+                    {RHYTHMS.map((r) => (
+                      <option key={r.value} value={r.value}>{r.label}</option>
+                    ))}
+                  </select>
+                  {rhythm !== "aucune" && (
+                    <div className="mt-3 grid gap-3 rounded-[16px] bg-primary/10 p-4 text-primary">
+                      {rhythm === "dates" && (
+                        <div>
+                          <p className="text-[12px] text-muted-foreground">Autres dates (la première est la date souhaitée)</p>
+                          <div className="mt-2 flex gap-2">
+                            <Input type="date" value={nextDate} onChange={(e) => setNextDate(e.target.value)} aria-label="Ajouter une date" />
+                            <Button type="button" variant="soft" onClick={() => { if (nextDate && !extraDates.includes(nextDate)) setExtraDates([...extraDates, nextDate].sort()); setNextDate(""); }}>Ajouter</Button>
+                          </div>
+                          {extraDates.length > 0 && (
+                            <ul className="mt-2 flex flex-wrap gap-2">
+                              {extraDates.map((d) => (
+                                <li key={d}>
+                                  <button type="button" onClick={() => setExtraDates(extraDates.filter((x) => x !== d))} className="inline-flex h-9 items-center gap-1 rounded-full bg-card px-3 text-[12px]" aria-label={`Retirer le ${d}`}>
+                                    {new Date(`${d}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} <X className="size-3" />
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-[12px] text-muted-foreground">Date de fin (facultative)</p>
+                        <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-2" aria-label="Date de fin de la récurrence" />
+                      </div>
+                      <p className="text-[12px] leading-5 text-muted-foreground">Chaque échéance crée une demande sept jours avant sa date, que vous suivez comme les autres.</p>
+                    </div>
+                  )}
+                </Field>
               </div>
+              {stepError && <p role="alert" className="mt-4 rounded-[18px] bg-primary/10 p-4 text-xs leading-5 text-primary">{stepError}</p>}
               <div className="mt-6 grid grid-cols-[auto_minmax(0,1fr)] gap-2 lg:flex lg:justify-between">
                 <Button type="button" variant="outline" size="lg" onClick={() => setStep(1)}>
                   Retour
@@ -299,6 +362,7 @@ function Page() {
                 <Review label="Heure" value={time || "À définir"} />
                 <Review label={category === "Tables" ? "Couverts" : "Personnes"} value={guests || "À définir"} />
                 <Review label="Précisions" value={description || "Aucune"} />
+                {rhythm !== "aucune" && <Review label="Récurrence" value={rhythmLabel(rhythm)} />}
               </dl>
             </div>
             <p className="mt-5 text-[13px] leading-5 text-muted-foreground lg:col-span-5 lg:mt-0 lg:self-end lg:border-t lg:border-primary/25 lg:pt-6 lg:text-[18px] lg:leading-7">

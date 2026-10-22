@@ -2,16 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, ChevronLeft, Download, FileText, Paperclip } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, Download, FileText, Paperclip, Plus, X } from "lucide-react";
 import { AdminShell, TeamStatus } from "@/components/art-de-vie/admin-shell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatDate, formatShortDate, initials, type RequestStatus } from "@/data/art-de-vie";
-import { requestDetailQuery, teamNamesQuery, requestEventsQuery, replyTemplatesQuery, requestBillingQuery, requestMessagesAdminQuery, requestFilesQuery, requestChangesQuery, requestReviewQuery } from "@/lib/admin-queries";
+import { requestDetailQuery, teamNamesQuery, requestEventsQuery, replyTemplatesQuery, requestBillingQuery, requestMessagesAdminQuery, requestFilesQuery, requestChangesQuery, requestReviewQuery, requestProposalsQuery } from "@/lib/admin-queries";
 import { eurosInput, invoiceBreakdown, parseEuros, ratePercent } from "@/lib/billing-rules";
 import { insertReply, requestHistory } from "@/lib/team-request-rules";
-import { decideRequestChange, getRequestFileUrl, setRequestFileVisibility, uploadRequestFile } from "@/lib/admin.functions";
+import { decideRequestChange, getRequestFileUrl, sendProposal, setRequestFileVisibility, uploadRequestFile, withdrawProposal } from "@/lib/admin.functions";
 import { FILE_TYPES, fileProblem, fileSizeLabel } from "@/lib/request-actions-rules";
 import { addRequestNote, createRequestInvoice, listRequestNotes, setRequestAmount, sendTeamMessage, setRequestConcierge, updateRequestStatus } from "@/lib/admin.functions";
 
@@ -141,6 +141,8 @@ function Page() {
             <Button type="button" disabled={busy || !reply.trim()} onClick={() => run(async () => { const res = await sendMessage({ data: { requestId: r.id, body: reply } }); if (res.ok) { setReplyText(""); cursorRef.current = null; } return res; }, "Message envoyé au membre.")} className="h-11 rounded-full px-5">Envoyer au membre</Button>
           </div>
         </section>
+
+        <ProposalBlock requestId={r.id} cancelled={r.status === "Annulée"} busy={busy} run={run} />
 
         <FilesBlock requestId={r.id} busy={busy} run={run} />
 
@@ -364,5 +366,71 @@ function ReviewPanel({ requestId }: { requestId: string }) {
       {review.comment && <p className="mt-2 whitespace-pre-line text-[15px] leading-6">{review.comment}</p>}
       <p className="mt-2 text-[12px] text-muted-foreground">{stamp(review.created_at)}</p>
     </> : <p className="mt-3 text-[13px] text-muted-foreground">Le membre n’a pas encore donné son avis.</p>}
+  </section>;
+}
+
+type DraftOption = { label: string; detail: string; estimate: string };
+const emptyOption: DraftOption = { label: "", detail: "", estimate: "" };
+
+/** Lot 6.1 — proposition au membre : options, envoi, état de la réponse. */
+function ProposalBlock({ requestId, cancelled, busy, run }: { requestId: string; cancelled: boolean; busy: boolean; run: Run }) {
+  const { data: proposals = [], isLoading } = useQuery(requestProposalsQuery(requestId));
+  const send = useServerFn(sendProposal);
+  const withdraw = useServerFn(withdrawProposal);
+  const [drafting, setDrafting] = useState(false);
+  const [options, setOptions] = useState<DraftOption[]>([{ ...emptyOption }, { ...emptyOption }]);
+  const [problem, setProblem] = useState<string | null>(null);
+  const latest = proposals[0];
+  const pending = latest?.status === "en attente" ? latest : null;
+
+  function update(i: number, key: keyof DraftOption, value: string) {
+    setOptions((list) => list.map((o, k) => (k === i ? { ...o, [key]: value } : o)));
+  }
+
+  function submit() {
+    const filled = options.filter((o) => o.label.trim());
+    if (filled.length === 0) { setProblem("Indiquez au moins une option."); return; }
+    const parsed = filled.map((o) => ({ label: o.label.trim(), detail: o.detail.trim(), estimateCents: o.estimate.trim() ? parseEuros(o.estimate) : null }));
+    if (parsed.some((o, i) => filled[i]!.estimate.trim() && o.estimateCents === null)) { setProblem("Montant estimé invalide : indiquez des euros, avec deux décimales au plus."); return; }
+    setProblem(null);
+    void run(async () => {
+      const res = await send({ data: { requestId, options: parsed } });
+      if (res.ok) { setDrafting(false); setOptions([{ ...emptyOption }, { ...emptyOption }]); }
+      return res;
+    }, "Proposition envoyée au membre.");
+  }
+
+  if (isLoading) return <Skeleton className="h-24 rounded-[28px] bg-primary/10" />;
+  if (cancelled && !latest) return null;
+
+  return <section aria-labelledby="proposal-title" className="team-panel rounded-[28px] p-6">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <h2 id="proposal-title" className="eyebrow team-mention">( Proposition au membre )</h2>
+      {latest && <span className={`rounded-full px-3 py-1 text-[11px] ${latest.status === "en attente" ? "border border-dashed border-border" : latest.status === "acceptée" ? "bg-primary text-primary-foreground" : "border border-border"}`}>{latest.status === "en attente" ? "En attente de réponse" : latest.status === "acceptée" ? "Option choisie" : "Aucune ne convient"}</span>}
+    </div>
+    {latest && !drafting && <>
+      <ol className="mt-4 grid gap-2">{latest.options.map((o) => <li key={o.id} className={`rounded-2xl p-4 ${o.chosen ? "bg-foreground text-background" : "border border-border"}`}>
+        <p className="flex flex-wrap items-baseline justify-between gap-2"><span className="text-[16px]">{o.label}</span>{o.estimate_cents !== null && <span className="text-[14px]">≈ {formatAmount(o.estimate_cents)}</span>}</p>
+        {o.detail && <p className="mt-1 whitespace-pre-line text-[13px] opacity-80">{o.detail}</p>}
+      </li>)}</ol>
+      <p className="mt-3 text-[12px] text-muted-foreground">Envoyée le {stamp(latest.created_at)}{latest.decided_at ? ` · réponse le ${stamp(latest.decided_at)}` : ""}</p>
+    </>}
+    {pending && !drafting && <Button type="button" variant="outline" disabled={busy} className="mt-4 h-11 rounded-full px-5" onClick={() => { if (window.confirm("Retirer cette proposition ? Le membre ne la verra plus.")) void run(() => withdraw({ data: { id: pending.id } }), "Proposition retirée."); }}>Retirer la proposition</Button>}
+    {!pending && !cancelled && !drafting && <Button type="button" variant="outline" className="mt-4 h-11 rounded-full px-5" onClick={() => setDrafting(true)}>{latest ? "Nouvelle proposition" : "Préparer une proposition"}</Button>}
+    {drafting && <div className="mt-4 grid gap-3">
+      {options.map((o, i) => <fieldset key={i} className="grid gap-2 rounded-2xl border border-border p-4">
+        <legend className="px-1 text-[12px] text-muted-foreground">Option {i + 1}</legend>
+        <div className="flex gap-2"><input aria-label={`Intitulé de l’option ${i + 1}`} value={o.label} maxLength={160} onChange={(e) => update(i, "label", e.target.value)} placeholder="Intitulé" className="h-11 min-w-0 flex-1 rounded-2xl border border-border bg-card px-4 text-[15px] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+          {options.length > 1 && <Button type="button" variant="outline" size="icon" className="size-11 shrink-0 rounded-full" aria-label={`Retirer l’option ${i + 1}`} onClick={() => setOptions((list) => list.filter((_, k) => k !== i))}><X className="size-4" /></Button>}</div>
+        <Textarea aria-label={`Détail de l’option ${i + 1}`} value={o.detail} maxLength={2000} rows={2} onChange={(e) => update(i, "detail", e.target.value)} placeholder="Détail" className="min-h-[64px]" />
+        <input aria-label={`Montant estimé de l’option ${i + 1} en euros`} inputMode="decimal" value={o.estimate} onChange={(e) => update(i, "estimate", e.target.value)} placeholder="Montant estimé (€), facultatif" className="h-11 rounded-2xl border border-border bg-card px-4 text-[15px] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+      </fieldset>)}
+      {problem && <p role="alert" className="text-[13px]">{problem}</p>}
+      <div className="flex flex-wrap gap-2">
+        {options.length < 6 && <Button type="button" variant="outline" className="h-11 rounded-full px-5" onClick={() => setOptions((list) => [...list, { ...emptyOption }])}><Plus className="size-4" />Ajouter une option</Button>}
+        <Button type="button" disabled={busy} className="h-11 rounded-full px-5" onClick={submit}>Envoyer la proposition</Button>
+        <Button type="button" variant="link" className="h-11" onClick={() => { setDrafting(false); setProblem(null); }}>Annuler</Button>
+      </div>
+    </div>}
   </section>;
 }

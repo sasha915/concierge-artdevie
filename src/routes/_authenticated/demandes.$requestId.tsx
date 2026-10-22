@@ -6,6 +6,7 @@ import { ArrowUp, CalendarPlus, Download, FileText, PencilLine, RotateCcw } from
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { getMemberFileUrl, sendMemberMessage, submitReview } from "@/lib/messages.functions";
+import { proposalBanner } from "@/lib/planning-rules";
 import { buildIcs, canAddToCalendar, canRenew, canRequestChange, canReview, changeKindLabel, FILE_TYPES, fileSizeLabel, REVIEW_RATINGS, type ReviewRating } from "@/lib/request-actions-rules";
 import type { RequestItem } from "@/data/art-de-vie";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { PillAction, StatusTimeline, Title } from "@/components/art-de-vie/v3";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, imageFor } from "@/data/art-de-vie";
-import { requestChangesMemberQuery, requestFilesMemberQuery, requestMessagesQuery, requestReviewMemberQuery, requestsQuery, unreadRequestNotificationsQuery } from "@/lib/adv-queries";
+import { requestChangesMemberQuery, requestFilesMemberQuery, requestProposalMemberQuery, requestMessagesQuery, requestReviewMemberQuery, requestsQuery, unreadRequestNotificationsQuery } from "@/lib/adv-queries";
 
 export const Route = createFileRoute("/_authenticated/demandes/$requestId")({
   head: () => ({
@@ -120,6 +121,7 @@ function Page() {
             <StatusTimeline status={item.status} dark />
           </div>
         </section>
+        <ProposalBanner requestId={item.id} />
         <Exchanges requestId={item.id} description={item.description} cancelled={item.status === "Annulée"} />
         <Documents requestId={item.id} />
         <section className="mt-8 px-2 text-primary lg:col-span-5 lg:mr-[clamp(20px,3.9vw,56px)] lg:mt-16 lg:px-0">
@@ -374,5 +376,20 @@ function ReviewBlock({ requestId }: { requestId: string }) {
       <Textarea id="review-comment" value={comment} onChange={(e) => setComment(e.target.value)} maxLength={1000} rows={2} className="mt-2 min-h-[64px] bg-card" />
       <Button type="submit" disabled={busy || !rating} className="mt-4 w-full">Envoyer mon avis</Button>
     </form>
+  );
+}
+
+/** Lot 6.1 — bandeau vers la proposition en attente ; n'apparaît que s'il y en a une. */
+function ProposalBanner({ requestId }: { requestId: string }) {
+  const { data: proposal } = useQuery(requestProposalMemberQuery(requestId));
+  if (!proposal || proposal.status !== "en attente" || proposal.options.length === 0) return null;
+  return (
+    <Link to="/demandes/$requestId/proposition" params={{ requestId }} className="mt-3 flex items-center justify-between gap-4 rounded-[28px] bg-primary p-5 text-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:col-span-7 lg:col-start-1 lg:ml-[clamp(20px,3.9vw,56px)] lg:mt-16 lg:p-8">
+      <span>
+        <span className="eyebrow block text-background/80">Votre conciergerie vous propose</span>
+        <span className="mt-2 block text-[20px] lg:text-[26px]">{proposalBanner(proposal.options.length)}</span>
+      </span>
+      <ArrowUp className="size-5 rotate-45" aria-hidden="true" />
+    </Link>
   );
 }

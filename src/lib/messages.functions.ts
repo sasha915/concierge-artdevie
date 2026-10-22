@@ -101,3 +101,81 @@ export const submitReview = createServerFn({ method: "POST" })
     await supabaseAdmin.from("request_events").insert({ request_id: request.id, actor_id: context.userId, kind: "avis reçu", detail: data.rating });
     return { ok: true as const };
   });
+
+// ---- Lot 6.1 : réponse du membre à une proposition ----
+
+/** optionId null : « Aucune ne me convient ». Le choix préremplit le montant de la demande s'il n'est pas encore facturé. */
+export const answerProposal = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ proposalId: z.string().uuid(), optionId: z.string().uuid().nullable() }).parse(input))
+  .handler(async ({ data, context }) => {
+    // RLS : le membre ne lit que les propositions de ses propres demandes.
+    const { data: proposal } = await context.supabase.from("request_proposals").select("id, request_id, status").eq("id", data.proposalId).maybeSingle();
+    if (!proposal) return { ok: false as const, reason: "Cette proposition est introuvable." };
+    if (proposal.status !== "en attente") return { ok: false as const, reason: "Vous avez déjà répondu à cette proposition." };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let option: { id: string; label: string; estimate_cents: number | null } | null = null;
+    if (data.optionId) {
+      const { data: o } = await supabaseAdmin.from("request_proposal_options").select("id, label, estimate_cents").eq("id", data.optionId).eq("proposal_id", proposal.id).maybeSingle();
+      if (!o) return { ok: false as const, reason: "Cette option est introuvable." };
+      option = o;
+    }
+    const { data: updated } = await supabaseAdmin.from("request_proposals").update({ status: option ? "acceptée" : "déclinée", decided_at: new Date().toISOString() }).eq("id", proposal.id).eq("status", "en attente").select("id").maybeSingle();
+    if (!updated) return { ok: false as const, reason: "Vous avez déjà répondu à cette proposition." };
+    if (option) {
+      await supabaseAdmin.from("request_proposal_options").update({ chosen: true }).eq("id", option.id);
+      if (option.estimate_cents !== null) {
+        const { data: invoice } = await supabaseAdmin.from("invoices").select("id").eq("request_id", proposal.request_id).maybeSingle();
+        if (!invoice) await supabaseAdmin.from("requests").update({ amount_cents: option.estimate_cents }).eq("id", proposal.request_id);
+      }
+    }
+    await supabaseAdmin.from("request_events").insert({ request_id: proposal.request_id, actor_id: context.userId, kind: option ? "proposition acceptée" : "proposition déclinée", detail: option?.label ?? null });
+    try {
+      const { data: request } = await supabaseAdmin.from("requests").select("id, user_id, title, category").eq("id", proposal.request_id).maybeSingle();
+      if (request) {
+        const { notifyConcierge } = await import("./notify-concierge.server");
+        await notifyConcierge(request, option ? `Option choisie : ${option.label}` : "Aucune des options proposées ne convient.");
+      }
+    } catch (err) {
+      console.error("[answerProposal] notification équipe impossible", err);
+    }
+    return { ok: true as const };
+  });
+
+// ---- Lot 6.2 : demandes récurrentes ----
+
+export const createRecurringFromRequest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({
+    requestId: z.string().uuid(),
+    recurrence: z.object({
+      rhythm: z.enum(["hebdomadaire", "mensuelle", "dates"]),
+      dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(60),
+      endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+    }),
+  }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: request } = await context.supabase
+      .from("requests")
+      .select("id, user_id, category, title, description, guests, scheduled_date, scheduled_time, image_key, recurring_id")
+      .eq("id", data.requestId)
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (!request) return { ok: false as const, reason: "Cette demande est introuvable." };
+    if (request.recurring_id) return { ok: false as const, reason: "Cette demande appartient déjà à une série." };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { createRecurringRule } = await import("./recurring.server");
+    return createRecurringRule(supabaseAdmin, request, data.recurrence, context.userId);
+  });
+
+export const setRecurringPaused = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), paused: z.boolean() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: rule } = await context.supabase.from("recurring_requests").select("id").eq("id", data.id).eq("user_id", context.userId).maybeSingle();
+    if (!rule) return { ok: false as const, reason: "Cette série est introuvable." };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("recurring_requests").update({ paused: data.paused }).eq("id", rule.id);
+    if (error) return { ok: false as const, reason: "Le changement n’a pas pu être enregistré." };
+    return { ok: true as const };
+  });
