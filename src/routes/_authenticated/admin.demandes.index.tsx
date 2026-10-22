@@ -5,8 +5,10 @@ import { Plus, Search } from "lucide-react";
 import { AdminShell, TeamStatus } from "@/components/art-de-vie/admin-shell";
 import { Title } from "@/components/art-de-vie/v3";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { formatShortDate, type RequestStatus } from "@/data/art-de-vie";
-import { allRequestsQuery } from "@/lib/admin-queries";
+import { allRequestsQuery, teamSelfQuery } from "@/lib/admin-queries";
+import { matchesRequestFilters } from "@/lib/team-request-rules";
 
 export const Route = createFileRoute("/_authenticated/admin/demandes/")({
   head: () => ({ meta: [
@@ -25,15 +27,15 @@ const control = "h-11 rounded-full border border-border bg-card px-4 text-[14px]
 
 function Page() {
   const { data = [], isLoading } = useQuery(allRequestsQuery);
+  const { data: userId = null } = useQuery(teamSelfQuery);
+  const [mine, setMine] = useState(false);
+  const [unassigned, setUnassigned] = useState(false);
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("");
   const [concierge, setConcierge] = useState("");
   const categories = useMemo(() => [...new Set(data.map((r) => r.category))].sort(), [data]);
   const concierges = useMemo(() => [...new Set(data.map((r) => r.concierge))].sort(), [data]);
-  const needle = q.trim().toLowerCase();
-  const list = data.filter((r) =>
-    (!needle || r.title.toLowerCase().includes(needle) || r.member_name.toLowerCase().includes(needle)) &&
-    (!category || r.category === category) && (!concierge || r.concierge === concierge));
+  const list = data.filter((r) => matchesRequestFilters(r, { search: q, category, concierge, mine, unassigned, userId }));
 
   return <AdminShell>
     <p className="eyebrow team-mention">( Demandes )</p>
@@ -48,10 +50,14 @@ function Page() {
         <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher un membre ou une demande…" className={`${control} w-full pl-10 placeholder:text-muted-foreground`} />
       </label>
-      <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Filtrer par catégorie">
+      <div className="flex basis-full flex-wrap gap-2" role="group" aria-label="Filtrer les attributions">
+        <Button type="button" variant="ghost" aria-pressed={mine} disabled={!userId} onClick={() => setMine((v) => !v)} className={`h-9 text-[13px] ${mine ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" : "border border-border text-muted-foreground"}`}>Mes demandes</Button>
+        <Button type="button" variant="ghost" aria-pressed={unassigned} onClick={() => setUnassigned((v) => !v)} className={`h-9 text-[13px] ${unassigned ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" : "border border-border text-muted-foreground"}`}>À attribuer</Button>
+      </div>
+      <div className="no-scrollbar flex w-full min-w-0 gap-2 overflow-x-auto sm:flex-wrap" role="group" aria-label="Filtrer par catégorie">
         {["", ...categories].map((c) => <button key={c || "all"} type="button" onClick={() => setCategory(c)} aria-pressed={category === c} className={`h-9 shrink-0 rounded-full px-4 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${category === c ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground hover:text-foreground"}`}>{c || "Toutes catégories"}</button>)}
       </div>
-      <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Filtrer par concierge">
+      <div className="no-scrollbar flex w-full min-w-0 gap-2 overflow-x-auto sm:flex-wrap" role="group" aria-label="Filtrer par concierge">
         {["", ...concierges].map((c) => <button key={c || "all"} type="button" onClick={() => setConcierge(c)} aria-pressed={concierge === c} className={`h-9 shrink-0 rounded-full px-4 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${concierge === c ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground hover:text-foreground"}`}>{c || "Tous les concierges"}</button>)}
       </div>
     </div>

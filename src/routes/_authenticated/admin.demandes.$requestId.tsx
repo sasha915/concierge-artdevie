@@ -1,14 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, ChevronLeft } from "lucide-react";
 import { AdminShell, TeamStatus } from "@/components/art-de-vie/admin-shell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, initials, type RequestStatus } from "@/data/art-de-vie";
-import { requestDetailQuery, teamNamesQuery } from "@/lib/admin-queries";
+import { requestDetailQuery, teamNamesQuery, requestEventsQuery, replyTemplatesQuery } from "@/lib/admin-queries";
+import { insertReply, requestHistory } from "@/lib/team-request-rules";
 import { addRequestNote, listRequestNotes, setRequestConcierge, setRequestReply, updateRequestStatus } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/demandes/$requestId")({
@@ -34,6 +35,11 @@ function stamp(iso: string) {
 function Page() {
   const { requestId } = Route.useParams();
   const { cree } = Route.useSearch();
+  const { teamRole } = Route.useRouteContext();
+  const { data: events = [], isLoading: eventsLoading, isError: eventsError } = useQuery(requestEventsQuery(requestId));
+  const { data: templates = [], isLoading: templatesLoading, isError: templatesError } = useQuery(replyTemplatesQuery);
+  const replyRef = useRef<HTMLTextAreaElement>(null);
+  const cursorRef = useRef<number | null>(null);
   const fetchNotes = useServerFn(listRequestNotes);
   const addNote = useServerFn(addRequestNote);
   const { data: notes = [] } = useQuery({ queryKey: ["admin", "request", requestId, "notes"], queryFn: () => fetchNotes({ data: { requestId } }) });
@@ -75,6 +81,16 @@ function Page() {
   const legacyName = !r.concierge_id && r.concierge !== UNASSIGNED ? r.concierge : null;
   const conciergeValue = r.concierge_id ?? (legacyName ? "legacy" : "");
   const guestsLabel = r.category === "Tables" ? "Couverts" : "Personnes";
+  const history = requestHistory(events, r.created_at);
+  const usableTemplates = templates.filter((t) => t.body.trim());
+
+  function useTemplate(body: string) {
+    const inserted = insertReply(reply, body, cursorRef.current);
+    if (inserted.text.length > 4000) { setNotice({ ok: false, text: "La réponse ne peut pas dépasser 4 000 caractères." }); return; }
+    setReplyText(inserted.text);
+    cursorRef.current = inserted.cursor;
+    requestAnimationFrame(() => { replyRef.current?.focus(); replyRef.current?.setSelectionRange(inserted.cursor, inserted.cursor); });
+  }
 
   return <AdminShell>
     <Link to="/admin/demandes" className="inline-flex h-11 items-center gap-2 rounded-full border border-border px-4 text-[14px] hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ChevronLeft className="size-4" />Demandes</Link>
@@ -100,8 +116,12 @@ function Page() {
             <h2 className="eyebrow team-mention">( Réponse au membre )</h2>
             <span className="rounded-full border border-border px-3 py-1 text-[11px]">Visible par le membre</span>
           </div>
+          {templatesError ? <p role="alert" className="mt-3 text-[13px] text-muted-foreground">Les réponses types n’ont pas pu être chargées.</p> : !templatesLoading && <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2">
+            {usableTemplates.map((t) => <Button key={t.id} type="button" variant="outline" className="h-auto min-h-9 max-w-full whitespace-normal py-2 text-[13px]" onClick={() => useTemplate(t.body)}>{t.label}</Button>)}
+            {teamRole === "admin" && <Button asChild variant="link" className="h-auto whitespace-normal px-0 py-1 text-[12px]"><Link to="/admin/reponses-types">Rédiger les réponses types</Link></Button>}
+          </div>}
           <label htmlFor="team-reply" className="sr-only">Réponse au membre</label>
-          <Textarea id="team-reply" value={reply} onChange={(e) => setReplyText(e.target.value)} maxLength={4000} rows={6} placeholder="Écrire au membre…" className="mt-4 min-h-[140px]" />
+          <Textarea ref={replyRef} id="team-reply" value={reply} onChange={(e) => { setReplyText(e.target.value); cursorRef.current = e.target.selectionStart; }} onSelect={(e) => { cursorRef.current = e.currentTarget.selectionStart; }} maxLength={4000} rows={6} placeholder="Écrire au membre…" className="mt-4 min-h-[140px]" />
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <p className="text-[13px] text-muted-foreground">{r.team_reply_at ? `Dernière publication le ${stamp(r.team_reply_at)}` : "Aucune réponse publiée."}</p>
             <Button type="button" disabled={busy} onClick={() => run(() => setReply({ data: { id: r.id, reply } }), reply.trim() ? "Réponse publiée." : "Réponse retirée.")} className="h-11 rounded-full px-5">Publier la réponse</Button>
@@ -166,6 +186,15 @@ function Page() {
             Fiche membre<span className="flex size-8 items-center justify-center rounded-full bg-primary-foreground text-primary"><ArrowUpRight className="size-4" /></span>
           </Link>
         </section>}
+        <section className="team-panel rounded-[28px] p-6">
+          <h2 className="eyebrow team-mention">( Historique )</h2>
+          {eventsLoading ? <Skeleton className="mt-4 h-28 bg-primary/10" /> : eventsError ? <p role="alert" className="mt-4 text-[13px] text-muted-foreground">L’historique n’a pas pu être chargé.</p> : <ol className="mt-4 divide-y divide-border border-y border-border">
+            {history.map((e) => <li key={e.id} className="py-4">
+              <p className="break-words text-[15px] font-medium">{e.label}</p>
+              <p className="mt-2 flex flex-wrap justify-between gap-2 text-[12px] text-muted-foreground"><time dateTime={e.created_at}>{stamp(e.created_at)}</time><span>{e.author_name}</span></p>
+            </li>)}
+          </ol>}
+        </section>
       </div>
     </div>
   </AdminShell>;
