@@ -147,10 +147,10 @@ function Page() {
             <p className="mt-5 max-w-md text-[14px] leading-6 text-muted-foreground lg:col-span-5 lg:col-start-8 lg:row-start-2 lg:text-[18px] lg:leading-7">
               {t("Vous pouvez suivre son avancement à tout moment depuis Mes demandes.")}
             </p>
-            <div className="mt-7 rounded-[28px] bg-primary/10 p-5 lg:col-span-7 lg:col-start-1 lg:row-span-4 lg:row-start-1 lg:mt-0 lg:p-8">
+            <div className="mt-7 rounded-[28px] bg-panel p-5 lg:col-span-7 lg:col-start-1 lg:row-span-4 lg:row-start-1 lg:mt-0 lg:p-8">
               <div className="flex items-center justify-between">
                 <span className="eyebrow text-primary">{t(category)}</span>
-                <span className="rounded-full bg-primary/10 px-3 py-1 text-[11px] font-medium">{t("Nouvelle")}</span>
+                <span className="rounded-full bg-panel px-3 py-1 text-[11px] font-medium">{t("Nouvelle")}</span>
               </div>
               <h2 className="v3-card-title mt-6 text-[23px] lg:text-[40px]">{title}</h2>
               <div className="mt-5">
@@ -305,7 +305,7 @@ function Page() {
                     ))}
                   </select>
                   {rhythm !== "aucune" && (
-                    <div className="mt-3 grid gap-3 rounded-[16px] bg-primary/10 p-4 text-primary">
+                    <div className="mt-3 grid gap-3 rounded-[16px] bg-panel p-4 text-primary">
                       {rhythm === "dates" && (
                         <div>
                           <p className="text-[12px] text-muted-foreground">{t("Autres dates (la première est la date souhaitée)")}</p>
@@ -335,7 +335,7 @@ function Page() {
                   )}
                 </Field>
               </div>
-              {stepError && <p role="alert" className="mt-4 rounded-[18px] bg-primary/10 p-4 text-xs leading-5 text-primary">{stepError}</p>}
+              {stepError && <p role="alert" className="mt-4 rounded-[18px] bg-panel p-4 text-xs leading-5 text-primary">{stepError}</p>}
               <div className="mt-6 grid grid-cols-[auto_minmax(0,1fr)] gap-2 lg:flex lg:justify-between">
                 <Button type="button" variant="outline" size="lg" onClick={() => setStep(1)}>
                   {t("Retour")}
@@ -371,7 +371,7 @@ function Page() {
               {t("Votre demande sera transmise à votre conciergerie dès l’envoi.")}
             </p>
             {error && (
-              <p className="mt-4 rounded-[18px] lg:col-span-5 bg-primary/10 p-4 text-xs leading-5 text-primary">
+              <p className="mt-4 rounded-[18px] lg:col-span-5 bg-panel p-4 text-xs leading-5 text-primary">
                 {error}
               </p>
             )}

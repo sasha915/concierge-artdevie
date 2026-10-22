@@ -18,7 +18,7 @@ export function SubHeader({
     <>
       <div className="mb-7 flex items-center justify-between lg:hidden">
         <div className="w-11" />
-        <Logo className="h-[19px] w-auto" />
+        <Logo inverse className="h-[19px] w-auto" />
         <div className="w-11" />
       </div>
       <header className="mb-8 flex items-start gap-4 lg:hidden">
@@ -33,20 +33,22 @@ export function SubHeader({
           {title.includes(" ") ? " " : ""}
         </Title>
       </header>
-      <section className="hidden lg:mb-16 lg:flex lg:min-h-[440px] lg:flex-col lg:rounded-[28px] lg:bg-primary-deep lg:px-[clamp(20px,3.9vw,56px)] lg:py-6 lg:text-foreground">
+      <section className="hidden lg:mb-10 lg:block lg:text-foreground">
         <TopBar />
-        <p className="lg:eyebrow lg:mt-16 lg:text-foreground/80">{title}</p>
-        <Title
-          italic={`${title.split(" ").slice(-1).join(" ")}.`}
-          className="lg:mt-5 lg:text-[clamp(52px,7.2vw,104px)] lg:leading-[0.96]"
-        >
-          {title.split(" ").slice(0, -1).join(" ")}{" "}
-        </Title>
-        <div className="lg:mt-8 lg:flex lg:justify-end lg:border-t lg:border-foreground/22 lg:pt-5">
+        <div className="lg:mt-14 lg:flex lg:flex-wrap lg:items-end lg:justify-between lg:gap-6 lg:px-4">
+          <div>
+            <p className="eyebrow text-muted-foreground">{title}</p>
+            <Title
+              italic={`${title.split(" ").slice(-1).join(" ")}.`}
+              className="lg:mt-5 lg:text-[clamp(52px,5.6vw,88px)] lg:leading-[0.98]"
+            >
+              {title.split(" ").slice(0, -1).join(" ")}{" "}
+            </Title>
+          </div>
           <Button
             asChild
             variant="outline"
-            className="lg:h-11 lg:border-foreground/22 lg:text-foreground lg:hover:bg-foreground/10"
+            className="lg:h-11 lg:border-foreground/24 lg:text-foreground lg:hover:bg-foreground/10"
           >
             <Link to={backTo}>
               {close ? <X /> : <ChevronLeft />}

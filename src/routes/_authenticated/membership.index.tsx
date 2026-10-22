@@ -1,11 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CircleUserRound, FileText, Gift, History, Languages, LogOut, MessageCircle, ReceiptText, ShieldCheck, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowUpRight, CircleUserRound, FileText, Gift, History, Languages, LogOut, ReceiptText, ShieldCheck, Sparkles } from "lucide-react";
 import { AppShell, TopBar } from "@/components/art-de-vie/app-shell";
 import { Photo } from "@/components/art-de-vie/cards";
 import { MemberCard } from "@/components/art-de-vie/member-card";
-import { ArrowCircle, PillAction, Title } from "@/components/art-de-vie/v3";
+import { PillAction, Title } from "@/components/art-de-vie/v3";
 import { imageFor } from "@/data/art-de-vie";
 import { supabase } from "@/integrations/supabase/client";
 import { profileQuery } from "@/lib/adv-queries";
@@ -26,34 +25,21 @@ export const Route = createFileRoute("/_authenticated/membership/")({
   component: Page,
 });
 
-function AccountTile({
-  to,
-  icon,
-  label,
-  dark = false,
-  photo,
-}: {
-  to: "/membership/informations" | "/membership/factures" | "/membership/historique" | "/membership/parrainer" | "/membership/preferences" | "/membership/releve" | "/membership/langue";
-  icon: React.ReactNode;
-  label: string;
-  dark?: boolean;
-  photo?: string | undefined;
-}) {
+type TileTo = "/membership/informations" | "/membership/factures" | "/membership/historique" | "/membership/parrainer" | "/membership/preferences" | "/membership/releve" | "/membership/langue";
+
+/** Tuile de compte V4 : icône cerclée, flèche beige, libellé en bas ; panneau, verre ou photo. */
+function AccountTile({ to, icon, label, tone = "panel", photo }: { to: TileTo; icon: React.ReactNode; label: string; tone?: "panel" | "glass"; photo?: string | undefined }) {
   return (
     <Link
       to={to}
-      className={`relative flex min-h-[164px] flex-col justify-between overflow-hidden rounded-card p-5 lg:min-h-[240px] lg:p-6 transition-transform active:scale-[0.98] ${dark ? "bg-primary-deep text-foreground" : "bg-primary/10 text-primary"} ${photo ? "lg:text-foreground" : ""}`}
+      className={`relative isolate flex min-h-[148px] flex-col justify-between gap-3.5 overflow-hidden rounded-[24px] p-[14px] pl-4 text-foreground transition-transform active:scale-[0.98] lg:min-h-[188px] lg:rounded-[28px] lg:p-6 ${tone === "glass" && !photo ? "border border-foreground/16 bg-glass" : "bg-panel"}`}
     >
-      {photo ? <Photo src={photo} alt={t("Bassin Art de Vie")} className="absolute inset-0 h-full w-full" /> : null}
-      <span className="relative z-10 flex size-11 items-center justify-center rounded-full border border-current/25">
-        {icon}
+      {photo ? <Photo src={photo} alt={t("Bassin Art de Vie")} hero className="absolute inset-0 -z-10 h-full w-full" /> : null}
+      <span className="flex items-start justify-between gap-2">
+        <span className="flex size-10 items-center justify-center rounded-full border border-foreground/24 lg:size-12">{icon}</span>
+        <span className="flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground lg:size-10"><ArrowUpRight className="size-4" /></span>
       </span>
-      <div className="relative z-10 flex items-end justify-between gap-3">
-        <span className="max-w-[120px] lg:max-w-[220px] lg:text-[26px] lg:leading-8 text-[16px] font-medium leading-5">
-          {label}
-        </span>
-        <ArrowCircle diagonal inverse={!dark && !photo} className="size-9 lg:absolute lg:right-6 lg:top-[-154px]" />
-      </div>
+      <span className="block text-[19px] leading-[1.16] tracking-[-0.025em] lg:text-[26px]">{label}</span>
     </Link>
   );
 }
@@ -67,6 +53,7 @@ function Page() {
   const whatsappDigits = profile?.concierge_whatsapp?.replace(/[^0-9]/g, "") ?? "";
   const whatsappUrl = `https://wa.me/${whatsappDigits}?text=${encodeURIComponent(t("Bonjour {name}, j’aimerais échanger avec vous.", { name: conciergeFirstName ?? "" }))}`;
   const showConcierge = profile?.plan === "Signature" && Boolean(conciergeFirstName) && whatsappDigits.length > 0;
+  const [head, tail] = tPair("Votre", "Membership.");
 
   async function signOut() {
     await queryClient.cancelQueries();
@@ -75,115 +62,96 @@ function Page() {
     navigate({ to: "/connexion", replace: true });
   }
 
+  const writeButton = showConcierge ? (
+    <PillAction asChild light className="w-full lg:w-auto">
+      <a href={whatsappUrl} target="_blank" rel="noreferrer">
+        {t("Écrire à")} {conciergeFirstName}
+      </a>
+    </PillAction>
+  ) : null;
+
+  const quote = (
+    <blockquote className="rounded-[24px] border border-foreground/16 bg-glass p-[22px] font-display text-[23px] italic leading-[1.28] lg:rounded-[28px] lg:p-7 lg:text-[32px]">
+      {t("« Le luxe véritable, c’est le temps rendu à l’essentiel. »")}
+    </blockquote>
+  );
+
+  const outline = "flex h-[52px] w-full items-center justify-between gap-3 rounded-full border border-foreground/24 pl-6 pr-2 text-[15px] font-medium transition-colors hover:bg-foreground/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:w-auto lg:justify-start lg:px-6";
+  const footer = (
+    <div className="grid gap-3 lg:flex lg:flex-wrap">
+      {isAdmin && (
+        <Link to="/admin" className={outline}>
+          <span className="lg:order-2">{t("Administration")}</span>
+          <span className="flex size-9 items-center justify-center rounded-full border border-foreground/24 lg:order-1 lg:size-auto lg:border-0"><ShieldCheck className="size-4" /></span>
+        </Link>
+      )}
+      <button type="button" onClick={signOut} className={outline}>
+        <span className="lg:order-2">{t("Se déconnecter")}</span>
+        <span className="flex size-9 items-center justify-center rounded-full border border-foreground/24 lg:order-1 lg:size-auto lg:border-0"><LogOut className="size-4" /></span>
+      </button>
+    </div>
+  );
+
+  const tiles = (
+    <div className="grid grid-cols-2 gap-3 lg:gap-4">
+      <AccountTile to="/membership/informations" label={t("Vos informations")} icon={<CircleUserRound className="size-[18px]" />} />
+      <AccountTile to="/membership/factures" label={t("Mes factures")} icon={<FileText className="size-[18px]" />} tone="glass" />
+      <AccountTile to="/membership/historique" label={t("Historique des demandes")} icon={<History className="size-[18px]" />} tone="glass" />
+      <AccountTile to="/membership/parrainer" label={t("Parrainer un membre")} icon={<Gift className="size-[18px]" />} photo={imageFor("bassin")} />
+      {/* Lots 6.4 et 6.5 */}
+      <AccountTile to="/membership/preferences" label={t("Mes préférences")} icon={<Sparkles className="size-[18px]" />} />
+      <AccountTile to="/membership/releve" label={t("Mon relevé")} icon={<ReceiptText className="size-[18px]" />} tone="glass" />
+      <AccountTile to="/membership/langue" label={t("Langue de l’application")} icon={<Languages className="size-[18px]" />} tone="glass" />
+    </div>
+  );
+
   return (
     <AppShell immersive>
-      <section className="relative h-[376px] overflow-hidden rounded-[28px] text-foreground lg:h-[660px]">
-        <Photo
-          src={imageFor("entree-de-nuit")}
-          alt={t("Entrée Art de Vie de nuit")}
-          hero
-          eager
-          className="absolute inset-0 h-full w-full"
-        />
-        <div className="relative z-10 flex h-full flex-col p-4 sm:p-6 lg:px-[clamp(20px,3.9vw,56px)] lg:py-6">
+      <div className="hidden lg:mb-10 lg:block">
+        <TopBar />
+      </div>
+
+      {/* Mobile */}
+      <div className="lg:hidden">
+        <section className="relative isolate flex h-[372px] flex-col justify-between overflow-hidden rounded-[28px] bg-panel p-[14px] pb-24 text-foreground">
+          <Photo src={imageFor("entree-de-nuit")} alt={t("Entrée Art de Vie de nuit")} hero eager className="absolute inset-0 -z-10 h-full w-full" />
           <TopBar />
-          <div className="mt-auto max-w-[650px] pb-8 lg:max-w-[min(760px,calc(100%-460px))] lg:pb-12">
-            <p className="eyebrow text-foreground/80">{t("Membership")}</p>
-            <Title
-              italic={tPair("Votre", "Membership.")[1]}
-              className="mt-4 text-[44px] lg:text-[clamp(52px,7.2vw,104px)] lg:leading-[0.96]"
-            >
-              {tPair("Votre", "Membership.")[0]}{" "}
-            </Title>
-            <p className="mt-5 max-w-md text-[14px] leading-6 lg:border-t lg:border-foreground/22 lg:pt-6 lg:text-[18px] lg:leading-7">
+          <div className="px-1.5">
+            <Title italic={tail} className="text-[46px] leading-[0.98]">{head}{" "}</Title>
+            <p className="mt-3 max-w-[310px] text-[15px] leading-[22px] text-muted-foreground">
               {t("Votre carte personnelle ouvre l’accès à votre espace et aux attentions réservées par notre maison.")}
             </p>
-            {showConcierge && (
-              <PillAction asChild light className="hidden lg:mt-6 lg:inline-flex">
-                <a href={whatsappUrl} target="_blank" rel="noreferrer">
-                  {t("Écrire à")}{" "}{conciergeFirstName}
-                </a>
-              </PillAction>
-            )}
           </div>
+        </section>
+        <div className="relative z-10 mx-2.5 -mt-[76px]">
+          <MemberCard profile={profile} />
         </div>
-      </section>
-
-      <div className="relative z-20 mx-auto -mt-[88px] max-w-[620px] px-2 lg:-mt-[230px] lg:max-w-none lg:px-[clamp(20px,3.9vw,56px)]">
-        <div className="lg:relative">
-          <div className="lg:ml-auto lg:w-[460px]">
-            <MemberCard profile={profile} />
-            {showConcierge ? (
-              <PillAction asChild className="mt-5 w-full lg:hidden">
-                <a href={whatsappUrl} target="_blank" rel="noreferrer">
-                  {t("Écrire à")}{" "}{conciergeFirstName}
-                </a>
-              </PillAction>
-            ) : null}
-          </div>
-          <div className="mt-9 lg:mt-16">
-            <p className="eyebrow text-primary">{t("Votre compte")}</p>
-            <Title as="h2" italic={tPair("Votre", "compte.")[1]} className="hidden lg:mt-5 lg:block lg:text-[clamp(38px,4.44vw,64px)]">
-              {tPair("Votre", "compte.")[0]}{" "}
-            </Title>
-            <div className="mt-4 grid grid-cols-2 gap-3 lg:mt-10 lg:grid-cols-4 lg:gap-4">
-              <AccountTile
-                to="/membership/informations"
-                label={t("Vos informations")}
-                icon={<CircleUserRound className="size-5" />}
-                dark
-              />
-              <AccountTile to="/membership/factures" label={t("Mes factures")} icon={<FileText className="size-5" />} />
-              <AccountTile
-                to="/membership/historique"
-                label={t("Historique des demandes")}
-                icon={<History className="size-5" />}
-              />
-              <AccountTile
-                to="/membership/parrainer"
-                label={t("Parrainer un membre")}
-                icon={<Gift className="size-5" />}
-                photo={imageFor("bassin")}
-              />
-            </div>
-            {/* Lot 6.4 : bloc ajouté, sous les tuiles existantes. */}
-            <div className="mt-3 grid grid-cols-2 gap-3 lg:mt-4 lg:grid-cols-4 lg:gap-4">
-              <AccountTile to="/membership/preferences" label={t("Mes préférences")} icon={<Sparkles className="size-5" />} />
-              <AccountTile to="/membership/releve" label={t("Mon relevé")} icon={<ReceiptText className="size-5" />} />
-              {/* Lot 6.5 */}
-              <AccountTile to="/membership/langue" label={t("Langue de l’application")} icon={<Languages className="size-5" />} />
-            </div>
-            {isAdmin ? (
-              <Button asChild variant="outline" size="lg" className="mt-4 w-full lg:hidden">
-                <Link to="/admin">
-                  <ShieldCheck />
-                  {t("Administration")}
-                </Link>
-              </Button>
-            ) : null}
-            <Button type="button" variant="outline" size="lg" className="mt-3 w-full lg:hidden" onClick={signOut}>
-              <LogOut />
-              {t("Se déconnecter")}
-            </Button>
-          </div>
-        </div>
+        {writeButton && <div className="mt-4">{writeButton}</div>}
+        <section className="mt-8">
+          <h2 className="eyebrow mx-2 mb-3.5 text-muted-foreground">{t("Votre compte")}</h2>
+          {tiles}
+        </section>
+        <div className="mt-3">{quote}</div>
+        <div className="mt-3">{footer}</div>
       </div>
-      <blockquote className="mx-auto mt-12 max-w-xl border-t border-primary/25 px-6 pt-8 text-center font-display text-[24px] italic leading-9 text-primary lg:mx-[clamp(20px,3.9vw,56px)] lg:mt-24 lg:max-w-[62%] lg:px-0 lg:text-left lg:text-[40px] lg:leading-[1.3]">
-        {t("« Le luxe véritable, c’est le temps rendu à l’essentiel. »")}
-      </blockquote>
-      <div className="hidden lg:mx-[clamp(20px,3.9vw,56px)] lg:-mt-12 lg:flex lg:flex-wrap lg:justify-end lg:gap-3">
-        {isAdmin && (
-          <Button asChild variant="outline" size="lg">
-            <Link to="/admin">
-              <ShieldCheck />
-              {t("Administration")}
-            </Link>
-          </Button>
-        )}
-        <Button variant="outline" size="lg" onClick={signOut}>
-          <LogOut />
-          {t("Se déconnecter")}
-        </Button>
+
+      {/* Ordinateur */}
+      <div className="hidden lg:grid lg:grid-cols-12 lg:gap-8 lg:px-4">
+        <div className="lg:col-span-5 lg:space-y-4">
+          <MemberCard profile={profile} />
+          {quote}
+          {footer}
+        </div>
+        <div className="lg:col-span-7">
+          <p className="eyebrow text-muted-foreground">{t("Membership")}</p>
+          <Title italic={tail} className="mt-5 text-[clamp(56px,6vw,96px)] leading-[0.98]">{head}{" "}</Title>
+          <p className="mt-6 max-w-[520px] text-[18px] leading-7 text-muted-foreground">
+            {t("Votre carte personnelle ouvre l’accès à votre espace et aux attentions réservées par notre maison.")}
+          </p>
+          {writeButton && <div className="mt-7">{writeButton}</div>}
+          <h2 className="eyebrow mt-12 mb-4 text-muted-foreground">{t("Votre compte")}</h2>
+          {tiles}
+        </div>
       </div>
     </AppShell>
   );

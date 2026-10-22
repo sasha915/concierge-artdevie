@@ -56,13 +56,13 @@ function Page() {
     <AppShell nav={false}>
       <div className="mx-auto max-w-3xl lg:max-w-none">
         <SubHeader title="Langue de l’application" />
-        <p className="mb-6 max-w-[560px] text-[14px] leading-6 text-muted-foreground lg:ml-[clamp(20px,3.9vw,56px)] lg:max-w-[760px] lg:text-[18px] lg:leading-7">
+        <p className="mb-6 max-w-[560px] text-[14px] leading-6 text-muted-foreground lg:ml-4 lg:max-w-[760px] lg:text-[18px] lg:leading-7">
           {t("Vos messages et notifications vous parviennent dans cette langue.")}
         </p>
         {isLoading ? (
-          <Skeleton className="h-40 rounded-card bg-primary/10 lg:mx-[clamp(20px,3.9vw,56px)]" />
+          <Skeleton className="h-40 rounded-card bg-panel lg:mx-4" />
         ) : (
-          <div role="radiogroup" aria-label={t("Langue de l’application")} className="grid gap-3 text-primary sm:grid-cols-2 lg:mx-[clamp(20px,3.9vw,56px)]">
+          <div role="radiogroup" aria-label={t("Langue de l’application")} className="grid gap-3 text-primary sm:grid-cols-2 lg:mx-4">
             {LANGUAGES.map((l) => {
               const active = current === l.value;
               return (
@@ -74,7 +74,7 @@ function Page() {
                   lang={l.value}
                   disabled={busy}
                   onClick={() => void choose(l.value)}
-                  className={`flex min-h-[88px] items-center justify-between gap-4 rounded-card p-5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:p-6 ${active ? "bg-primary text-background" : "bg-primary/10 hover:bg-primary/15"}`}
+                  className={`flex min-h-[88px] items-center justify-between gap-4 rounded-card p-5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:p-6 ${active ? "bg-primary text-background" : "bg-panel hover:bg-primary/15"}`}
                 >
                   <span className="v3-card-title text-[24px] lg:text-[30px]">{l.label}</span>
                   <span className={`flex size-8 shrink-0 items-center justify-center rounded-full border ${active ? "border-background" : "border-primary/40"}`}>{active && <Check className="size-4" />}</span>

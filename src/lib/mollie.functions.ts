@@ -103,12 +103,13 @@ export const activateAutoDebit = createServerFn({ method: "POST" })
       await supabaseAdmin.from("profiles").update({ mollie_customer_id: customerId }).eq("id", context.userId);
     }
 
-    const essentiel = profile.plan === "Essentiel";
+    const { data: plan } = await supabaseAdmin.from("membership_plans").select("price_cents").eq("name", profile.plan).maybeSingle();
+    if (!plan) return { ok: false as const, reason: "plan_not_found" as const };
     const base = publicBase(getRequest());
     const payment = await mollie<MolliePayment>("/payments", {
       method: "POST",
       body: JSON.stringify({
-        amount: { currency: "EUR", value: essentiel ? "890.00" : "1490.00" },
+        amount: { currency: "EUR", value: (plan.price_cents / 100).toFixed(2) },
         description: `Art de Vie — Formule ${profile.plan} (premier prélèvement)`,
         sequenceType: "first",
         customerId,

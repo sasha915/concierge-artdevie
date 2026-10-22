@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/art-de-vie/cards";
 import { PillAction } from "@/components/art-de-vie/v3";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatAmount } from "@/data/art-de-vie";
+import { formatAmount, formatDate } from "@/data/art-de-vie";
 import { requestProposalMemberQuery, requestsQuery } from "@/lib/adv-queries";
 import { answerProposal } from "@/lib/messages.functions";
 import { t } from "@/lib/i18n";
@@ -27,6 +27,14 @@ export const Route = createFileRoute("/_authenticated/demandes/$requestId_/propo
   }),
   component: Page,
 });
+
+/** « Pour six couverts, samedi 10 octobre. » — rappel de la demande au-dessus des options. */
+function recall(item: { category: string; guests: number | null; scheduled_date: string | null }): string | null {
+  const parts: string[] = [];
+  if (item.guests) parts.push(item.category === "Tables" ? t("{n} couverts", { n: item.guests }) : t("{n} personnes", { n: item.guests }));
+  if (item.scheduled_date) parts.push(formatDate(item.scheduled_date));
+  return parts.length ? t("Pour {details}.", { details: parts.join(", ") }) : null;
+}
 
 function Page() {
   const { requestId } = Route.useParams();
@@ -61,15 +69,16 @@ function Page() {
       <div className="mx-auto max-w-3xl lg:max-w-none">
         <SubHeader title="Votre conciergerie vous propose" close backTo="/demandes" />
         {isLoading ? (
-          <Skeleton className="h-[420px] rounded-[28px] bg-primary/10" />
+          <Skeleton className="h-[420px] rounded-[28px] bg-panel" />
         ) : !proposal || proposal.status !== "en attente" ? (
-          <div className="lg:mx-[clamp(20px,3.9vw,56px)]">
+          <div className="lg:mx-4">
             <EmptyState>{proposal ? t("Vous avez déjà répondu à cette proposition.") : t("Aucune proposition en attente.")}</EmptyState>
             <Link to="/demandes/$requestId" params={{ requestId }} className="mt-4 inline-block text-[14px] text-primary underline underline-offset-4">{t("Revenir à la demande")}</Link>
           </div>
         ) : (
-          <div className="text-primary lg:mx-[clamp(20px,3.9vw,56px)]">
-            {item && <p className="mb-4 text-[14px] text-muted-foreground lg:text-[18px]">{t(item.category)} · {item.title}</p>}
+          <div className="text-primary lg:mx-4">
+            {item && <p className="eyebrow text-muted-foreground">{item.title}</p>}
+            {item && recall(item) && <p className="mb-5 mt-3 text-[15px] text-muted-foreground lg:text-[18px]">{recall(item)}</p>}
             <div role="radiogroup" aria-label={t("Options proposées")} className="grid gap-3 lg:grid-cols-2">
               {proposal.options.map((o) => {
                 const active = choice === o.id;
@@ -87,7 +96,7 @@ function Page() {
               })}
             </div>
             <p className="mt-5 text-[13px] leading-5 text-muted-foreground lg:text-[15px]">{t("Les montants sont estimatifs. Le montant définitif figure sur votre relevé.")}</p>
-            {error && <p role="alert" className="mt-4 rounded-2xl bg-primary/10 p-4 text-xs leading-5">{error}</p>}
+            {error && <p role="alert" className="mt-4 rounded-2xl bg-panel p-4 text-xs leading-5">{error}</p>}
             <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center">
               <PillAction type="button" className="w-full sm:max-w-sm" disabled={busy || !choice} onClick={() => void respond(choice)}>{t("Valider ce choix")}</PillAction>
               <Button type="button" variant="link" disabled={busy} onClick={() => void respond(null)}>{t("Aucune ne me convient")}</Button>

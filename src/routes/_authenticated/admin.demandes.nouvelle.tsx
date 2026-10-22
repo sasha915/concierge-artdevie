@@ -88,13 +88,13 @@ function Page() {
 
   return <AdminShell>
     <Link to="/admin/demandes" className="inline-flex h-11 items-center gap-2 rounded-full border border-border px-4 text-[14px] hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ChevronLeft className="size-4" />Demandes</Link>
-    <p className="eyebrow team-mention mt-6">( Demande pour un membre )</p>
+    <p className="eyebrow team-mention mt-6">Demande pour un membre</p>
     <Title italic="demande." className="mt-3 text-primary lg:text-[clamp(52px,6vw,88px)]">Nouvelle </Title>
 
     <div className="mt-8 grid min-w-0 gap-4 lg:grid-cols-12">
       <form onSubmit={submit} className="grid min-w-0 content-start gap-4 lg:col-span-7">
         <section className="team-panel rounded-[28px] p-6">
-          <h2 className="eyebrow team-mention">( Membre )</h2>
+          <h2 className="eyebrow team-mention">Membre</h2>
           {member ? <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border p-4">
             <div className="min-w-0"><p className="text-[20px] leading-tight">{member.full_name}</p><p className="mt-1 break-all text-[13px] text-muted-foreground">{member.email ?? "—"} · {member.plan}</p></div>
             <Button type="button" variant="outline" className="h-11 rounded-full" onClick={() => setMemberId("")}>Changer</Button>
@@ -117,7 +117,7 @@ function Page() {
         </section>
 
         <section className="team-panel rounded-[28px] p-6">
-          <h2 className="eyebrow team-mention">( Catégorie )</h2>
+          <h2 className="eyebrow team-mention">Catégorie</h2>
           <div role="group" aria-label="Catégorie" className="mt-4 flex flex-wrap gap-2">
             {CATS.map((c) => <button key={c.name} type="button" aria-pressed={category === c.name} onClick={() => setCategory(c.name)}
               className={`inline-flex h-11 items-center gap-2 rounded-full px-4 text-[14px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${category === c.name ? "bg-primary text-primary-foreground" : "border border-border hover:bg-primary/10"}`}>
@@ -133,9 +133,10 @@ function Page() {
           <Field id="g" label={guestsLabel}><Input id="g" type="number" min="1" value={guests} onChange={(e) => setGuests(e.target.value)} placeholder="2" /></Field>
           <Field id="p" label="Précisions" full><Textarea id="p" rows={5} maxLength={4000} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Envies, contraintes ou attentions particulières…" /></Field>
           <Field id="rec" label="Récurrence" full>
-            <select id="rec" value={rhythm} onChange={(e) => setRhythm(e.target.value as "aucune" | Rhythm)} className="h-12 w-full rounded-2xl border border-border bg-card px-4 text-[15px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              {RHYTHMS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-            </select>
+            <div id="rec" role="radiogroup" aria-label="Récurrence" className="flex flex-wrap gap-2">
+              {RHYTHMS.map((r) => <button key={r.value} type="button" role="radio" aria-checked={rhythm === r.value} onClick={() => setRhythm(r.value as "aucune" | Rhythm)} className={`h-11 rounded-full px-4 text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${rhythm === r.value ? "bg-primary text-primary-foreground" : "border border-border hover:bg-primary/10"}`}>{r.value === "aucune" ? "Ponctuelle" : r.label}</button>)}
+            </div>
+            <p className="mt-2 text-[12px] text-muted-foreground">Une demande récurrente se recrée seule à chaque échéance, jusqu’à la date de fin que vous indiquez. Pour des jours de match, choisissez « À des dates choisies ».</p>
             {rhythm !== "aucune" && <div className="mt-3 grid gap-3">
               {!date && <p className="text-[12px]">Indiquez la date souhaitée : c’est la première échéance.</p>}
               {rhythm === "dates" && <div>
@@ -163,7 +164,7 @@ function Page() {
 
       <aside className="min-w-0 lg:col-span-5">
         <div className="lg:sticky lg:top-6">
-          <p className="eyebrow team-mention">( Aperçu côté membre )</p>
+          <p className="eyebrow team-mention">Aperçu côté membre</p>
           <div className="member-preview mt-3 rounded-[28px] p-4" inert aria-label="Aperçu de la carte vue par le membre">
             <RequestCard item={preview} featured />
             <div className="mt-4"><RequestCard item={preview} /></div>
@@ -176,5 +177,5 @@ function Page() {
 }
 
 function Field({ id, label, full = false, children }: { id: string; label: string; full?: boolean; children: React.ReactNode }) {
-  return <div className={full ? "sm:col-span-3" : undefined}><label htmlFor={id} className="eyebrow team-mention text-[10px]">( {label} )</label><div className="member-preview mt-2 rounded-2xl">{children}</div></div>;
+  return <div className={full ? "sm:col-span-3" : undefined}><label htmlFor={id} className="eyebrow team-mention text-[10px]">{label}</label><div className="member-preview mt-2 rounded-2xl">{children}</div></div>;
 }

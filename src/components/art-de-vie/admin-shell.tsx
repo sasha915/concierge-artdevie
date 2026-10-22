@@ -6,7 +6,9 @@ import type { ReactNode } from "react";
 import { Logo } from "@/components/art-de-vie/app-shell";
 import { supabase } from "@/integrations/supabase/client";
 import { lockAdmin } from "@/lib/admin-gate.functions";
-import { adminReferralsQuery, teamRoleQuery } from "@/lib/admin-queries";
+import { adminReferralsQuery, allRequestsQuery, teamRoleQuery } from "@/lib/admin-queries";
+import { profileQuery } from "@/lib/adv-queries";
+import { initials } from "@/data/art-de-vie";
 import { Button } from "@/components/ui/button";
 
 const teamNav = [
@@ -30,6 +32,10 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
   const isAdmin = teamRole === "admin";
   const { data: referrals = [] } = useQuery({ ...adminReferralsQuery, enabled: isAdmin });
   const pendingReferrals = referrals.filter((r) => r.status === "Invitation envoyée").length;
+  const { data: requests = [] } = useQuery(allRequestsQuery);
+  const newRequests = requests.filter((r) => r.status === "Nouvelle").length;
+  const { data: profile } = useQuery(profileQuery);
+  const badge = "inline-flex min-w-5 items-center justify-center rounded-full bg-primary-foreground px-1.5 text-[11px] font-semibold text-primary";
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -52,10 +58,11 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
           <span className="eyebrow mr-2 rounded-full border border-border px-3 py-1 text-[10px]">Équipe</span>
           {teamNav.filter((item) => isAdmin || !("adminOnly" in item)).map(({ to, label, exact }) => {
             const active = exact ? pathname === to || pathname === `${to}/` : pathname.startsWith(to) && !pathname.startsWith("/admin/demandes/nouvelle");
-            return <Link key={to} to={to} aria-current={active ? "page" : undefined} className={`${pill} ${active ? "bg-primary font-medium text-primary-foreground" : "hover:bg-primary/10"}`}>{label}{to === "/admin/parrainages" && pendingReferrals > 0 && <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary-foreground px-1.5 text-[11px] font-semibold text-primary">{pendingReferrals}</span>}</Link>;
+            return <Link key={to} to={to} aria-current={active ? "page" : undefined} className={`${pill} ${active ? "bg-primary font-medium text-primary-foreground" : "hover:bg-primary/10"}`}>{label}{to === "/admin/parrainages" && pendingReferrals > 0 && <span className={active ? "inline-flex min-w-5 items-center justify-center rounded-full bg-primary-foreground px-1.5 text-[11px] font-semibold text-primary" : badge}>{pendingReferrals}</span>}{to === "/admin/demandes" && newRequests > 0 && <span className={badge} aria-label={`${newRequests} nouvelle${newRequests > 1 ? "s" : ""}`}>{newRequests}</span>}</Link>;
           })}
           <Link to="/admin/demandes/nouvelle" className={`${pill} bg-primary font-medium text-primary-foreground hover:bg-primary/90`}><Plus className="size-4" />Demande</Link>
           <Link to="/membership" className={`${pill} col-span-2 min-w-0 hover:bg-primary/10 sm:col-auto`}><ArrowLeft className="size-4 shrink-0" />Retour à l’espace membre</Link>
+          <span title={profile?.full_name ?? ""} aria-label={profile?.full_name ? `Connecté : ${profile.full_name}` : undefined} className="hidden size-11 items-center justify-center rounded-full bg-primary text-[13px] font-semibold text-primary-foreground sm:inline-flex">{initials(profile?.full_name ?? "")}</span>
           <Button type="button" variant="outline" size="icon" title="Verrouiller l’espace équipe" aria-label="Verrouiller l’espace équipe" onClick={lockSession} className="size-11 rounded-full"><Lock className="size-4" /></Button>
           <Button type="button" variant="outline" size="icon" title="Se déconnecter" aria-label="Se déconnecter" onClick={signOut} className="size-11 rounded-full"><LogOut className="size-4" /></Button>
         </nav>

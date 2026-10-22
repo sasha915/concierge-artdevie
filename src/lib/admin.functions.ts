@@ -354,7 +354,8 @@ export const getDashboard = createServerFn({ method: "GET" })
       openCount: open.length,
       unassignedCount: open.filter((r) => r.concierge === "À attribuer").length,
       activeMembers: (profiles ?? []).filter((p: { id: string; disabled_at: string | null }) => !p.disabled_at && !ids.includes(p.id)).length,
-      lastRequest: last ? { id: last.id, title: last.title, created_at: last.created_at } : null,
+      lastRequest: last ? { id: last.id, title: last.title, created_at: last.created_at, status: last.status, member_name: names.get(last.user_id) ?? "", scheduled_date: last.scheduled_date } : null,
+      byStatus: { nouvelle: open.filter((r) => r.status === "Nouvelle").length, enCours: open.filter((r) => r.status === "En cours").length, confirmee: open.filter((r) => r.status === "Confirmée").length },
       toProcess: rows.filter((r) => r.status === "Nouvelle").map(withName),
       upcoming: rows
         .filter((r) => (r.status === "En cours" || r.status === "Confirmée") && r.scheduled_date && r.scheduled_date >= today)
@@ -1173,4 +1174,41 @@ export const getMemberStatement = createServerFn({ method: "GET" })
     ]);
     if (error || !member) throw new Error("Le relevé n’a pas pu être chargé.");
     return { member_name: member.full_name as string, member_number: member.member_number as string, language: (member.language === "en" ? "en" : "fr") as "fr" | "en", lines: statementLines(rows ?? [], data.month) };
+  });
+
+// ---- Écarts avec la maquette V4 équipe (22 octobre) ----
+
+/** « Prendre en charge » : la demande passe En cours et, si elle n'est attribuée à personne, à l'appelant. */
+export const takeRequest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const me = (context as Ctx).userId;
+    const { data: request } = await admin.from("requests").select("id, status, concierge_id").eq("id", data.id).maybeSingle();
+    if (!request) return { ok: false as const, reason: "La demande est introuvable." };
+    if (request.status !== "Nouvelle") return { ok: false as const, reason: "Cette demande est déjà prise en charge." };
+    const resolved = request.concierge_id ? null : await resolveConcierge(admin, me);
+    const { data: row, error } = await admin.from("requests").update({ status: "En cours", ...(resolved ?? {}) }).eq("id", data.id).eq("status", "Nouvelle").select("id").maybeSingle();
+    if (error || !row) return { ok: false as const, reason: "La prise en charge a échoué. Rechargez la page." };
+    const events = [{ request_id: data.id, actor_id: me, kind: "statut changé", detail: "Nouvelle → En cours" }];
+    if (resolved?.concierge_id) events.push({ request_id: data.id, actor_id: me, kind: "attribuée", detail: resolved.concierge });
+    await admin.from("request_events").insert(events);
+    await notifyMember(admin, data.id, "statut", (title, tr) => statusNotice(title, "En cours", tr));
+    return { ok: true as const };
+  });
+
+/** « Renvoyer la proposition » : nouvelle notification au membre pour la proposition en attente. */
+export const resendProposal = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { data: proposal } = await admin.from("request_proposals").select("id, request_id, status").eq("id", data.id).maybeSingle();
+    if (!proposal || proposal.status !== "en attente") return { ok: false as const, reason: "Aucune proposition en attente." };
+    const { count } = await admin.from("request_proposal_options").select("id", { count: "exact", head: true }).eq("proposal_id", proposal.id);
+    const n = count ?? 1;
+    await admin.from("request_events").insert({ request_id: proposal.request_id, actor_id: (context as Ctx).userId, kind: "proposition renvoyée", detail: null });
+    await notifyMember(admin, proposal.request_id, "proposition", (title, tr) => n > 1 ? tr("Votre conciergerie vous propose {n} options pour « {title} ».", { n, title }) : tr("Votre conciergerie vous propose une option pour « {title} ».", { title }));
+    return { ok: true as const };
   });

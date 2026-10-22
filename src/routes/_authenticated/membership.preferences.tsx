@@ -62,19 +62,19 @@ function Page() {
       <div className="mx-auto max-w-3xl lg:max-w-none">
         <SubHeader title="Mes préférences" />
         {isLoading ? (
-          <Skeleton className="h-64 rounded-card bg-primary/10 lg:mx-[clamp(20px,3.9vw,56px)]" />
+          <Skeleton className="h-64 rounded-card bg-panel lg:mx-4" />
         ) : (
-          <form onSubmit={submit} className="grid gap-4 text-primary lg:mx-[clamp(20px,3.9vw,56px)] lg:grid-cols-2">
+          <form onSubmit={submit} className="grid gap-4 text-primary lg:mx-4 lg:grid-cols-2">
             {WELCOME_STEPS.map((s) => (
-              <section key={s.key} className="rounded-card bg-primary/10 p-5 lg:p-6">
-                <p className="eyebrow">( {t(s.eyebrow)} )</p>
+              <section key={s.key} className="rounded-card bg-panel p-5 lg:p-6">
+                <p className="eyebrow">{t(s.eyebrow)}</p>
                 <h2 className="v3-card-title mt-3 text-[22px] lg:text-[26px]">{t(s.question)}</h2>
                 <div className="mt-5">
                   <ChoiceGroup label={t(s.question)} options={s.options} value={answers[s.key]} onChange={(next) => setAnswers((a) => ({ ...a, [s.key]: next }))} />
                 </div>
               </section>
             ))}
-            <section className="rounded-card bg-primary/10 p-5 lg:p-6">
+            <section className="rounded-card bg-panel p-5 lg:p-6">
               <p className="eyebrow">{t("( Dates à retenir )")}</p>
               <label htmlFor="pref-dates" className="v3-card-title mt-3 block text-[22px] lg:text-[26px]">{t("Quelles dates comptent pour vous ?")}</label>
               <Textarea id="pref-dates" rows={5} maxLength={2000} value={answers.dates_membre} onChange={(e) => setAnswers((a) => ({ ...a, dates_membre: e.target.value }))} className="mt-5" />

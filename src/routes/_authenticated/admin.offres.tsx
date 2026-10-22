@@ -52,7 +52,7 @@ function Page() {
   return <AdminShell>
     <header className="mb-[22px] flex flex-wrap items-end justify-between gap-4">
       <div>
-        <p className="eyebrow team-mention">( Offres )</p>
+        <p className="eyebrow team-mention">Offres</p>
         <Title italic="offres." className="mt-3 text-primary lg:text-[clamp(52px,6vw,88px)]">Les </Title>
         <p className="mt-2 text-[13px] text-muted-foreground">Privilèges proposés aux membres, publiés ou retirés.</p>
       </div>
@@ -131,7 +131,7 @@ function OfferForm({ offer, onDone, onCancel }: { offer: AdminOffer | null; onDo
 
   return <form onSubmit={submit} className="team-panel mb-6 grid min-w-0 gap-6 rounded-[28px] p-5 sm:p-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
     <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-      <h2 className="eyebrow team-mention sm:col-span-2">( {offer ? "Modifier l’offre" : "Créer une offre"} )</h2>
+      <h2 className="eyebrow team-mention sm:col-span-2">{offer ? "Modifier l’offre" : "Créer une offre"}</h2>
       {field("title", "Titre")}
       {field("partner", "Partenaire")}
       <div><Label htmlFor="of-category" className="eyebrow text-muted-foreground">Catégorie</Label>

@@ -64,6 +64,10 @@
   --color-primary-light: var(--primary-light);
   --color-primary-deep: var(--primary-deep);
   --color-gold: var(--gold);
+  --color-panel: var(--panel);
+  --color-ink-soft: oklch(0.405 0.077 298.9); /* #4F3F6D, texte secondaire sur beige */
+  --color-glass: var(--glass);
+  --color-status-confirmed: var(--status-confirmed);
   --radius-card: 1.5rem;
   --shadow-nav: 0 14px 40px oklch(0.31 0.08 298 / 0.15);
   --shadow-action: 0 8px 18px oklch(0.31 0.08 298 / 0.18);
@@ -72,9 +76,12 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.332 0.07 298.7); /* #3B2D55 — thème Profond (charte v1.4) */
+  --background: oklch(0.248 0.044 299.2); /* #241C33 — V4 : fond de page */
+  --panel: oklch(0.332 0.07 298.7); /* #3B2D55 — V4 : panneaux */
+  --glass: oklch(0.944 0.013 102 / 0.07); /* V4 : surfaces en verre */
+  --status-confirmed: oklch(0.719 0.037 303.6); /* #A99FB8 */
   --foreground: oklch(0.944 0.013 102);
-  --card: oklch(0.248 0.044 299.2); /* #241C33 — surface-carte */
+  --card: oklch(0.332 0.07 298.7); /* #3B2D55 — V4 : surface de carte */
   --card-foreground: oklch(0.944 0.013 102);
   --popover: oklch(0.248 0.044 299.2);
   --popover-foreground: oklch(0.944 0.013 102);
@@ -321,9 +328,9 @@
 }
 /* Aperçu membre dans l'interface équipe : rétablit les couleurs de l'espace membre. */
 .team-theme .member-preview {
-  --background: oklch(0.332 0.07 298.7);
+  --background: oklch(0.248 0.044 299.2);
   --foreground: oklch(0.944 0.013 102);
-  --card: oklch(0.248 0.044 299.2);
+  --card: oklch(0.332 0.07 298.7);
   --card-foreground: oklch(0.944 0.013 102);
   --primary: oklch(0.944 0.013 102);
   --primary-foreground: oklch(0.332 0.07 298.7);

@@ -39,7 +39,7 @@ export function ArrowCircle({
       aria-hidden="true"
       className={cn(
         "flex size-11 shrink-0 items-center justify-center rounded-full",
-        inverse ? "bg-primary text-background" : "bg-background text-primary",
+        inverse ? "border border-foreground/24 text-foreground" : "bg-primary text-primary-foreground",
         className,
       )}
     >
@@ -53,7 +53,7 @@ export function PillAction({
   light = false,
   ...props
 }: React.ComponentProps<typeof Button> & { light?: boolean }) {
-  const arrow = <ArrowCircle inverse={light} className="size-9" />;
+  const arrow = <ArrowCircle className="size-9 bg-primary-foreground text-primary" />;
   const content =
     props.asChild && isValidElement<{ children?: ReactNode }>(children) ? (
       cloneElement(children, {}, children.props.children, arrow)
@@ -76,7 +76,7 @@ export function PillAction({
 }
 
 const steps: RequestStatus[] = ["Nouvelle", "En cours", "Confirmée", "Terminée"];
-export function StatusTimeline({ status, dark = false }: { status: RequestStatus; dark?: boolean }) {
+export function StatusTimeline({ status, dark = false, onLight = false }: { status: RequestStatus; dark?: boolean; onLight?: boolean }) {
   if (status === "Annulée") return null;
   const current = steps.indexOf(status);
   return (
@@ -85,12 +85,16 @@ export function StatusTimeline({ status, dark = false }: { status: RequestStatus
         <li
           key={step}
           aria-current={current === index ? "step" : undefined}
-          className={cn("min-w-0 text-[10px] leading-4", dark ? "text-foreground" : "text-primary")}
+          className={cn("min-w-0 text-[11px] leading-4", onLight ? "text-primary-foreground" : dark ? "text-foreground" : "text-primary")}
         >
           <span
             className={cn(
               "mb-2 block h-[3px] rounded-full",
-              dark
+              onLight
+                ? index <= current
+                  ? "bg-primary-foreground"
+                  : "bg-primary-foreground/18"
+                : dark
                 ? index <= current
                   ? "bg-foreground"
                   : "bg-foreground/25"
@@ -124,7 +128,7 @@ export function Counter({ value }: { value: number }) {
     return () => cancelAnimationFrame(frame);
   }, [value]);
   return (
-    <span aria-label={String(value)} className="block font-display text-[72px] font-normal leading-none lg:text-[88px]">
+    <span aria-label={String(value)} className="block font-display text-[64px] font-normal leading-[0.94] lg:text-[80px]">
       <span aria-hidden="true">{display}</span>
     </span>
   );

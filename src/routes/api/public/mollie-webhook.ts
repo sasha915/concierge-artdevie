@@ -40,11 +40,14 @@ export const Route = createFileRoute("/api/public/mollie-webhook")({
         // 2) Premier paiement réussi → créer l'abonnement récurrent
         if (meta.kind === "mandate_first" && meta.user_id && payment.status === "paid" && payment.customerId) {
           const essentiel = meta.plan === "Essentiel";
+          const { data: plan } = await supabaseAdmin.from("membership_plans").select("price_cents, period").eq("name", meta.plan ?? "").maybeSingle();
+          const value = plan ? (plan.price_cents / 100).toFixed(2) : essentiel ? "890.00" : "1490.00";
+          const interval = plan ? (plan.period === "an" ? "12 months" : "1 month") : essentiel ? "12 months" : "1 month";
           const sub = await mollie<{ id: string }>(`/customers/${payment.customerId}/subscriptions`, {
             method: "POST",
             body: JSON.stringify({
-              amount: { currency: "EUR", value: essentiel ? "890.00" : "1490.00" },
-              interval: essentiel ? "12 months" : "1 month",
+              amount: { currency: "EUR", value },
+              interval,
               description: `Art de Vie — Formule ${essentiel ? "Essentiel" : "Signature"}`,
               metadata: { user_id: meta.user_id, kind: "subscription_charge" },
             }),

@@ -2,11 +2,10 @@ import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { MessageCircle } from "lucide-react";
+import { ArrowRight, ArrowUpRight, MessageCircle, Plus } from "lucide-react";
 import { AppShell, Logo, TopBar } from "@/components/art-de-vie/app-shell";
 import { EmptyState, Photo, StatusBadge } from "@/components/art-de-vie/cards";
-import { ArrowCircle, Counter, PillAction, StatusTimeline, Title } from "@/components/art-de-vie/v3";
-import { Button } from "@/components/ui/button";
+import { Counter, PillAction, StatusTimeline, Title } from "@/components/art-de-vie/v3";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   formatDate,
@@ -22,7 +21,7 @@ import {
 import { offersQuery, profileQuery, requestsQuery } from "@/lib/adv-queries";
 import { WELCOME_LATER_KEY } from "@/components/art-de-vie/welcome";
 import vendome from "@/assets/v3/place-vendome.jpg.asset.json";
-import { t, tPair } from "@/lib/i18n";
+import { locale, t, tPair } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/")({
   beforeLoad: async () => {
@@ -52,74 +51,108 @@ export const Route = createFileRoute("/_authenticated/")({
   component: Home,
 });
 
+/** Cercle d'action V4 : contour fin sur panneau sombre, ou beige plein. */
+function Ring({ diagonal = true, solid = false, className = "" }: { diagonal?: boolean; solid?: boolean; className?: string }) {
+  const Icon = diagonal ? ArrowUpRight : ArrowRight;
+  return (
+    <span aria-hidden="true" className={`flex size-9 shrink-0 items-center justify-center rounded-full ${solid ? "bg-primary text-primary-foreground" : "border border-foreground/24 text-foreground"} ${className}`}>
+      <Icon className="size-4" />
+    </span>
+  );
+}
+
+/** Demande en cours : carte beige (V4), photo au-dessus sur ordinateur. */
 function CurrentRequest({ item }: { item: RequestItem }) {
   return (
     <Link
       to="/demandes/$requestId"
       params={{ requestId: item.id }}
-      className="dark-glass block rounded-[24px] p-4 transition-transform active:scale-[0.98] lg:w-[400px] lg:max-w-full lg:p-5"
+      className="block h-full rounded-[24px] bg-primary p-[18px] text-primary-foreground transition-transform active:scale-[0.98] lg:flex lg:flex-col lg:rounded-[28px] lg:p-3"
     >
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-        <span className="eyebrow text-foreground">{t("Demande en cours")}</span>
-        <StatusBadge status={item.status} onPhoto />
-      </div>
-      <h2 className="v3-card-title mt-4 text-[23px] lg:text-[28px]">{item.title}</h2>
-      <p className="mt-2 text-[12px] leading-5">
-        {formatDate(item.scheduled_date)}
-        {item.scheduled_time ? ` · ${formatTime(item.scheduled_time)}` : ""}
-      </p>
-      <div className="mt-4">
-        <StatusTimeline status={item.status} dark />
-      </div>
+      <Photo src={imageFor(item.image_key)} alt={item.title} category={item.category} className="hidden lg:block lg:h-[250px] lg:rounded-[20px]" />
+      <span className="block lg:mt-auto lg:px-3 lg:pb-1 lg:pt-5">
+        <span className="flex items-center justify-between gap-3">
+          <span className="eyebrow text-ink-soft">{t("Demande en cours")}</span>
+          <span className="inline-flex h-[26px] items-center rounded-full bg-primary-foreground px-[11px] text-[12px] font-medium text-primary">{t(item.status)}</span>
+        </span>
+        <span className="mt-3.5 block text-[28px] leading-[1.08] tracking-[-0.04em] lg:mt-4 lg:text-[32px]">{item.title}</span>
+        <span className="mt-1.5 block text-[14px] leading-5 text-ink-soft">
+          {formatDate(item.scheduled_date)}
+          {item.scheduled_time ? ` · ${formatTime(item.scheduled_time)}` : ""}
+        </span>
+        <span className="mt-4 block">
+          <StatusTimeline status={item.status} onLight />
+        </span>
+        <span className="mt-5 hidden h-[52px] items-center justify-between rounded-full bg-primary-foreground pl-6 pr-2 text-[15px] font-medium text-primary lg:flex">
+          {t("Suivre ma demande")}
+          <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground"><ArrowRight className="size-4" /></span>
+        </span>
+      </span>
     </Link>
   );
 }
 
 function MiniMember({ profile }: { profile: Profile | null | undefined }) {
   return (
-    <div className="member-grain w-[120px] rotate-[-4deg] rounded-[14px] border border-gold p-3 text-foreground shadow-member lg:w-[150px] lg:p-4">
+    <div className="member-grain relative h-[66px] w-[104px] overflow-hidden rounded-[12px] border border-gold p-[9px] text-foreground lg:h-[90px] lg:w-[148px] lg:p-3">
       <div className="flex items-center justify-between gap-2">
-        <Logo inverse className="h-3 w-auto" />
-        <span className="flex size-4 items-center justify-center rounded-full border border-gold text-[7px]">
-          {initials(profile?.full_name ?? "")}
-        </span>
+        <Logo inverse className="h-[11px] w-auto lg:h-3" />
+        <span className="hidden text-[8px] lg:inline">{initials(profile?.full_name ?? "")}</span>
       </div>
-      <p className="mt-5 font-display text-sm">{profile?.plan ?? "—"}</p>
+      <p className="absolute bottom-[7px] left-[9px] font-display text-[12px] lg:bottom-3 lg:left-3 lg:text-[15px]">{profile?.plan ?? "—"}</p>
     </div>
   );
 }
 
+const tile = "flex min-h-[156px] min-w-0 flex-col justify-between gap-3 rounded-[24px] p-[14px] pl-[18px] transition-transform active:scale-[0.98] lg:min-h-[216px] lg:rounded-[28px] lg:p-6";
+
+/** Offre en vedette : carte photo (mobile, carrousel). */
 function HomeOffer({ offer }: { offer: Offer }) {
   return (
     <Link
       to="/offres"
-      className="relative block h-[336px] w-[252px] shrink-0 overflow-hidden rounded-card text-foreground transition-transform active:scale-[0.98] lg:h-[460px] lg:w-full lg:min-w-0"
+      className="relative flex h-[300px] w-[236px] shrink-0 flex-col justify-between overflow-hidden rounded-[24px] bg-panel p-3 pb-[18px] text-foreground transition-transform active:scale-[0.98]"
     >
       <Photo src={offerImage(offer)} alt={offer.title} category={offer.category} className="absolute inset-0 h-full" />
-      <div className="absolute inset-x-4 top-4 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
-        <span className="dark-glass w-fit rounded-full px-3 py-2 text-[11px] font-medium uppercase tracking-[0.13em]">
-          {t(offer.category)}
-        </span>
-        <ArrowCircle diagonal />
-      </div>
-      <div className="absolute inset-x-5 bottom-5">
-        <h3 className="v3-card-title text-[25px] lg:text-[28px] xl:text-[32px]">{offer.title}</h3>
-        <p className="mt-2 text-[13px]">{offer.partner}</p>
-      </div>
+      <span className="relative flex">
+        <span className="dark-glass inline-flex h-[30px] items-center rounded-full px-3 text-[11px] font-semibold uppercase tracking-[0.13em]">{t(offer.category)}</span>
+      </span>
+      <span className="relative block px-1.5">
+        <span className="block text-[24px] leading-[1.1] tracking-[-0.035em]">{offer.title}</span>
+        <span className="mt-1.5 block text-[13px] text-muted-foreground">{offer.partner}</span>
+      </span>
+    </Link>
+  );
+}
+
+/** Rang de liste (ordinateur) : vignette, surtitre, titre, mention, pastille, flèche. */
+function Row({ to, params, image, category, title, meta, badge }: { to: "/demandes/$requestId" | "/offres"; params?: { requestId: string }; image: string | undefined; category: string; title: string; meta: string; badge?: React.ReactNode }) {
+  return (
+    <Link to={to} params={params as never} className="grid grid-cols-[84px_minmax(0,1fr)_auto] items-center gap-5 border-b border-foreground/16 py-4 last:border-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <Photo src={image} alt={title} category={category} className="h-[96px] rounded-[16px]" />
+      <span className="min-w-0">
+        <span className="eyebrow block text-[11px] text-muted-foreground">{t(category)}</span>
+        <span className="mt-2 block truncate text-[26px] leading-tight tracking-[-0.03em]">{title}</span>
+        <span className="mt-1 block text-[14px] text-muted-foreground">{meta}</span>
+      </span>
+      <span className="flex items-center gap-3">{badge}<Ring className="size-11" /></span>
     </Link>
   );
 }
 
 function Home() {
-  const heroTitle = tPair("Votre conciergerie,", "à votre rythme.");
-  const offersTitle = tPair("Offres", "en vedette.");
+  const heroTitle = tPair("Votre conciergerie, à votre", "rythme.");
+  const offersTitle = tPair("Offres en", "vedette.");
   const latestTitle = tPair("Vos dernières", "demandes.");
   const { data: requests = [], isPending: requestsPending } = useQuery(requestsQuery);
   const { data: offers = [], isPending: offersPending } = useQuery(offersQuery);
   const { data: profile } = useQuery(profileQuery);
   const [greeting, setGreeting] = useState("Bonjour");
+  const [today, setToday] = useState("");
   useEffect(() => {
     setGreeting(new Date().getHours() < 18 ? "Bonjour" : "Bonsoir");
+    const d = new Date().toLocaleDateString(locale(), { weekday: "long", day: "numeric", month: "long" });
+    setToday(d.charAt(0).toUpperCase() + d.slice(1));
   }, []);
   const upcoming = requests.filter(
     (r) => r.status === "Nouvelle" || r.status === "En cours" || r.status === "Confirmée",
@@ -130,218 +163,141 @@ function Home() {
   const whatsappDigits = profile?.concierge_whatsapp?.replace(/[^0-9]/g, "") ?? "";
   const showConcierge = profile?.plan === "Signature" && Boolean(conciergeFirstName) && whatsappDigits.length > 0;
   const whatsappUrl = `https://wa.me/${whatsappDigits}?text=${encodeURIComponent(t("Bonjour {name}, j’aimerais échanger avec vous.", { name: conciergeFirstName ?? "" }))}`;
+  const hello = `${t(greeting)}${firstName ? ` ${firstName}` : ""}`;
 
   return (
     <AppShell immersive>
-      <section className="relative flex min-h-[600px] flex-col overflow-hidden rounded-[28px] p-[14px] text-foreground lg:min-h-[780px] lg:px-[clamp(20px,3.9vw,56px)] lg:py-6">
-        <Photo src={vendome.url} alt={t("La place Vendôme à Paris")} hero eager className="absolute inset-0 h-full w-full" />
-        <div className="relative">
-          <TopBar />
-        </div>
-        <div className="relative mt-10 lg:absolute lg:right-10 lg:top-[130px] lg:mt-0 lg:w-[400px]">
-          {requestsPending ? (
-            <Skeleton className="h-[164px] rounded-card bg-foreground/15" />
-          ) : nextRequest ? (
-            <CurrentRequest item={nextRequest} />
-          ) : null}
-        </div>
-        <div className="relative mt-auto px-1 pb-1 pt-10 lg:pb-5 lg:pt-[300px]">
-          <p className="eyebrow mb-5 text-foreground">
-            {t(greeting)}
-            {firstName ? ` ${firstName}` : ""}
-          </p>
-          <Title
-            as="h2"
-            italic={<>{heroTitle[1]}</>}
-            className="text-[47px] lg:text-[clamp(52px,7.2vw,104px)] lg:leading-[0.96]"
-          >
-            {heroTitle[0].split(" ")[0]}
-            <br className="lg:hidden" /> {heroTitle[0].split(" ").slice(1).join(" ")}
-            <br />
-          </Title>
-          <PillAction asChild light className="mt-7 lg:hidden">
-            <Link to="/demandes/nouvelle" search={{ offer: undefined }}>
-              {t("Nouvelle demande")}
-            </Link>
-          </PillAction>
-        </div>
-        <div className="relative hidden lg:mt-8 lg:flex lg:flex-wrap lg:items-center lg:justify-between lg:gap-6 lg:border-t lg:border-foreground/22 lg:pt-8 lg:pb-5">
-          <p className="lg:max-w-[560px] lg:text-[18px] lg:leading-7">
-            {t("Suivez vos demandes et vos privilèges, ou contactez votre concierge en un geste.")}
-          </p>
-          <div className="lg:flex lg:flex-wrap lg:gap-3">
-            <PillAction asChild light>
-              <Link to="/demandes/nouvelle" search={{ offer: undefined }}>
-                {t("Nouvelle demande")}
-              </Link>
-            </PillAction>
-            <Button
-              asChild
-              variant="outline"
-              className="lg:h-[52px] lg:border-foreground/50 lg:bg-transparent lg:text-foreground lg:hover:bg-foreground/10"
-            >
-              <Link to="/demandes">{t("Mes demandes")}</Link>
-            </Button>
+      <div className="hidden lg:mb-5 lg:block">
+        <TopBar />
+      </div>
+      <div className="grid gap-3 lg:grid-cols-12 lg:gap-4">
+        {/* Héros */}
+        <section className={`relative flex min-h-[476px] flex-col justify-between overflow-hidden rounded-[28px] bg-panel p-[14px] pb-[18px] text-foreground lg:min-h-[540px] lg:p-9 ${nextRequest ? "lg:col-span-8" : "lg:col-span-12"}`}>
+          <Photo src={vendome.url} alt={t("La place Vendôme à Paris")} hero eager className="absolute inset-0 h-full w-full" />
+          <div className="relative lg:hidden">
+            <TopBar />
           </div>
-        </div>
-      </section>
-      <section
-        aria-label={t("Votre activité")}
-        className={`mx-2 mb-8 mt-9 grid grid-cols-2 gap-4 lg:mx-[clamp(4px,2.8vw,40px)] lg:mb-0 lg:mt-[72px] lg:gap-6 ${showConcierge ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
-      >
-        <div className="border-t border-primary/25 pt-6 text-primary">
-          {requestsPending ? <Skeleton className="h-[72px] w-16 bg-primary/10" /> : <Counter value={upcoming.length} />}
-          <p className="mt-1 text-[15px]">{t("demandes actives")}</p>
-        </div>
-        <div className="border-t border-primary/25 pt-6 text-primary">
-          {offersPending ? <Skeleton className="h-[72px] w-16 bg-primary/10" /> : <Counter value={offers.length} />}
-          <p className="mt-1 text-[15px]">{t("offres en vedette")}</p>
-        </div>
-        <Link
-          to="/membership"
-          className="hidden lg:relative lg:flex lg:min-h-[240px] lg:min-w-0 lg:flex-col lg:justify-between lg:rounded-[28px] lg:bg-primary/10 lg:p-6 lg:text-primary"
-        >
-          <MiniMember profile={profile} />
-          <span className="lg:absolute lg:right-5 lg:top-5">
-            <ArrowCircle diagonal inverse />
-          </span>
-          <div>
-            <p className="eyebrow lg:mt-8">{t("Membership")}</p>
-            <h2 className="v3-card-title lg:mt-3 lg:text-[26px]">{t("Votre carte")}</h2>
+          <div className="relative hidden items-start justify-between gap-4 lg:flex">
+            <p className="eyebrow text-muted-foreground">{today}</p>
+            <span className="rounded-full border border-foreground/24 px-4 py-2 text-[14px]">{hello}</span>
           </div>
-        </Link>
-        {showConcierge && (
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="hidden lg:flex lg:min-h-[240px] lg:min-w-0 lg:flex-col lg:justify-between lg:rounded-[28px] lg:bg-primary-deep lg:p-6 lg:text-foreground"
-          >
-            <div className="lg:flex lg:items-center lg:justify-between">
-              <span className="lg:flex lg:size-11 lg:items-center lg:justify-center lg:rounded-full lg:bg-foreground/16">
-                <MessageCircle className="lg:size-5" />
-              </span>
-              <ArrowCircle diagonal />
-            </div>
-            <div>
-              <p className="eyebrow lg:mt-8">{t("Votre concierge")}</p>
-              <h2 className="v3-card-title lg:mt-3 lg:text-[26px]">
-                {t("Écrire à")}<br />
-                {conciergeFirstName}
-              </h2>
-            </div>
-          </a>
-        )}
-      </section>
-      <section className="grid grid-cols-2 gap-3 lg:hidden">
-        <Link
-          to="/membership"
-          className="flex min-h-[208px] min-w-0 flex-col justify-between rounded-[28px] bg-primary/10 p-[18px] text-primary transition-transform active:scale-[0.98]"
-        >
-          <MiniMember profile={profile} />
-          <div>
-            <p className="eyebrow mt-6">{t("Membership")}</p>
-            <h2 className="v3-card-title mt-2 text-[21px]">{t("Votre carte")}</h2>
-          </div>
-        </Link>
-        {showConcierge && (
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="flex min-h-[208px] min-w-0 flex-col justify-between rounded-[28px] bg-primary-deep p-[18px] text-foreground transition-transform active:scale-[0.98]"
-          >
-            <div className="flex items-center justify-between">
-              <span className="flex size-11 items-center justify-center rounded-full bg-foreground/16">
-                <MessageCircle className="size-5" />
-              </span>
-              <ArrowCircle diagonal />
-            </div>
-            <div>
-              <p className="eyebrow mt-5 text-foreground">{t("Votre concierge")}</p>
-              <h2 className="v3-card-title mt-2 text-[21px]">
-                {t("Écrire à")}<br />
-                {conciergeFirstName}
-              </h2>
-            </div>
-          </a>
-        )}
-      </section>
-      <section className="mt-12 lg:hidden">
-        <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 px-2">
-          <Title as="h2" italic={<>{offersTitle[1]}</>} className="text-[34px] text-primary">
-            {offersTitle[0]}
-            <br />
-          </Title>
-          <Link to="/offres" aria-label={t("Toutes les offres")} className="rounded-full border border-primary/25">
-            <ArrowCircle className="size-11 bg-transparent" />
-          </Link>
-        </div>
-        <div className="no-scrollbar -mr-3 flex gap-3 overflow-x-auto pb-1">
-          {offersPending
-            ? [0, 1].map((i) => (
-                <Skeleton key={i} className="h-[336px] w-[252px] shrink-0 rounded-card bg-primary/10" />
-              ))
-            : offers.map((o) => <HomeOffer key={o.id} offer={o} />)}
-        </div>
-        {!offersPending && offers.length === 0 && <EmptyState>{t("Aucune offre pour le moment.")}</EmptyState>}
-      </section>
-      <section className="hidden lg:mx-[clamp(4px,2.8vw,40px)] lg:mt-24 lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8">
-        <p className="eyebrow lg:pt-4">{t("Demandes récentes")}</p>
-        <div className="lg:min-w-0">
-          <div className="lg:mb-10 lg:flex lg:flex-wrap lg:items-center lg:justify-between lg:gap-6">
-            <Title as="h2" italic={latestTitle[1]} className="lg:text-[clamp(38px,4.44vw,64px)]">
-              {latestTitle[0]}{" "}
+          <div className="relative px-1.5 lg:px-0">
+            <p className="eyebrow mb-3.5 text-muted-foreground lg:hidden">{hello}</p>
+            <Title as="h1" italic={heroTitle[1]} className="text-[46px] leading-none lg:max-w-[820px] lg:text-[clamp(56px,6vw,92px)] lg:leading-[0.98]">
+              {heroTitle[0]}{" "}
             </Title>
-            <Button asChild variant="outline" className="lg:h-[52px] lg:px-6">
-              <Link to="/demandes">{t("Toutes les demandes")}</Link>
-            </Button>
-          </div>
-          <div className="lg:border-t lg:border-primary/25 lg:divide-y lg:divide-primary/25">
-            {requestsPending ? (
-              <Skeleton className="lg:h-60 lg:bg-primary/10" />
-            ) : requests.length ? (
-              requests.slice(0, 3).map((item) => (
-                <Link
-                  key={item.id}
-                  to="/demandes/$requestId"
-                  params={{ requestId: item.id }}
-                  className="lg:grid lg:grid-cols-[140px_minmax(0,1fr)_auto_44px] lg:items-center lg:gap-4 lg:py-6 xl:grid-cols-[160px_minmax(0,1fr)_190px_auto_44px]"
-                >
-                  <span className="eyebrow">{t(item.category)}</span>
-                  <h3 className="v3-card-title lg:text-[26px]">{item.title}</h3>
-                  <p className="lg:col-start-2 lg:row-start-2 lg:text-[14px] lg:text-muted-foreground xl:col-start-auto xl:row-start-auto">
-                    {formatShortDate(item.scheduled_date)}
-                  </p>
-                  <StatusBadge status={item.status} />
-                  <ArrowCircle diagonal className="lg:border lg:border-primary/25 lg:bg-transparent" />
+            <p className="mt-6 hidden max-w-[520px] text-[18px] leading-7 text-foreground/90 lg:block">
+              {t("Suivez vos demandes et vos privilèges, ou contactez votre concierge en un geste.")}
+            </p>
+            <div className="mt-[22px] lg:mt-7 lg:flex lg:flex-wrap lg:gap-3">
+              <PillAction asChild light className="w-full lg:w-auto">
+                <Link to="/demandes/nouvelle" search={{ offer: undefined }}>
+                  {t("Nouvelle demande")}
                 </Link>
-              ))
-            ) : (
-              <EmptyState>{t("Aucune demande pour le moment.")}</EmptyState>
-            )}
+              </PillAction>
+              <Link to="/demandes" className="hidden h-[52px] items-center rounded-full border border-foreground/24 px-6 text-[15px] font-medium transition-colors hover:bg-foreground/10 lg:inline-flex">
+                {t("Mes demandes")}
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
-      <section className="hidden lg:mx-[clamp(4px,2.8vw,40px)] lg:mt-24 lg:block">
-        <div className="lg:mb-12 lg:flex lg:items-end lg:justify-between lg:gap-6">
-          <Title as="h2" italic={offersTitle[1]} className="lg:text-[clamp(38px,4.44vw,64px)]">
-            {offersTitle[0]}{" "}
-          </Title>
-          <div className="lg:text-right">
-            <p className="eyebrow lg:mb-4">{t("Offres")}</p>
-            <Button asChild variant="outline" className="lg:h-[52px] lg:px-6">
-              <Link to="/offres">{t("Toutes les offres")}</Link>
-            </Button>
+        </section>
+
+        {/* Demande en cours */}
+        {requestsPending ? (
+          <Skeleton className="h-[180px] rounded-[24px] bg-panel lg:col-span-4 lg:h-auto" />
+        ) : nextRequest ? (
+          <div className="lg:col-span-4">
+            <CurrentRequest item={nextRequest} />
           </div>
-        </div>
-        <div className="lg:grid lg:grid-cols-[minmax(0,6fr)_minmax(0,3fr)_minmax(0,3fr)] lg:gap-4">
-          {offersPending
-            ? [0, 1, 2].map((i) => <Skeleton key={i} className="lg:h-[460px] lg:rounded-card lg:bg-primary/10" />)
-            : offers.slice(0, 3).map((offer) => <HomeOffer key={offer.id} offer={offer} />)}
-        </div>
-        {!offersPending && offers.length === 0 && <EmptyState>{t("Aucune offre pour le moment.")}</EmptyState>}
-      </section>
+        ) : null}
+
+        {/* Tuiles */}
+        <section aria-label={t("Votre activité")} className="grid grid-cols-2 gap-3 lg:col-span-12 lg:grid-cols-4 lg:gap-4">
+          <Link to="/demandes" className={`${tile} bg-panel text-foreground`}>
+            <span className="flex justify-end"><Ring /></span>
+            <span>
+              {requestsPending ? <Skeleton className="h-[60px] w-14 bg-foreground/10" /> : <Counter value={upcoming.length} />}
+              <span className="mt-1.5 block text-[14px] text-muted-foreground lg:text-[16px]">{t("demandes actives")}</span>
+            </span>
+          </Link>
+          <Link to="/offres" className={`${tile} border border-foreground/16 bg-glass text-foreground`}>
+            <span className="flex justify-end"><Ring /></span>
+            <span>
+              {offersPending ? <Skeleton className="h-[60px] w-14 bg-foreground/10" /> : <Counter value={offers.length} />}
+              <span className="mt-1.5 block text-[14px] text-muted-foreground lg:text-[16px]">{t("offres en vedette")}</span>
+            </span>
+          </Link>
+          <Link to="/membership" className={`${tile} border border-foreground/16 bg-glass text-foreground lg:border-0 lg:bg-panel`}>
+            <span className="flex items-start justify-between gap-2"><MiniMember profile={profile} /><Ring className="hidden lg:flex" /></span>
+            <span>
+              <span className="eyebrow block text-[11px] text-muted-foreground">{t("Membership")}</span>
+              <span className="mt-1.5 block text-[20px] leading-tight tracking-[-0.025em] lg:text-[28px]">{t("Votre carte")}</span>
+            </span>
+          </Link>
+          {showConcierge && (
+            <a href={whatsappUrl} target="_blank" rel="noreferrer" className={`${tile} bg-panel text-foreground lg:border lg:border-foreground/16 lg:bg-glass`}>
+              <span className="flex justify-end">
+                <span className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground"><MessageCircle className="size-4" /></span>
+              </span>
+              <span>
+                <span className="eyebrow block text-[11px] text-muted-foreground">{t("Votre concierge")}</span>
+                <span className="mt-1.5 block text-[18px] leading-tight tracking-[-0.02em] lg:text-[28px]">{t("Écrire à")} {conciergeFirstName}</span>
+              </span>
+            </a>
+          )}
+        </section>
+
+        {/* Mobile : offres en carrousel */}
+        <section className="mt-6 lg:hidden">
+          <div className="flex items-end justify-between gap-3 px-2 pb-4">
+            <Title as="h2" italic={offersTitle[1]} className="text-[34px] leading-[1.04] text-primary">
+              {offersTitle[0]}{" "}
+            </Title>
+            <Link to="/offres" aria-label={t("Toutes les offres")} className="rounded-full">
+              <Ring diagonal={false} className="size-11" />
+            </Link>
+          </div>
+          <div className="no-scrollbar -mx-3 flex gap-3 overflow-x-auto px-3 pb-1">
+            {offersPending
+              ? [0, 1].map((i) => <Skeleton key={i} className="h-[300px] w-[236px] shrink-0 rounded-[24px] bg-panel" />)
+              : offers.map((o) => <HomeOffer key={o.id} offer={o} />)}
+          </div>
+          {!offersPending && offers.length === 0 && <EmptyState>{t("Aucune offre pour le moment.")}</EmptyState>}
+        </section>
+
+        {/* Ordinateur : dernières demandes et offres en vedette */}
+        <section className="hidden lg:col-span-7 lg:block lg:rounded-[28px] lg:bg-panel lg:p-7">
+          <p className="eyebrow text-muted-foreground">{t("Demandes récentes")}</p>
+          <div className="mt-4 flex items-end justify-between gap-4">
+            <Title as="h2" italic={latestTitle[1]} className="text-[clamp(34px,3.2vw,52px)]">{latestTitle[0]}{" "}</Title>
+            <Link to="/demandes" className="shrink-0 text-[14px] underline underline-offset-4">{t("Toutes les demandes")}</Link>
+          </div>
+          <div className="mt-4">
+            {requestsPending ? <Skeleton className="h-60 bg-foreground/10" />
+              : requests.length ? requests.slice(0, 3).map((item) => (
+                  <Row key={item.id} to="/demandes/$requestId" params={{ requestId: item.id }} image={imageFor(item.image_key)} category={item.category} title={item.title} meta={formatDate(item.scheduled_date)} badge={<StatusBadge status={item.status} />} />
+                ))
+              : <EmptyState>{t("Aucune demande pour le moment.")}</EmptyState>}
+          </div>
+        </section>
+        <section className="hidden lg:col-span-5 lg:block lg:rounded-[28px] lg:border lg:border-foreground/16 lg:bg-glass lg:p-7">
+          <p className="eyebrow text-muted-foreground">{t("Offres")}</p>
+          <div className="mt-4 flex items-end justify-between gap-4">
+            <Title as="h2" italic={offersTitle[1]} className="whitespace-nowrap text-[clamp(34px,3.2vw,52px)]">{offersTitle[0]}{" "}</Title>
+            <Link to="/offres" className="shrink-0 text-[14px] underline underline-offset-4">{t("Toutes les offres")}</Link>
+          </div>
+          <div className="mt-4">
+            {offersPending ? <Skeleton className="h-60 bg-foreground/10" />
+              : offers.length ? offers.slice(0, 3).map((offer) => (
+                  <Row key={offer.id} to="/offres" image={offerImage(offer)} category={offer.category} title={offer.title} meta={offer.partner} />
+                ))
+              : <EmptyState>{t("Aucune offre pour le moment.")}</EmptyState>}
+          </div>
+        </section>
+      </div>
+      <Link to="/demandes/nouvelle" search={{ offer: undefined }} aria-label={t("Nouvelle demande")} className="sr-only">
+        <Plus />
+      </Link>
     </AppShell>
   );
 }

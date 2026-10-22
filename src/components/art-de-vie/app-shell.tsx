@@ -170,6 +170,7 @@ export function ListHeader({
   italic,
   introduction,
   children,
+  action,
   desktop = false,
 }: {
   desktop?: boolean;
@@ -178,40 +179,28 @@ export function ListHeader({
   italic: string;
   introduction: string;
   children?: ReactNode;
+  action?: ReactNode;
 }) {
   const [head, tail] = tPair(title, italic);
   return (
     <section
-      className={`relative -mx-2 -mt-3 overflow-hidden rounded-[28px] bg-primary-deep p-4 text-foreground sm:mx-0 sm:mt-0 ${desktop ? "lg:flex lg:min-h-[520px] lg:flex-col lg:px-[clamp(20px,3.9vw,56px)] lg:py-6" : ""}`}
+      className={`relative isolate overflow-hidden rounded-[28px] bg-panel p-[14px] pb-[22px] text-foreground ${desktop ? "lg:overflow-visible lg:rounded-none lg:bg-transparent lg:p-0" : ""}`}
     >
-      <Logo inverse className="pointer-events-none absolute bottom-16 left-3 w-[150%] max-w-none opacity-5" />
-      <div className={`relative ${desktop ? "lg:flex lg:flex-1 lg:flex-col" : ""}`}>
-        <TopBar />
-        <p className={`eyebrow mt-7 text-foreground/80 ${desktop ? "lg:mt-24" : ""}`}>{t(eyebrow)}</p>
-        <Title
-          italic={tail}
-          className={`mt-4 ${desktop ? "lg:text-[clamp(70px,10vw,144px)] lg:leading-[0.96]" : ""}`}
-        >
+      <Logo inverse className={`pointer-events-none absolute -right-[18%] top-[36%] -z-10 w-[112%] max-w-none opacity-5 ${desktop ? "lg:hidden" : ""}`} />
+      <TopBar />
+      <div className={`px-1.5 pt-[34px] ${desktop ? "lg:px-4 lg:pt-14" : ""}`}>
+        <p className="eyebrow mb-3.5 text-muted-foreground">{t(eyebrow)}</p>
+        <Title italic={tail} className={`text-[46px] leading-[0.98] ${desktop ? "lg:text-[clamp(56px,6vw,96px)]" : ""}`}>
           {head}
         </Title>
-        <p
-          className={`mb-5 mt-5 border-t border-foreground/22 pt-4 text-[13px] leading-5 text-foreground ${desktop ? "lg:hidden" : ""}`}
-        >
-          {t(introduction)}
-        </p>
-        <div
-          className={
-            desktop
-              ? "lg:mt-auto lg:flex lg:flex-wrap lg:items-center lg:justify-between lg:gap-6 lg:border-t lg:border-foreground/22 lg:pt-7"
-              : undefined
-          }
-        >
-          {desktop && (
-            <p className="hidden lg:block lg:min-w-[260px] lg:flex-1 lg:text-[18px] lg:leading-7">{introduction}</p>
-          )}
-          {children}
+        <div className={desktop ? "lg:mt-5 lg:flex lg:flex-wrap lg:items-end lg:justify-between lg:gap-6" : undefined}>
+          <p className={`mt-[22px] border-t border-foreground/24 pt-[18px] text-[15px] leading-[23px] text-muted-foreground ${desktop ? "lg:mt-0 lg:max-w-[620px] lg:border-0 lg:pt-0 lg:text-[18px] lg:leading-7" : ""}`}>
+            {t(introduction)}
+          </p>
+          {action && <div className={desktop ? "hidden lg:block" : "hidden"}>{action}</div>}
         </div>
       </div>
+      {children && <div className={`-mx-[14px] mt-5 px-5 ${desktop ? "lg:mx-0 lg:mt-7 lg:px-4" : ""}`}>{children}</div>}
     </section>
   );
 }

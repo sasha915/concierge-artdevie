@@ -56,7 +56,7 @@ function Page() {
   }
 
   return <AdminShell>
-    <p className="eyebrow team-mention">( Parrainages )</p>
+    <p className="eyebrow team-mention">Parrainages</p>
     <Title italic="parrainages." className="mt-3 text-primary lg:text-[clamp(52px,6vw,88px)]">Les </Title>
 
     {error && <p role="alert" className="mt-4 rounded-2xl border border-dashed border-border px-4 py-3 text-[14px]">{error}</p>}
@@ -91,12 +91,16 @@ function Page() {
 
       <aside className="min-w-0 lg:col-span-4">
         <section className="team-panel rounded-[28px] p-6 lg:sticky lg:top-6">
-          <h2 className="eyebrow team-mention">( Suivi )</h2>
+          <h2 className="eyebrow team-mention">Suivi</h2>
           <dl className="mt-4 divide-y divide-border border-y border-border">
             <div className="flex items-baseline justify-between gap-3 py-4"><dt className="text-[14px] text-muted-foreground">Reçus</dt><dd className="font-display text-[40px] leading-none">{counts.recu}</dd></div>
             <div className="flex items-baseline justify-between gap-3 py-4"><dt className="text-[14px] text-muted-foreground">Contactés</dt><dd className="font-display text-[40px] leading-none">{counts.contacte}</dd></div>
             <div className="flex items-baseline justify-between gap-3 py-4"><dt className="text-[14px] text-muted-foreground">Convertis</dt><dd className="font-display text-[40px] leading-none">{counts.converti}</dd></div>
           </dl>
+          <h2 className="eyebrow team-mention mt-8">Parcours</h2>
+          <ol className="mt-4 grid gap-4 text-[14px] leading-5">
+            {["Le membre recommande une personne depuis son espace.", "L’équipe la contacte et note l’avancement ici.", "Une fois le parrainage converti, la fiche du nouveau membre est créée et mentionne son parrain."].map((step, i) => <li key={step} className="flex gap-3"><span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-border text-[12px]">{i + 1}</span><span className="text-muted-foreground">{step}</span></li>)}
+          </ol>
         </section>
       </aside>
     </div>

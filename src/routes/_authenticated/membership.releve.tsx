@@ -1,13 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/art-de-vie/app-shell";
 import { SubHeader } from "@/components/art-de-vie/page-header";
 import { EmptyState } from "@/components/art-de-vie/cards";
 import { PillAction } from "@/components/art-de-vie/v3";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatShortDate } from "@/data/art-de-vie";
 import { profileQuery, statementSourceQuery } from "@/lib/adv-queries";
@@ -36,6 +35,7 @@ function Page() {
   const lines = statementLines(rows, month);
   const total = statementTotal(lines);
   const current = new Date().toISOString().slice(0, 7);
+  const months = Array.from({ length: 12 }, (_, i) => shiftMonth(current, -i));
 
   async function download() {
     setBusy(true);
@@ -53,28 +53,27 @@ function Page() {
     <AppShell nav={false}>
       <div className="mx-auto max-w-3xl lg:max-w-none">
         <SubHeader title="Mon relevé" />
-        <section aria-label={t("Mois du relevé")} className="rounded-[28px] bg-primary-deep p-6 text-foreground sm:p-8 lg:mx-[clamp(20px,3.9vw,56px)] lg:p-10">
-          <div className="flex items-center justify-between gap-3">
-            <Button type="button" variant="outline" size="icon" aria-label={t("Mois précédent")} onClick={() => setMonth((m) => shiftMonth(m, -1))} className="border-foreground/22 text-foreground hover:bg-foreground/10">
-              <ChevronLeft />
-            </Button>
-            <p className="eyebrow text-foreground/80" aria-live="polite">{monthLabel(month, getLang())}</p>
-            <Button type="button" variant="outline" size="icon" aria-label={t("Mois suivant")} disabled={month >= current} onClick={() => setMonth((m) => shiftMonth(m, 1))} className="border-foreground/22 text-foreground hover:bg-foreground/10">
-              <ChevronRight />
-            </Button>
+        <section className="rounded-[28px] bg-panel p-6 text-foreground sm:p-8 lg:mx-4 lg:p-10">
+          <div role="group" aria-label={t("Mois du relevé")} className="no-scrollbar -mx-6 flex gap-2 overflow-x-auto px-6 sm:-mx-8 sm:px-8 lg:mx-0 lg:flex-wrap lg:px-0">
+            {months.map((m) => (
+              <button key={m} type="button" aria-pressed={m === month} onClick={() => setMonth(m)} className={`h-11 shrink-0 rounded-full px-[18px] text-[15px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${m === month ? "bg-primary text-primary-foreground" : "border border-foreground/24 bg-foreground/8 hover:bg-foreground/15"}`}>
+                {monthLabel(m, getLang()).replace(/\s\d{4}$/, "")}
+              </button>
+            ))}
           </div>
-          <p className="mt-8 text-[13px] opacity-80">{t("Total du mois")}</p>
-          <strong className="mt-1 block font-display text-[48px] font-normal italic leading-none lg:text-[88px]">{formatAmount(total)}</strong>
+          <p className="eyebrow mt-8 text-muted-foreground" aria-live="polite">{monthLabel(month, getLang())}</p>
+          <strong className="mt-3 block font-display text-[48px] font-normal italic leading-none lg:text-[88px]">{formatAmount(total)}</strong>
+          <p className="mt-3 text-[14px] text-muted-foreground">{t("Total du mois")} · {lines.length > 1 ? t("{n} prestations ce mois-ci", { n: lines.length }) : t("{n} prestation ce mois-ci", { n: lines.length })}</p>
         </section>
 
         {isLoading ? (
-          <Skeleton className="mt-5 h-40 rounded-card bg-primary/10 lg:mx-[clamp(20px,3.9vw,56px)]" />
+          <Skeleton className="mt-5 h-40 rounded-card bg-panel lg:mx-4" />
         ) : lines.length === 0 ? (
-          <div className="mt-6 lg:mx-[clamp(20px,3.9vw,56px)]">
+          <div className="mt-6 lg:mx-4">
             <EmptyState>{t("Aucune prestation ce mois-ci.")}</EmptyState>
           </div>
         ) : (
-          <ul className="mt-5 overflow-hidden rounded-card bg-primary/10 px-5 text-primary lg:mx-[clamp(20px,3.9vw,56px)] lg:px-8">
+          <ul className="mt-5 overflow-hidden rounded-card bg-panel px-5 text-primary lg:mx-4 lg:px-8">
             {lines.map((l) => (
               <li key={l.id} className="flex items-center gap-4 border-b border-primary/25 py-5 last:border-0">
                 <div className="min-w-0 flex-1">
@@ -87,7 +86,7 @@ function Page() {
           </ul>
         )}
 
-        <div className="mt-6 lg:mx-[clamp(20px,3.9vw,56px)]">
+        <div className="mt-6 lg:mx-4">
           <PillAction type="button" disabled={busy || isLoading} onClick={() => void download()} className="w-full sm:w-auto">
             <Download className="size-4" />
             {t("Télécharger le relevé")}

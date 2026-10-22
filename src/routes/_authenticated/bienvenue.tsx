@@ -71,7 +71,7 @@ function Page() {
     <AppShell nav={false}>
       <div className="mx-auto max-w-[720px] text-primary lg:pt-8">
         <div className="flex items-center justify-between">
-          <Logo className="h-[19px] w-auto" />
+          <Logo inverse className="h-[19px] w-auto" />
           <Button type="button" variant="link" onClick={later} className="px-0">{t("Plus tard")}</Button>
         </div>
 
@@ -81,10 +81,10 @@ function Page() {
           {t("Quelques réponses suffisent pour que nos propositions vous ressemblent dès la première demande. Vous pourrez les modifier à tout moment depuis votre Membership.")}
         </p>
 
-        <section aria-labelledby="welcome-step" className="mt-10 rounded-card bg-primary/10 p-5 sm:p-8">
+        <section aria-labelledby="welcome-step" className="mt-10 rounded-card bg-panel p-5 sm:p-8">
           {current ? (
             <>
-              <p className="eyebrow">( {t(current.eyebrow)} )</p>
+              <p className="eyebrow">{t(current.eyebrow)}</p>
               <h2 id="welcome-step" className="v3-card-title mt-3 text-[26px] lg:text-[32px]">{t(current.question)}</h2>
               <p className="mt-2 text-[13px] text-muted-foreground">{t("Plusieurs choix possibles.")}</p>
               <div className="mt-6">

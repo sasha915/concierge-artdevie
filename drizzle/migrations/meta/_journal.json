@@ -183,6 +183,20 @@
       "when": 1792687238164,
       "tag": "0025_member_language",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792689462106,
+      "tag": "0026_webhook_secret_vault",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1792689498200,
+      "tag": "0027_plans_and_demo_cleanup",
+      "breakpoints": true
     }
   ]
 }

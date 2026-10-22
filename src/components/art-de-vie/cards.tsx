@@ -10,18 +10,19 @@ import { ArrowCircle, StatusTimeline } from "./v3";
 import { t } from "@/lib/i18n";
 
 const statusClass: Record<RequestStatus, string> = {
-  Nouvelle: "bg-primary/10 text-primary",
-  "En cours": "bg-primary-light text-foreground",
-  Confirmée: "bg-primary text-background",
-  Terminée: "bg-primary-deep text-foreground",
-  Annulée: "border border-primary/25 bg-transparent text-muted-foreground",
+  Nouvelle: "border border-foreground/55 text-foreground",
+  "En cours": "bg-foreground/18 text-foreground",
+  Confirmée: "bg-status-confirmed text-background",
+  Terminée: "bg-primary text-primary-foreground",
+  Annulée: "border border-dashed border-foreground/24 text-muted-foreground",
 };
 export function StatusBadge({ status, onPhoto = false }: { status: RequestStatus; onPhoto?: boolean }) {
   return (
     <span
       className={cn(
-        "shrink-0 rounded-full px-3 py-1 text-[11px] font-medium",
-        onPhoto ? "border border-foreground/22 bg-primary-deep text-foreground" : statusClass[status],
+        "inline-flex h-[26px] shrink-0 items-center whitespace-nowrap rounded-full px-[11px] text-[12px] font-medium",
+        statusClass[status],
+        onPhoto && (status === "Nouvelle" || status === "En cours") && "bg-background/55 backdrop-blur-md",
       )}
     >
       {t(status)}
@@ -67,10 +68,10 @@ export function RequestCard({
           className="absolute inset-0 h-full w-full"
         />
         <div className="absolute inset-x-4 top-4 flex items-start justify-between gap-3">
-          <span className="dark-glass rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.13em]">
+          <span className="dark-glass inline-flex h-[30px] items-center rounded-full px-3 text-[11px] font-semibold uppercase tracking-[0.13em]">
             {t(item.category)}
           </span>
-          <ArrowCircle diagonal />
+          <span className="flex shrink-0 items-center gap-2">{isNew && <NewMark onPhoto />}<StatusBadge status={item.status} onPhoto /></span>
         </div>
         <div
           className={cn(
@@ -79,8 +80,7 @@ export function RequestCard({
           )}
         >
           <div className="flex items-center justify-between gap-3">
-            <p className="text-[13px]">{formatRequestDate(item)}</p>
-            <span className="flex shrink-0 items-center gap-2">{isNew && <NewMark onPhoto />}<StatusBadge status={item.status} onPhoto /></span>
+            <p className="text-[13px] text-muted-foreground">{formatRequestDate(item)}</p>
           </div>
           <h2 className={cn("v3-card-title mt-5 text-[29px]", desktop && "lg:text-[40px]")}>{item.title}</h2>
           <div className="mt-5">
@@ -94,14 +94,14 @@ export function RequestCard({
       to="/demandes/$requestId"
       params={{ requestId: item.id }}
       className={cn(
-        "block rounded-card p-4 text-primary transition-transform active:scale-[0.99]",
-        item.status === "Annulée" ? "border border-primary/25 bg-transparent" : "bg-primary/10",
+        "block rounded-[24px] p-3 text-primary transition-transform active:scale-[0.99]",
+        item.status === "Annulée" ? "border border-dashed border-foreground/24 bg-transparent text-muted-foreground" : "bg-panel",
         desktop && "lg:p-5",
       )}
     >
       <div
         className={cn(
-          "grid grid-cols-[116px_minmax(0,1fr)] gap-4 lg:grid-cols-[92px_minmax(0,1fr)]",
+          "grid grid-cols-[88px_minmax(0,1fr)] gap-3.5",
           desktop && "lg:grid-cols-[104px_minmax(0,1fr)]",
         )}
       >
@@ -109,22 +109,22 @@ export function RequestCard({
           src={imageFor(item.image_key)}
           alt={item.title}
           category={item.category}
-          className={cn("h-[116px] rounded-[16px]", desktop && "lg:h-[128px]")}
+          className={cn("h-[124px] rounded-[16px]", desktop && "lg:h-[140px]")}
         />
         <div className="min-w-0">
           <div className="flex items-start justify-between gap-2">
             <span className="eyebrow text-primary">{t(item.category)}</span>
             <span className="flex shrink-0 flex-wrap items-center justify-end gap-2">{isNew && <NewMark />}<StatusBadge status={item.status} /></span>
           </div>
-          <h2 className={cn("v3-card-title mt-4 text-[22px]", desktop && "lg:text-[26px]")}>{item.title}</h2>
-          <p className="mt-2 text-[13px] text-muted-foreground">{formatDate(item.scheduled_date)}</p>
+          <h2 className={cn("v3-card-title mt-2.5 text-[21px] leading-[1.14]", desktop && "lg:text-[26px]")}>{item.title}</h2>
+          <p className="mt-1 text-[13px] text-muted-foreground">{formatDate(item.scheduled_date)}</p>
+          {item.status !== "Annulée" && (
+            <div className="mt-3">
+              <StatusTimeline status={item.status} />
+            </div>
+          )}
         </div>
       </div>
-      {item.status !== "Annulée" && (
-        <div className="mt-4">
-          <StatusTimeline status={item.status} />
-        </div>
-      )}
     </Link>
   );
 }
@@ -226,7 +226,7 @@ export function EditorialOfferCard({ offer, variant }: { offer: Offer; variant: 
       <Link
         to="/demandes/nouvelle"
         search={search}
-        className="block rounded-[28px] bg-primary/10 p-4 text-primary transition-transform active:scale-[0.99] lg:grid lg:h-[440px] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-6 lg:p-6"
+        className="block rounded-[28px] bg-primary p-3 text-primary-foreground transition-transform active:scale-[0.99] lg:grid lg:h-[440px] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-6 lg:p-4"
       >
         <Photo
           src={offerImage(offer)}
@@ -235,16 +235,16 @@ export function EditorialOfferCard({ offer, variant }: { offer: Offer; variant: 
           className="h-[244px] rounded-[18px] lg:h-full lg:min-h-0"
         />
         <div className="px-3 pb-2 pt-6 lg:flex lg:min-w-0 lg:flex-col lg:justify-center lg:px-0 lg:py-6">
-          <span className="eyebrow text-primary">
+          <span className="eyebrow text-ink-soft">
             {t(offer.category)} · {offer.promo}
           </span>
           <h2 className="v3-card-title mt-5 text-[32px] lg:text-[clamp(26px,2.8vw,40px)]">{offer.title}</h2>
           <p className="mt-4 text-[14px] leading-6 lg:text-[16px]">
             {offer.partner} · {offer.place} · {offer.validity}
           </p>
-          <div className="mt-7 flex items-center justify-between border-t border-primary/25 pt-4">
-            <span className="text-[14px] font-medium">{t("Demander cette offre")}</span>
-            <ArrowCircle inverse />
+          <div className="mt-6 flex h-[52px] items-center justify-between rounded-full bg-primary-foreground pl-6 pr-2 text-primary">
+            <span className="text-[15px] font-medium">{t("Demander cette offre")}</span>
+            <ArrowCircle className="size-9" />
           </div>
         </div>
       </Link>
@@ -256,6 +256,7 @@ export function EditorialOfferCard({ offer, variant }: { offer: Offer; variant: 
       className={cn(
         "relative block overflow-hidden rounded-card text-foreground transition-transform active:scale-[0.99]",
         variant === "hero" ? "h-[412px] lg:h-[520px]" : "h-[268px] lg:h-full lg:min-h-[440px]",
+        "rounded-[24px] bg-panel lg:rounded-[28px]",
       )}
     >
       <Photo
@@ -271,11 +272,11 @@ export function EditorialOfferCard({ offer, variant }: { offer: Offer; variant: 
         </span>
         {variant === "hero" && <ArrowCircle diagonal />}
       </div>
-      <div className="absolute inset-x-5 bottom-5 lg:inset-x-8 lg:bottom-8">
+      <div className={cn("absolute inset-x-3 bottom-3 lg:inset-x-6 lg:bottom-6", variant === "hero" && "dark-glass rounded-[20px] p-5 lg:max-w-[560px] lg:p-6")}>
         <h2
           className={cn(
             "v3-card-title",
-            variant === "hero" ? "text-[36px] lg:text-[52px]" : "text-[23px] lg:text-[36px]",
+            variant === "hero" ? "text-[30px] lg:text-[40px]" : "text-[23px] lg:text-[30px]",
           )}
         >
           {offer.title}
@@ -307,7 +308,7 @@ export function Filters({
     <div
       className={cn(
         "no-scrollbar flex min-w-0 gap-2 overflow-x-auto pb-1",
-        desktop && "lg:max-w-[720px] lg:flex-wrap lg:justify-end lg:overflow-visible lg:pb-0",
+        desktop && "lg:flex-wrap lg:overflow-visible lg:pb-0",
       )}
     >
       {values.map((value) => (
@@ -321,15 +322,15 @@ export function Filters({
             "h-11 shrink-0 px-5 text-[15px] font-medium",
             active === value
               ? dark
-                ? "bg-background text-primary hover:bg-background/90"
-                : "bg-primary text-background hover:bg-primary/90"
+                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                : "bg-primary text-primary-foreground hover:bg-primary/90"
               : dark
-                ? "border border-foreground/22 bg-foreground/10 text-foreground hover:bg-foreground/20"
-                : "border border-primary/25 bg-primary/10 text-primary",
+                ? "border border-foreground/24 bg-foreground/8 text-foreground hover:bg-foreground/15"
+                : "border border-foreground/24 bg-foreground/8 text-foreground hover:bg-foreground/15",
             desktopDark &&
               (active === value
-                ? "lg:bg-background lg:text-primary lg:hover:bg-background/90"
-                : "lg:border-foreground/22 lg:bg-foreground/10 lg:text-foreground lg:hover:bg-foreground/20"),
+                ? "lg:bg-primary lg:text-primary-foreground lg:hover:bg-primary/90"
+                : "lg:border-foreground/24 lg:bg-foreground/8 lg:text-foreground lg:hover:bg-foreground/15"),
           )}
         >
           {t(value)}

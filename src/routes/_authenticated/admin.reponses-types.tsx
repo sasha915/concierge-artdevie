@@ -61,7 +61,7 @@ function Page() {
 
   return <AdminShell>
     <Button asChild variant="outline"><Link to="/admin/equipe"><ChevronLeft />Équipe</Link></Button>
-    <p className="eyebrow team-mention mt-6">( Réponses types )</p>
+    <p className="eyebrow team-mention mt-6">Réponses types</p>
     <Title italic="types." className="mt-3 text-primary lg:text-[72px]">Réponses </Title>
     <p role="status" aria-live="polite" className="mt-4 text-[14px]">{notice}</p>
     {isLoading ? <Skeleton className="mt-6 h-60 bg-primary/10" /> : isError ? <p role="alert" className="mt-6">Les réponses types n’ont pas pu être chargées.</p> : <ol className="mt-6 grid min-w-0 gap-4 lg:grid-cols-2">
@@ -74,7 +74,7 @@ function Page() {
       const ok = await run(() => create({ data: { label: newLabel, body: newBody, sortOrder: Math.max(0, ...templates.map((t) => t.sort_order)) + 1 } }), "Réponse type ajoutée.");
       if (ok) { setNewLabel(""); setNewBody(""); }
     }}>
-      <h2 className="eyebrow team-mention">( Nouvelle réponse type )</h2>
+      <h2 className="eyebrow team-mention">Nouvelle réponse type</h2>
       <div className="mt-4 grid gap-4 lg:max-w-2xl">
         <div><Label htmlFor="new-template-label">Libellé</Label><Input id="new-template-label" required maxLength={100} value={newLabel} onChange={(e) => setNewLabel(e.target.value)} className="mt-2" /></div>
         <div><Label htmlFor="new-template-body">Corps</Label><Textarea id="new-template-body" maxLength={4000} rows={5} value={newBody} onChange={(e) => setNewBody(e.target.value)} className="mt-2" /></div>

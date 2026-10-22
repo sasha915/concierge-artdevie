@@ -77,7 +77,7 @@ function Page() {
 
   return <AdminShell>
     <header className="mb-[22px]">
-      <p className="eyebrow team-mention">( Équipe )</p>
+      <p className="eyebrow team-mention">Équipe</p>
       <Title italic="équipe." className="mt-3 text-primary lg:text-[clamp(52px,6vw,88px)]">L’</Title>
       <p className="mt-2 text-[13px] text-muted-foreground">Comptes de l’équipe, rôles et invitations.</p>
       <Button asChild variant="link" className="mt-2 px-0"><Link to="/admin/reponses-types">Rédiger les réponses types</Link></Button>
@@ -87,7 +87,7 @@ function Page() {
 
     <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
       <section className="team-panel min-w-0 rounded-[28px] p-5 sm:p-6">
-        <h2 className="eyebrow team-mention">( Comptes d’équipe )</h2>
+        <h2 className="eyebrow team-mention">Comptes d’équipe</h2>
         {isLoading ? <Skeleton className="mt-4 h-40 rounded-card bg-primary/10" />
           : <ul className="mt-2">
               {team.map((t) => <li key={t.id} className="grid min-w-0 gap-3 border-b border-border py-4 last:border-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
@@ -105,7 +105,7 @@ function Page() {
       </section>
 
       <form onSubmit={submit} className="team-panel min-w-0 rounded-[28px] p-5 sm:p-6">
-        <h2 className="eyebrow team-mention">( Inviter un collègue )</h2>
+        <h2 className="eyebrow team-mention">Inviter un collègue</h2>
         <div className="mt-4 grid gap-4">
           <div><Label htmlFor="col-name" className="eyebrow text-muted-foreground">Nom complet</Label><Input id="col-name" className="mt-2" required maxLength={80} value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} /></div>
           <div><Label htmlFor="col-email" className="eyebrow text-muted-foreground">Adresse email</Label><Input id="col-email" type="email" className="mt-2" required maxLength={160} value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} /></div>
@@ -119,7 +119,7 @@ function Page() {
     </div>
 
     <section className="team-panel mt-6 min-w-0 rounded-[28px] p-5 sm:p-6">
-      <h2 className="eyebrow team-mention">( Ce que chaque rôle peut faire )</h2>
+      <h2 className="eyebrow team-mention">Ce que chaque rôle peut faire</h2>
       <div className="mt-3 overflow-x-auto">
         <table className="w-full min-w-0 text-left text-[14px]">
           <thead><tr className="border-b border-border text-muted-foreground"><th scope="col" className="py-3 pr-3 font-medium">Action</th><th scope="col" className="w-28 py-3 text-center font-medium">Administrateur</th><th scope="col" className="w-24 py-3 text-center font-medium">Concierge</th></tr></thead>

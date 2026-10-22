@@ -109,8 +109,8 @@ function Page() {
 
   return (
     <AdminShell>
-      <p className="eyebrow team-mention">( Agenda )</p>
-      <Title italic="l’équipe." className="mt-3 text-primary lg:text-[clamp(52px,6vw,88px)]">Agenda de </Title>
+      <p className="eyebrow team-mention">Agenda</p>
+      <Title italic="agenda." className="mt-3 text-primary lg:text-[clamp(52px,6vw,88px)]">L’</Title>
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -127,7 +127,7 @@ function Page() {
 
       <ul aria-label="Légende" className="mt-4 flex flex-wrap gap-2">
         {LEGEND.map((s) => <li key={s} className={`rounded-full px-3 py-1 text-[11px] font-medium ${teamStatusClass(s)}`}>{s}</li>)}
-        <li className="rounded-full border border-dashed border-primary/70 px-3 py-1 text-[11px] font-medium">Échéance récurrente</li>
+        <li className="rounded-full border border-dashed border-primary/70 px-3 py-1 text-[11px] font-medium">Récurrente</li>
       </ul>
 
       {isError ? <p role="alert" className="team-panel mt-6 rounded-[28px] p-6 text-[14px] text-muted-foreground">L’agenda n’a pas pu être chargé.</p>

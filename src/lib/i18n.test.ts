@@ -4,7 +4,7 @@ import { join } from "path";
 import { EN } from "./i18n-en";
 import { setLang, t, tPair, translate } from "./i18n";
 import { CHANGE_KINDS, REVIEW_RATINGS } from "./request-actions-rules";
-import { RHYTHMS, proposalBanner } from "./planning-rules";
+import { DEFAULT_REVIEW_TITLE, REVIEW_TITLES, RHYTHMS, proposalBanner } from "./planning-rules";
 import { WELCOME_STEPS } from "./member-rules";
 
 function files(dir: string): string[] {
@@ -42,6 +42,8 @@ const dynamicKeys = [
   ...REVIEW_RATINGS,
   ...WELCOME_STEPS.flatMap((s) => [s.eyebrow, s.question, ...s.options]),
   ...[1, 2, 3, 4, 5, 6].map((n) => proposalBanner(n)),
+  ...[...Object.values(REVIEW_TITLES), DEFAULT_REVIEW_TITLE].map(([a, b]) => `${a}|${b}`),
+  "Chaque {day}",
 ];
 
 const placeholders = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(",");

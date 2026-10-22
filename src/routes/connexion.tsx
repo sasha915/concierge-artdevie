@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { Logo } from "@/components/art-de-vie/app-shell";
 import { Photo } from "@/components/art-de-vie/cards";
 import { PillAction, Title } from "@/components/art-de-vie/v3";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { imageFor } from "@/data/art-de-vie";
@@ -74,83 +73,49 @@ function Page() {
   const italic = `${parts.at(-1) ?? greeting}.`;
   const start = parts.slice(0, -1).join(" ");
   return (
-    <main className="relative min-h-[100svh] overflow-hidden bg-primary-deep text-foreground">
-      <Photo
-        src={imageFor("entree-de-nuit")}
-        alt={t("Entrée Art de Vie de nuit")}
-        hero
-        eager
-        className="absolute inset-0 h-full w-full"
-      />
-      <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-[1180px] flex-col px-5 pb-[max(32px,env(safe-area-inset-bottom))] pt-[max(24px,env(safe-area-inset-top))] sm:px-8 lg:px-12">
-        <Logo inverse className="h-[24px] w-auto self-center lg:self-start" />
-        <div className="my-auto grid items-end gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_440px] lg:gap-12">
-          <div className="lg:min-w-0">
-            <p className="eyebrow text-foreground/80">{t("Espace membre")}</p>
-            <Title
-              italic={italic}
-              className={`mt-5 text-[58px] lg:leading-[0.96] lg:[&_em]:whitespace-nowrap lg:text-[clamp(64px,9.2vw,132px)]`}
-            >
-              {start}
-              {start ? " " : ""}
-            </Title>
-            <p className="mt-5 max-w-sm text-[14px] leading-5 lg:text-[18px] lg:leading-7">
-              {t("Connectez-vous pour accéder à votre espace membre.")}
-            </p>
-          </div>
-          <form className="dark-glass rounded-card p-5 sm:p-7" onSubmit={submit}>
-            <div>
-              <Label htmlFor="email" className="eyebrow text-foreground/80">
-                {t("Email")}
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t("vous@exemple.fr")}
-                className="mt-2"
-              />
-            </div>
-            <div className="mt-5">
-              <Label htmlFor="password" className="eyebrow text-foreground/80">
-                {t("Mot de passe")}
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="mt-2"
-              />
-            </div>
-            <div className="mt-3 text-right">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={reset}
-                className="text-foreground hover:bg-foreground/10 hover:text-foreground"
-              >
-                {t("Mot de passe oublié ?")}
-              </Button>
-            </div>
-            {error ? <p className="mt-3 rounded-[16px] bg-foreground/10 p-4 text-xs leading-5">{error}</p> : null}
-            {notice ? <p className="mt-3 rounded-[16px] bg-foreground/10 p-4 text-xs leading-5">{notice}</p> : null}
-            <PillAction type="submit" light className="mt-5 w-full" disabled={busy}>
-              {busy ? t("Connexion en cours") : t("Se connecter")}
-            </PillAction>
-          </form>
+    <main className="min-h-[100svh] bg-background p-3 text-foreground lg:grid lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:gap-4 lg:p-4">
+      <section className="relative isolate flex h-[396px] flex-col justify-between overflow-hidden rounded-[28px] bg-panel px-5 pb-[26px] pt-[22px] lg:h-auto lg:min-h-[calc(100svh-32px)] lg:px-10 lg:pb-10 lg:pt-8">
+        <Photo src={imageFor("entree-de-nuit")} alt={t("Entrée Art de Vie de nuit")} hero eager className="absolute inset-0 -z-10 h-full w-full" />
+        <Logo inverse className="h-[30px] w-auto self-start" />
+        <div>
+          <p className="eyebrow mb-3.5 text-muted-foreground">{t("Espace membre")}</p>
+          <Title italic={italic} className="text-[64px] leading-[0.94] lg:text-[clamp(72px,8vw,136px)] lg:[&_em]:whitespace-nowrap">
+            {start}
+            {start ? " " : ""}
+          </Title>
+          <p className="mt-5 hidden max-w-sm text-[18px] leading-7 text-foreground/90 lg:block">
+            {t("Connectez-vous pour accéder à votre espace membre.")}
+          </p>
         </div>
-        <p className="text-center text-[13px] leading-5 text-foreground/80 lg:text-left">
-          {t("Pas encore membre ?")}{" "}
-          <span className="font-medium text-foreground">
-            {t("Demander une invitation : 58 avenue de Wagram, 75017 Paris")}
-          </span>
+      </section>
+      <div className="lg:flex lg:flex-col lg:justify-center lg:rounded-[28px] lg:bg-panel lg:px-11">
+        <form className="mt-3 flex flex-col gap-4 rounded-[28px] bg-panel px-5 py-[22px] lg:mt-0 lg:bg-transparent lg:px-0" onSubmit={submit}>
+          <p className="eyebrow hidden text-muted-foreground lg:block">{t("Connexion")}</p>
+          <div>
+            <Label htmlFor="email" className="eyebrow text-muted-foreground">
+              {t("Email")}
+            </Label>
+            <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("vous@exemple.fr")} className="mt-2.5" />
+          </div>
+          <div>
+            <Label htmlFor="password" className="eyebrow text-muted-foreground">
+              {t("Mot de passe")}
+            </Label>
+            <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-2.5" />
+          </div>
+          <button type="button" onClick={reset} className="-my-1.5 inline-flex min-h-11 items-center self-start text-[15px] font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            {t("Mot de passe oublié ?")}
+          </button>
+          {error ? <p role="alert" className="rounded-[16px] bg-foreground/10 p-4 text-xs leading-5">{error}</p> : null}
+          {notice ? <p role="status" className="rounded-[16px] bg-foreground/10 p-4 text-xs leading-5">{notice}</p> : null}
+          <PillAction type="submit" light className="w-full" disabled={busy}>
+            {busy ? t("Connexion en cours") : t("Se connecter")}
+          </PillAction>
+        </form>
+        <p className="mx-2 mt-5 text-[14px] leading-[21px] text-muted-foreground lg:mx-0 lg:mt-2 lg:border-t lg:border-foreground/16 lg:pt-6">
+          {t("Pas encore membre ?")}
+          <br />
+          <span className="text-foreground">{t("Demander une invitation : 58 avenue de Wagram, 75017 Paris")}</span>
         </p>
       </div>
     </main>

@@ -29,11 +29,11 @@ function Page() {
   }
 
   return <AppShell nav={false}><div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
-    <div className="mb-14 text-center"><Logo /></div>
+    <div className="mb-14 text-center"><Logo inverse /></div>
     <h1 className="text-center font-display text-[38px] font-semibold text-primary">{t("Nouveau mot de passe")}</h1>
     <form className="mt-10 space-y-5" onSubmit={submit}>
       <div><Label htmlFor="password" className="eyebrow">{t("Mot de passe")}</Label><Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-2" /></div>
-      {error && <p className="rounded-2xl bg-primary/10 p-4 text-xs leading-5 text-primary">{error}</p>}
+      {error && <p className="rounded-2xl bg-panel p-4 text-xs leading-5 text-primary">{error}</p>}
       <Button type="submit" size="lg" className="w-full" disabled={busy}>{busy ? t("Un instant…") : t("Enregistrer")}</Button>
     </form>
   </div></AppShell>;

@@ -64,16 +64,16 @@ function Page() {
       <div className="mx-auto max-w-3xl lg:max-w-none">
         <SubHeader title="Modifier ma demande" close backTo="/demandes" />
         {isLoading ? (
-          <Skeleton className="h-[420px] rounded-[28px] bg-primary/10" />
+          <Skeleton className="h-[420px] rounded-[28px] bg-panel" />
         ) : !item ? (
           <EmptyState>{t("Cette demande est introuvable.")}</EmptyState>
         ) : !canRequestChange(item.status) || pending ? (
-          <div className="lg:mx-[clamp(20px,3.9vw,56px)]">
+          <div className="lg:mx-4">
             <EmptyState>{pending ? t("Une demande de modification est déjà en cours d’examen par votre conciergerie.") : t("Cette demande ne peut plus être modifiée.")}</EmptyState>
             <Link to="/demandes/$requestId" params={{ requestId }} className="mt-4 inline-block text-[14px] text-primary underline underline-offset-4">{t("Revenir à la demande")}</Link>
           </div>
         ) : (
-          <form onSubmit={submit} className="rounded-[28px] bg-card p-5 text-primary sm:p-8 lg:mx-[clamp(20px,3.9vw,56px)] lg:p-10">
+          <form onSubmit={submit} className="rounded-[28px] bg-card p-5 text-primary sm:p-8 lg:mx-4 lg:p-10">
             <p className="eyebrow text-primary">{t(item.category)}</p>
             <p className="v3-card-title mt-3 text-[24px] lg:text-[34px]">{item.title}</p>
             <fieldset className="mt-6">
@@ -83,7 +83,7 @@ function Page() {
                   const active = kind === k.value;
                   return (
                     <button key={k.value} type="button" role="radio" aria-checked={active} onClick={() => setKind(k.value)}
-                      className={`flex min-h-[56px] items-center justify-between gap-3 rounded-[18px] px-4 py-3 text-left text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${active ? "bg-primary text-background" : "bg-primary/10 hover:bg-primary/15"}`}>
+                      className={`flex min-h-[56px] items-center justify-between gap-3 rounded-[18px] px-4 py-3 text-left text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${active ? "bg-primary text-background" : "bg-panel hover:bg-primary/15"}`}>
                       {t(k.label)}
                       {active && <Check className="size-4 shrink-0" aria-hidden="true" />}
                     </button>
@@ -94,7 +94,7 @@ function Page() {
             <label htmlFor="change-body" className="eyebrow mt-6 block text-primary">{t("Votre souhait")}</label>
             <Textarea id="change-body" value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000} rows={4} className="mt-3" placeholder={kind === "annulation" ? t("Un mot pour votre conciergerie (facultatif)") : t("Nouvelle date, nombre de couverts, précision…")} />
             <p className="mt-4 text-[13px] leading-5 text-muted-foreground">{t("Votre conciergerie vous confirme la modification. D’ici là, votre demande reste telle qu’elle est.")}</p>
-            {error && <p role="alert" className="mt-4 rounded-2xl bg-primary/10 p-4 text-xs leading-5">{error}</p>}
+            {error && <p role="alert" className="mt-4 rounded-2xl bg-panel p-4 text-xs leading-5">{error}</p>}
             <PillAction type="submit" className="mt-6 w-full sm:max-w-sm" disabled={busy}>{busy ? t("Envoi en cours") : t("Envoyer la demande")}</PillAction>
           </form>
         )}

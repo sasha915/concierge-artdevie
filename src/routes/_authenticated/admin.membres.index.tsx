@@ -98,7 +98,7 @@ function Page() {
   return <AdminShell>
     <header className="mb-[22px] flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <p className="eyebrow team-mention">( Membres )</p>
+        <p className="eyebrow team-mention">Membres</p>
         <Title italic="membres." className="mt-3 text-primary lg:text-[clamp(52px,6vw,88px)]">Les </Title>
         <p className="mt-2 text-[13px] text-muted-foreground">Gérez les membres invités, leurs demandes et leurs factures.</p>
       </div>

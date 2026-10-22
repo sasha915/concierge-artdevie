@@ -76,3 +76,18 @@ export function nextOccurrence(rule: RecurringRule, today: string): string | nul
 export function creationDate(occurrence: string): string {
   return addDays(occurrence, -7);
 }
+
+/** Surtitre d'une série : « Chaque mardi », « Chaque mois », « À des dates choisies » (clé de traduction + jour). */
+export function rhythmEyebrow(rule: { rhythm: string; start_date: string | null }): { key: string; day?: number } {
+  if (rule.rhythm === "hebdomadaire" && rule.start_date) return { key: "Chaque {day}", day: new Date(`${rule.start_date}T12:00:00Z`).getUTCDay() };
+  return { key: rhythmLabel(rule.rhythm) };
+}
+
+/** Titre de l'avis selon la catégorie : « Comment s'est passée votre soirée ? ». Paire début|fin italique. */
+export const REVIEW_TITLES: Record<string, [string, string]> = {
+  Tables: ["Comment s’est passée votre", "soirée ?"],
+  "Séjours": ["Comment s’est passé votre", "séjour ?"],
+  Transferts: ["Comment s’est passé votre", "trajet ?"],
+  Soins: ["Comment s’est passé votre", "soin ?"],
+};
+export const DEFAULT_REVIEW_TITLE: [string, string] = ["Comment s’est passée votre", "prestation ?"];

@@ -115,6 +115,30 @@ export type Database = {
           },
         ]
       }
+      membership_plans: {
+        Row: {
+          min_commitment_months: number | null
+          name: string
+          period: string
+          price_cents: number
+          updated_at: string
+        }
+        Insert: {
+          min_commitment_months?: number | null
+          name: string
+          period: string
+          price_cents: number
+          updated_at?: string
+        }
+        Update: {
+          min_commitment_months?: number | null
+          name?: string
+          period?: string
+          price_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       member_preferences: {
         Row: {
           tables_choix: string[]

@@ -6,7 +6,7 @@ import { ArrowUp, CalendarPlus, Download, FileText, PencilLine, RotateCcw } from
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { getMemberFileUrl, sendMemberMessage, submitReview } from "@/lib/messages.functions";
-import { proposalBanner } from "@/lib/planning-rules";
+import { DEFAULT_REVIEW_TITLE, REVIEW_TITLES, proposalBanner } from "@/lib/planning-rules";
 import { buildIcs, canAddToCalendar, canRenew, canRequestChange, canReview, changeKindLabel, FILE_TYPES, fileSizeLabel, REVIEW_RATINGS, type ReviewRating } from "@/lib/request-actions-rules";
 import type { RequestItem } from "@/data/art-de-vie";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,7 +18,7 @@ import { PillAction, StatusTimeline, Title } from "@/components/art-de-vie/v3";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, imageFor, formatTime } from "@/data/art-de-vie";
 import { requestChangesMemberQuery, requestFilesMemberQuery, requestProposalMemberQuery, requestMessagesQuery, requestReviewMemberQuery, requestsQuery, unreadRequestNotificationsQuery } from "@/lib/adv-queries";
-import { getLang, locale, t } from "@/lib/i18n";
+import { getLang, locale, t, tPair } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/demandes/$requestId")({
   head: () => ({
@@ -53,7 +53,7 @@ function Page() {
       <AppShell nav={false}>
         <div className="mx-auto max-w-2xl pt-10">
           {isLoading ? (
-            <Skeleton className="h-[452px] rounded-[28px] bg-primary/10" />
+            <Skeleton className="h-[452px] rounded-[28px] bg-panel" />
           ) : (
             <EmptyState>{t("Cette demande est introuvable.")}</EmptyState>
           )}
@@ -62,72 +62,58 @@ function Page() {
     );
   return (
     <AppShell nav={false}>
-      <div className="mx-auto max-w-[760px] lg:relative lg:grid lg:max-w-none lg:grid-cols-12 lg:gap-x-8">
-        <section className="relative -mx-2 -mt-3 h-[452px] overflow-hidden rounded-[28px] text-foreground sm:mx-0 sm:mt-0 lg:col-span-12 lg:h-auto lg:min-h-[700px]">
+      <div className="hidden lg:mb-5 lg:block">
+        <TopBar />
+      </div>
+      <div className="mx-auto max-w-[760px] lg:grid lg:max-w-none lg:grid-cols-12 lg:items-start lg:gap-4">
+        <div className="min-w-0 lg:col-span-8">
+        <section className="relative -mx-2 -mt-3 h-[452px] overflow-hidden rounded-[28px] bg-panel text-foreground sm:mx-0 sm:mt-0 lg:h-[340px]">
           <Photo
             src={imageFor(item.image_key)}
             alt={item.title}
             category={item.category}
+            hero
             className="absolute inset-0 h-full w-full"
           />
-          <div className="absolute inset-x-4 top-4 flex items-center justify-between lg:hidden">
-            <Button asChild variant="ghost" size="icon" className="dark-glass text-foreground hover:bg-primary-deep/70">
+          <div className="absolute inset-x-4 top-4 flex items-center justify-between lg:inset-x-5 lg:top-5">
+            <Button asChild variant="ghost" size="icon" className="dark-glass text-foreground hover:bg-primary-deep/70 lg:hidden">
               <Link to="/demandes" aria-label={t("Retour")}>
                 <ChevronLeft />
               </Link>
             </Button>
-            <span className="dark-glass rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.13em]">
-              {item.category}
+            <Link to="/demandes" className="dark-glass hidden h-10 items-center gap-2 rounded-full px-4 text-[14px] lg:inline-flex">
+              <ChevronLeft className="size-4" />
+              {t("Mes demandes")}
+            </Link>
+            <span className="dark-glass inline-flex h-[30px] items-center rounded-full px-3 text-[11px] font-semibold uppercase tracking-[0.13em]">
+              {t(item.category)}
             </span>
           </div>
-          <div className="hidden lg:absolute lg:inset-x-6 lg:top-6 lg:block">
-            <TopBar />
-          </div>
-          <div className="absolute inset-x-5 bottom-5 lg:inset-x-[clamp(20px,3.9vw,56px)] lg:bottom-10">
-            <div className="hidden lg:mb-6 lg:flex lg:items-center lg:gap-2">
-              <Button asChild variant="ghost" className="lg:dark-glass lg:h-11 lg:text-foreground">
-                <Link to="/demandes">
-                  <ChevronLeft />
-                  {t("Mes demandes")}
-                </Link>
-              </Button>
-              <span className="lg:dark-glass lg:rounded-full lg:px-4 lg:py-3 lg:text-[12px]">{item.category}</span>
-            </div>
-            <h1 className="v3-card-title max-w-[520px] text-[38px] lg:hidden">{item.title}</h1>
-            <Title
-              italic={item.title.split(" ").at(-1)}
-              className="hidden lg:block lg:text-[clamp(52px,7.2vw,104px)] lg:leading-[0.96]"
-            >
-              {item.title.split(" ").slice(0, -1).join(" ")}{" "}
-            </Title>
-            <div className="lg:mt-8 lg:flex lg:flex-wrap lg:items-center lg:justify-between lg:gap-6 lg:border-t lg:border-foreground/22 lg:pt-6">
-              <p className="mt-3 text-[13px] lg:mt-0 lg:text-[18px]">
-                {formatDate(item.scheduled_date)}
-                {item.scheduled_time ? ` · ${formatTime(item.scheduled_time)}` : ""}
-              </p>
-              <PillAction asChild light className="hidden lg:inline-flex">
-                <Link to="/demandes/nouvelle" search={{ offer: undefined }}>
-                  {t("Faire une nouvelle demande")}
-                </Link>
-              </PillAction>
-            </div>
+          <div className="absolute inset-x-5 bottom-5 lg:inset-x-6 lg:bottom-6">
+            <h1 className="v3-heading max-w-[620px] text-[43px] leading-[1.02] lg:text-[clamp(48px,4.6vw,68px)]">{item.title.split(" ").slice(0, -1).join(" ")}{" "}<em className="font-display font-normal">{item.title.split(" ").at(-1)}</em></h1>
+            <p className="mt-3 text-[15px] text-muted-foreground lg:text-[16px]">
+              {formatDate(item.scheduled_date)}
+              {item.scheduled_time ? ` · ${formatTime(item.scheduled_time)}` : ""}
+            </p>
           </div>
         </section>
-        <section className="mt-3 rounded-[28px] bg-primary-deep p-5 text-foreground lg:dark-glass lg:absolute lg:right-[clamp(20px,3.9vw,56px)] lg:top-[160px] lg:mt-0 lg:w-[420px] lg:p-6">
+        <section className="mt-3 rounded-[24px] bg-panel p-5 text-foreground lg:rounded-[28px] lg:p-6">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="eyebrow text-foreground">{t("Suivi")}</h2>
-            <StatusBadge status={item.status} onPhoto />
+            <h2 className="eyebrow text-muted-foreground">{t("Suivi")}</h2>
+            <StatusBadge status={item.status} />
           </div>
-          <div className="mt-5">
+          <div className="mt-[18px]">
             <StatusTimeline status={item.status} dark />
           </div>
         </section>
         <ProposalBanner requestId={item.id} />
         <Exchanges requestId={item.id} description={item.description} cancelled={item.status === "Annulée"} />
         <Documents requestId={item.id} />
-        <section className="mt-8 px-2 text-primary lg:col-span-5 lg:mr-[clamp(20px,3.9vw,56px)] lg:mt-16 lg:px-0">
+        </div>
+        <div className="min-w-0 lg:col-span-4">
+        <section className="mt-3 rounded-[24px] bg-panel px-5 pb-1.5 pt-5 text-primary lg:mt-0 lg:rounded-[28px] lg:px-7 lg:pt-7">
           <h2 className="eyebrow text-primary">{t("Détails")}</h2>
-          <dl className="mt-4 divide-y divide-primary/25 border-y border-primary/25 text-[14px]">
+          <dl className="mt-3.5 divide-y divide-foreground/16 border-t border-foreground/16 text-[14px]">
             <Detail label={t("Date")} value={formatDate(item.scheduled_date)} />
             <Detail label={t("Heure")} value={item.scheduled_time ? formatTime(item.scheduled_time) : t("À définir")} />
             {item.guests && (
@@ -137,7 +123,7 @@ function Page() {
           </dl>
         </section>
         <RequestActions item={item} />
-        <div className="mt-6 lg:hidden">
+        <div className="mt-6 lg:mt-3">
           <PillAction asChild className="w-full">
             <Link to="/demandes/nouvelle" search={{ offer: undefined }}>
               {t("Faire une nouvelle demande")}
@@ -145,21 +131,22 @@ function Page() {
           </PillAction>
         </div>
       </div>
+      </div>
     </AppShell>
   );
 }
 
 function Detail({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-[100px_minmax(0,1fr)] gap-4 py-4">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="text-right text-[16px] lg:text-[24px]">{value}</dd>
+    <div className="flex items-baseline justify-between gap-4 py-[15px]">
+      <dt className="text-[14px] text-muted-foreground">{label}</dt>
+      <dd className="text-right text-[18px] tracking-[-0.02em] lg:text-[22px]">{value}</dd>
     </div>
   );
 }
 
 function stamp(iso: string) {
-  return new Date(iso).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleString(locale(), { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
 }
 
 /** Lot 5.1 — fil d'échanges : messages du membre à droite, de la conciergerie à gauche dans la bulle violette. */
@@ -188,24 +175,24 @@ function Exchanges({ requestId, description, cancelled }: { requestId: string; d
   }
 
   return (
-    <section aria-labelledby="exchanges-title" className="mt-3 rounded-[28px] bg-primary/10 p-5 text-primary lg:col-span-7 lg:ml-[clamp(20px,3.9vw,56px)] lg:mt-16 lg:self-start lg:p-8">
+    <section aria-labelledby="exchanges-title" className="mt-3 rounded-[24px] border border-foreground/16 bg-glass p-5 text-primary lg:mt-3 lg:rounded-[28px] lg:p-8">
       <h2 id="exchanges-title" className="eyebrow text-primary">{t("Échanges")}</h2>
       <ol className="mt-5 grid gap-3" aria-live="polite">
         <li className="ml-auto max-w-[88%] lg:max-w-[78%]">
-          <p className="whitespace-pre-line rounded-[18px] bg-card p-4 text-[14px] leading-6 lg:text-[16px] lg:leading-7">
+          <p className="whitespace-pre-line rounded-[18px_18px_4px_18px] bg-primary px-4 py-3 text-[15px] leading-[22px] text-primary-foreground lg:text-[16px] lg:leading-7">
             {description || t("Aucune précision complémentaire n’a été indiquée.")}
           </p>
         </li>
         {!isLoading && !hasTeamMessage && (
           <li className="mr-auto max-w-[88%] lg:max-w-[78%]">
-            <p className="rounded-[18px] bg-primary p-4 text-[14px] text-background lg:text-[16px]">{t("Votre demande a bien été transmise.")}</p>
+            <p className="rounded-[18px_18px_18px_4px] border border-foreground/24 bg-foreground/14 px-4 py-3 text-[15px] leading-[22px] lg:text-[16px]">{t("Votre demande a bien été transmise.")}</p>
           </li>
         )}
         {messages.map((m) => {
           const mine = m.author_role === "membre";
           return (
             <li key={m.id} className={mine ? "ml-auto max-w-[88%] text-right lg:max-w-[78%]" : "mr-auto max-w-[88%] lg:max-w-[78%]"}>
-              <p className={`whitespace-pre-line break-words rounded-[18px] p-4 text-left text-[14px] leading-6 lg:text-[16px] lg:leading-7 ${mine ? "bg-card" : "bg-primary text-background"}`}>{m.body}</p>
+              <p className={`whitespace-pre-line break-words rounded-[18px] p-4 text-left text-[14px] leading-6 lg:text-[16px] lg:leading-7 ${mine ? "rounded-br-[4px] bg-primary text-primary-foreground" : "rounded-bl-[4px] border border-foreground/24 bg-foreground/14"}`}>{m.body}</p>
               <p className="mt-1 px-1 text-[11px] text-muted-foreground">{mine ? t("Vous") : t("Votre conciergerie")} · {stamp(m.created_at)}</p>
             </li>
           );
@@ -245,7 +232,7 @@ function Documents({ requestId }: { requestId: string }) {
   }
 
   return (
-    <section aria-labelledby="documents-title" className="mt-3 rounded-[28px] bg-primary/10 p-5 text-primary lg:col-span-7 lg:col-start-1 lg:ml-[clamp(20px,3.9vw,56px)] lg:p-8">
+    <section aria-labelledby="documents-title" className="mt-3 rounded-[28px] bg-panel p-5 text-primary lg:p-8">
       <h2 id="documents-title" className="eyebrow text-primary">{t("Documents")}</h2>
       <ul className="mt-4 divide-y divide-primary/25">
         {files.map((f) => (
@@ -290,14 +277,14 @@ function RequestActions({ item }: { item: RequestItem }) {
   if (!showChange && !showCalendar && !showRenew && !canReview(item.status) && !lastDecided) return null;
 
   return (
-    <section className="mt-3 grid gap-3 lg:col-span-5 lg:col-start-8 lg:mr-[clamp(20px,3.9vw,56px)] lg:self-start">
+    <section className="mt-3 grid gap-3">
       {pending && (
-        <p role="status" className="rounded-[22px] bg-primary/10 p-4 text-[13px] leading-5 text-primary">
+        <p role="status" className="rounded-[22px] bg-panel p-4 text-[13px] leading-5 text-primary">
           {t("Modification demandée · {type}. Votre conciergerie vous confirme la modification ; d’ici là, votre demande reste telle qu’elle est.", { type: t(changeKindLabel(pending.kind)) })}
         </p>
       )}
       {!pending && lastDecided && (
-        <p className="rounded-[22px] bg-primary/10 p-4 text-[13px] leading-5 text-primary">
+        <p className="rounded-[22px] bg-panel p-4 text-[13px] leading-5 text-primary">
           {lastDecided.status === "acceptée"
             ? t("Votre dernière demande de modification ({type}) a été acceptée.", { type: t(changeKindLabel(lastDecided.kind)).toLowerCase() })
             : t("Votre dernière demande de modification ({type}) a été examinée et n’a pas pu être retenue.", { type: t(changeKindLabel(lastDecided.kind)).toLowerCase() })}
@@ -325,12 +312,13 @@ function RequestActions({ item }: { item: RequestItem }) {
           </Link>
         </Button>
       )}
-      {canReview(item.status) && <ReviewBlock requestId={item.id} />}
+      {canReview(item.status) && <ReviewBlock requestId={item.id} category={item.category} />}
     </section>
   );
 }
 
-function ReviewBlock({ requestId }: { requestId: string }) {
+function ReviewBlock({ requestId, category }: { requestId: string; category: string }) {
+  const reviewTitle = tPair(...(REVIEW_TITLES[category] ?? DEFAULT_REVIEW_TITLE));
   const queryClient = useQueryClient();
   const { data: review, isLoading } = useQuery(requestReviewMemberQuery(requestId));
   const send = useServerFn(submitReview);
@@ -341,7 +329,7 @@ function ReviewBlock({ requestId }: { requestId: string }) {
 
   if (review)
     return (
-      <div className="rounded-[22px] bg-primary/10 p-5 text-primary">
+      <div className="rounded-[22px] bg-panel p-5 text-primary">
         <h2 className="eyebrow text-primary">{t("Votre avis")}</h2>
         <p className="mt-3 font-display text-[24px] italic">{t(review.rating)}</p>
         {review.comment && <p className="mt-2 whitespace-pre-line text-[14px] leading-6">{review.comment}</p>}
@@ -365,8 +353,9 @@ function ReviewBlock({ requestId }: { requestId: string }) {
   }
 
   return (
-    <form onSubmit={submit} className="rounded-[22px] bg-primary/10 p-5 text-primary">
-      <h2 className="eyebrow text-primary">{t("Votre avis")}</h2>
+    <form onSubmit={submit} className="rounded-[22px] bg-panel p-5 text-primary">
+      <p className="eyebrow text-muted-foreground">{t("Votre avis")}</p>
+      <h2 className="v3-heading mt-3 text-[30px] leading-[1.06]">{reviewTitle[0]}{" "}<em className="font-display font-normal">{reviewTitle[1]}</em></h2>
       <div role="radiogroup" aria-label={t("Votre avis sur la prestation")} className="mt-4 flex flex-wrap gap-2">
         {REVIEW_RATINGS.map((r) => (
           <button key={r} type="button" role="radio" aria-checked={rating === r} onClick={() => setRating(r)}
@@ -387,7 +376,7 @@ function ProposalBanner({ requestId }: { requestId: string }) {
   const { data: proposal } = useQuery(requestProposalMemberQuery(requestId));
   if (!proposal || proposal.status !== "en attente" || proposal.options.length === 0) return null;
   return (
-    <Link to="/demandes/$requestId/proposition" params={{ requestId }} className="mt-3 flex items-center justify-between gap-4 rounded-[28px] bg-primary p-5 text-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:col-span-7 lg:col-start-1 lg:ml-[clamp(20px,3.9vw,56px)] lg:mt-16 lg:p-8">
+    <Link to="/demandes/$requestId/proposition" params={{ requestId }} className="mt-3 flex items-center justify-between gap-4 rounded-[28px] bg-primary p-5 text-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:mt-3 lg:p-8">
       <span>
         <span className="eyebrow block text-background/80">{t("Votre conciergerie vous propose")}</span>
         <span className="mt-2 block text-[20px] lg:text-[26px]">{t(proposalBanner(proposal.options.length))}</span>

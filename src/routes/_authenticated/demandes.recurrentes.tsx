@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -11,8 +11,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, formatTime } from "@/data/art-de-vie";
 import { recurringRequestsQuery } from "@/lib/adv-queries";
 import { setRecurringPaused } from "@/lib/messages.functions";
-import { nextOccurrence, rhythmLabel } from "@/lib/planning-rules";
-import { t } from "@/lib/i18n";
+import { nextOccurrence, rhythmEyebrow, rhythmLabel, type RecurringRule } from "@/lib/planning-rules";
+import { PillAction } from "@/components/art-de-vie/v3";
+
+/** « Chaque mardi » : jour de la semaine dans la langue de l'application. */
+function eyebrowOf(r: RecurringRule & { rhythm: string }): string {
+  const e = rhythmEyebrow(r);
+  if (e.day === undefined) return t(e.key);
+  const day = new Date(Date.UTC(2026, 0, 4 + e.day)).toLocaleDateString(locale(), { weekday: "long", timeZone: "UTC" });
+  return t(e.key, { day });
+}
+import { locale, t } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/demandes/recurrentes")({
   head: () => ({
@@ -52,22 +61,22 @@ function Page() {
     <AppShell nav={false}>
       <div className="mx-auto max-w-3xl lg:max-w-none">
         <SubHeader title="Mes demandes récurrentes" backTo="/demandes" />
-        <p className="mb-6 max-w-[560px] text-[14px] leading-6 text-muted-foreground lg:ml-[clamp(20px,3.9vw,56px)] lg:max-w-[760px] lg:text-[18px] lg:leading-7">
-          {t("Chaque échéance crée une demande que vous suivez comme les autres. Vous pouvez la suspendre à tout moment.")}
+        <p className="mb-6 max-w-[560px] text-[14px] leading-6 text-muted-foreground lg:ml-4 lg:max-w-[760px] lg:text-[18px] lg:leading-7">
+          {t("Ce qui revient chaque semaine ou chaque mois, sans avoir à le redemander.")}
         </p>
         {isLoading ? (
-          <Skeleton className="h-40 rounded-card bg-primary/10" />
+          <Skeleton className="h-40 rounded-card bg-panel" />
         ) : rules.length === 0 ? (
           <EmptyState>{t("Aucune demande récurrente pour le moment.")}</EmptyState>
         ) : (
-          <ul className="grid gap-3 lg:mx-[clamp(20px,3.9vw,56px)] lg:grid-cols-2">
+          <ul className="grid gap-3 lg:mx-4 lg:grid-cols-2">
             {rules.map((r) => {
               const next = nextOccurrence(r, today);
               return (
-                <li key={r.id} className={`rounded-card p-5 text-primary ${r.paused ? "border border-primary/25" : "bg-primary/10"}`}>
+                <li key={r.id} className={`rounded-card p-5 text-primary ${r.paused ? "border border-primary/25" : "bg-panel"}`}>
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="eyebrow">{t(r.category)}</p>
+                      <p className="eyebrow text-muted-foreground">{eyebrowOf(r)}</p>
                       <p className="v3-card-title mt-3 text-[22px] lg:text-[26px]">{r.title}</p>
                     </div>
                     <Switch checked={!r.paused} disabled={busy === r.id} onCheckedChange={(on) => void toggle(r.id, !on)} aria-label={r.paused ? t("Reprendre la série") : t("Suspendre la série")} />
@@ -82,6 +91,14 @@ function Page() {
             })}
           </ul>
         )}
+        <p className="mt-6 max-w-[560px] text-[14px] leading-6 text-muted-foreground lg:ml-4 lg:max-w-[760px]">
+          {t("Chaque échéance crée une demande que vous suivez comme les autres. Vous pouvez la suspendre à tout moment.")}
+        </p>
+        <div className="mt-5 lg:mx-4">
+          <PillAction asChild className="w-full sm:w-auto">
+            <Link to="/demandes/nouvelle" search={{ offer: undefined }}>{t("Créer une demande récurrente")}</Link>
+          </PillAction>
+        </div>
       </div>
     </AppShell>
   );

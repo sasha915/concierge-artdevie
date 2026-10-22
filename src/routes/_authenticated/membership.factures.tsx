@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PillAction } from "@/components/art-de-vie/v3";
 import { formatAmount, formatShortDate } from "@/data/art-de-vie";
 import { ratePercent } from "@/lib/billing-rules";
-import { invoicesQuery, profileQuery } from "@/lib/adv-queries";
+import { invoicesQuery, planQuery, profileQuery } from "@/lib/adv-queries";
 import { activateAutoDebit, billingStatus, payInvoice } from "@/lib/mollie.functions";
 import { getLang, locale, t } from "@/lib/i18n";
 
@@ -38,9 +38,11 @@ function Page() {
   const { data: profile } = useQuery(profileQuery);
   const { data: billing } = useQuery({ queryKey: ["billing-status"], queryFn: useServerFn(billingStatus) });
   const list = active === "Toutes" ? invoices : invoices.filter((i) => i.kind === active);
-  const essentiel = (billing?.plan ?? profile?.plan) === "Essentiel";
+  const planName = billing?.plan ?? profile?.plan ?? null;
+  const essentiel = planName === "Essentiel";
+  const { data: plan } = useQuery(planQuery(planName));
   const next = new Date();
-  if (essentiel) next.setFullYear(next.getFullYear() + 1);
+  if (plan ? plan.period === "an" : essentiel) next.setFullYear(next.getFullYear() + 1);
   else next.setMonth(next.getMonth() + 1);
 
   useEffect(() => {
@@ -94,14 +96,14 @@ function Page() {
     <AppShell nav={false}>
       <div className="mx-auto max-w-3xl lg:max-w-none">
         <SubHeader title="Mes factures" />
-        <section className="rounded-[28px] bg-primary-deep p-6 text-foreground sm:p-8 lg:mx-[clamp(20px,3.9vw,56px)] lg:p-10">
+        <section className="rounded-[28px] bg-primary-deep p-6 text-foreground sm:p-8 lg:mx-4 lg:p-10">
           <span className="eyebrow text-foreground/80">{t("Formule {name}", { name: profile?.plan ?? "Signature" })}</span>
           <div className="mt-6 flex items-end justify-between gap-5">
             <div>
               <strong className="font-display text-[40px] lg:text-[88px] font-normal">
-                {essentiel ? formatAmount(89000) : formatAmount(149000)}
+                {plan ? formatAmount(plan.price_cents) : "—"}
               </strong>
-              <span className="text-sm">{essentiel ? t(" / an") : t(" / mois")}</span>
+              <span className="text-sm">{plan ? (plan.period === "an" ? t(" / an") : t(" / mois")) : ""}</span>
             </div>
             <div className="text-right text-[10px] leading-4 opacity-80">
               <p>
@@ -109,11 +111,11 @@ function Page() {
                 <br />
                 {next.toLocaleDateString(locale(), { day: "numeric", month: "long", year: "numeric" })}
               </p>
-              {!essentiel && (
+              {plan?.min_commitment_months && (
                 <p className="mt-2">
                   {t("Engagement minimum")}
                   <br />
-                  {t("12 mois")}
+                  {t("{n} mois", { n: plan.min_commitment_months })}
                 </p>
               )}
             </div>
@@ -144,7 +146,7 @@ function Page() {
             </p>
           )}
         </section>
-        <div className="mt-5 lg:mx-[clamp(20px,3.9vw,56px)] lg:mt-16 lg:rounded-[28px] lg:bg-primary-deep lg:p-6">
+        <div className="mt-5 lg:mx-4 lg:mt-16 lg:rounded-[28px] lg:bg-primary-deep lg:p-6">
           <Filters
             values={["Toutes", "Abonnement", "Prestations"]}
             active={active}
@@ -155,11 +157,11 @@ function Page() {
         </div>
         {isLoading ? (
           <div className="mt-5 grid gap-3">
-            <Skeleton className="h-24 rounded-card bg-primary/10" />
-            <Skeleton className="h-24 rounded-card bg-primary/10" />
+            <Skeleton className="h-24 rounded-card bg-panel" />
+            <Skeleton className="h-24 rounded-card bg-panel" />
           </div>
         ) : (
-          <div className="mt-5 overflow-hidden rounded-card bg-primary/10 px-5 lg:mx-[clamp(20px,3.9vw,56px)] lg:px-8">
+          <div className="mt-5 overflow-hidden rounded-card bg-panel px-5 lg:mx-4 lg:px-8">
             {list.map((i) => {
               const unpaid = i.status !== "Payée";
               return (

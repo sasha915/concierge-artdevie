@@ -11,7 +11,7 @@ import { formatAmount, formatDate, formatShortDate, initials, type RequestStatus
 import { requestDetailQuery, teamNamesQuery, requestEventsQuery, replyTemplatesQuery, requestBillingQuery, requestMessagesAdminQuery, requestFilesQuery, requestChangesQuery, requestReviewQuery, requestProposalsQuery } from "@/lib/admin-queries";
 import { eurosInput, invoiceBreakdown, parseEuros, ratePercent } from "@/lib/billing-rules";
 import { insertReply, requestHistory } from "@/lib/team-request-rules";
-import { decideRequestChange, getRequestFileUrl, sendProposal, setRequestFileVisibility, uploadRequestFile, withdrawProposal } from "@/lib/admin.functions";
+import { decideRequestChange, getRequestFileUrl, resendProposal, sendProposal, setRequestFileVisibility, uploadRequestFile, withdrawProposal } from "@/lib/admin.functions";
 import { FILE_TYPES, fileProblem, fileSizeLabel } from "@/lib/request-actions-rules";
 import { addRequestNote, createRequestInvoice, listRequestNotes, setRequestAmount, sendTeamMessage, setRequestConcierge, updateRequestStatus } from "@/lib/admin.functions";
 
@@ -107,7 +107,7 @@ function Page() {
         <section className="team-panel rounded-[28px] p-6">
           <div className="flex flex-wrap items-center gap-2"><span className="eyebrow rounded-full border border-border px-3 py-1 text-[10px]">{r.category}</span><TeamStatus status={r.status} /></div>
           <h1 className="mt-4 break-words text-[clamp(32px,4vw,52px)] leading-[1.02]">{r.title}</h1>
-          <p className="eyebrow team-mention mt-6">( Précisions du membre )</p>
+          <p className="eyebrow team-mention mt-6">Précisions du membre</p>
           <p className="mt-3 whitespace-pre-line rounded-[18px] bg-foreground p-4 text-[15px] leading-6 text-background">{r.description || "Aucune précision complémentaire n’a été indiquée."}</p>
           <dl className="mt-6 grid gap-3 sm:grid-cols-3">
             <Info label="Date souhaitée" value={formatDate(r.scheduled_date)} />
@@ -118,7 +118,7 @@ function Page() {
 
         <section aria-labelledby="exchanges-title" className="team-panel rounded-[28px] p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 id="exchanges-title" className="eyebrow team-mention">( Échanges avec le membre )</h2>
+            <h2 id="exchanges-title" className="eyebrow team-mention">Échanges avec le membre</h2>
             <span className="rounded-full border border-border px-3 py-1 text-[11px]">Visible par le membre</span>
           </div>
           {messagesLoading ? <Skeleton className="mt-4 h-24 bg-primary/10" />
@@ -137,7 +137,10 @@ function Page() {
           </div>}
           <label htmlFor="team-reply" className="sr-only">Message au membre</label>
           <Textarea ref={replyRef} id="team-reply" value={reply} onChange={(e) => { setReplyText(e.target.value); cursorRef.current = e.target.selectionStart; }} onSelect={(e) => { cursorRef.current = e.currentTarget.selectionStart; }} maxLength={4000} rows={5} placeholder="Écrire au membre…" className="mt-4 min-h-[120px]" />
-          <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+            <label htmlFor="request-file" className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-full border border-border px-5 text-[14px] font-medium hover:bg-primary/10 focus-within:ring-2 focus-within:ring-ring">
+              <Paperclip className="size-4" />Joindre un fichier
+            </label>
             <Button type="button" disabled={busy || !reply.trim()} onClick={() => run(async () => { const res = await sendMessage({ data: { requestId: r.id, body: reply } }); if (res.ok) { setReplyText(""); cursorRef.current = null; } return res; }, "Message envoyé au membre.")} className="h-11 rounded-full px-5">Envoyer au membre</Button>
           </div>
         </section>
@@ -148,7 +151,7 @@ function Page() {
 
         <section className="team-panel rounded-[28px] p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="eyebrow team-mention">( Notes internes )</h2>
+            <h2 className="eyebrow team-mention">Notes internes</h2>
             <span className="rounded-full border border-dashed border-border px-3 py-1 text-[11px]">Invisibles du membre</span>
           </div>
           {notes.length === 0 ? <p className="mt-4 text-[13px] text-muted-foreground">Aucune note pour le moment.</p>
@@ -166,7 +169,7 @@ function Page() {
 
       <div className="grid min-w-0 content-start gap-4 lg:col-span-5">
         <section className="team-panel rounded-[28px] p-6">
-          <h2 className="eyebrow team-mention">( Statut )</h2>
+          <h2 className="eyebrow team-mention">Statut</h2>
           <div role="group" aria-label="Statut de la demande" className="mt-4 flex flex-wrap gap-2">
             {STATUSES.map((s) => {
               const active = s === r.status;
@@ -179,7 +182,7 @@ function Page() {
         </section>
 
         <section className="team-panel rounded-[28px] p-6">
-          <h2 className="eyebrow team-mention">( Concierge en charge )</h2>
+          <h2 className="eyebrow team-mention">Concierge en charge</h2>
           <label htmlFor="concierge" className="sr-only">Concierge en charge</label>
           <select id="concierge" value={conciergeValue} disabled={busy} onChange={(e) => { const id = e.target.value || null; if (id === "legacy") return; const name = team.find((t) => t.id === id)?.name ?? UNASSIGNED; run(() => setConcierge({ data: { id: r.id, conciergeId: id } }), id ? `Demande attribuée à ${name}.` : "Demande remise « À attribuer »."); }}
             className="mt-4 h-12 w-full rounded-2xl border border-border bg-card px-4 text-[15px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -193,7 +196,7 @@ function Page() {
 
         {m && <section className="team-glass rounded-[28px] p-6">
           <div className="flex items-start justify-between gap-3">
-            <h2 className="eyebrow team-mention">( Membre )</h2>
+            <h2 className="eyebrow team-mention">Membre</h2>
             <span className="flex size-12 items-center justify-center rounded-full bg-primary-light text-[15px] font-medium text-primary-deep">{initials(m.full_name)}</span>
           </div>
           <p className="mt-2 text-[28px] leading-tight">{m.full_name}</p>
@@ -208,7 +211,7 @@ function Page() {
         </section>}
         {r.status === "Terminée" && <ReviewPanel requestId={r.id} />}
         <section className="team-panel rounded-[28px] p-6">
-          <h2 className="eyebrow team-mention">( Historique )</h2>
+          <h2 className="eyebrow team-mention">Historique</h2>
           {eventsLoading ? <Skeleton className="mt-4 h-28 bg-primary/10" /> : eventsError ? <p role="alert" className="mt-4 text-[13px] text-muted-foreground">L’historique n’a pas pu être chargé.</p> : <ol className="mt-4 divide-y divide-border border-y border-border">
             {history.map((e) => <li key={e.id} className="py-4">
               <p className="break-words text-[15px] font-medium">{e.label}</p>
@@ -222,7 +225,7 @@ function Page() {
 }
 
 function Info({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-2xl border border-border p-4"><dt className="eyebrow team-mention text-[10px]">( {label} )</dt><dd className="mt-3 text-[20px] leading-tight">{value}</dd></div>;
+  return <div className="rounded-2xl border border-border p-4"><dt className="eyebrow team-mention text-[10px]">{label}</dt><dd className="mt-3 text-[20px] leading-tight">{value}</dd></div>;
 }
 
 function BillingBlock({ requestId, cancelled, isAdmin, busy, run }: { requestId: string; cancelled: boolean; isAdmin: boolean; busy: boolean; run: (action: () => Promise<{ ok: boolean; reason?: string }>, success: string) => Promise<void> }) {
@@ -234,7 +237,7 @@ function BillingBlock({ requestId, cancelled, isAdmin, busy, run }: { requestId:
   useEffect(() => { setValue(eurosInput(billing?.amount_cents)); setInvalid(false); }, [billing?.amount_cents]);
 
   if (isLoading) return <Skeleton className="h-56 rounded-[28px] bg-primary/10" />;
-  if (isError || !billing) return <section className="team-panel rounded-[28px] p-6"><h2 className="eyebrow team-mention">( Montant et commission )</h2><p role="alert" className="mt-4 text-[13px] text-muted-foreground">Le montant n’a pas pu être chargé.</p></section>;
+  if (isError || !billing) return <section className="team-panel rounded-[28px] p-6"><h2 className="eyebrow team-mention">Montant et commission</h2><p role="alert" className="mt-4 text-[13px] text-muted-foreground">Le montant n’a pas pu être chargé.</p></section>;
 
   const typed = parseEuros(value);
   const preview = typed !== null ? invoiceBreakdown(typed, billing.plan) : billing.breakdown;
@@ -256,7 +259,7 @@ function BillingBlock({ requestId, cancelled, isAdmin, busy, run }: { requestId:
 
   return <section className="team-panel rounded-[28px] p-6">
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <h2 className="eyebrow team-mention">( Montant et commission )</h2>
+      <h2 className="eyebrow team-mention">Montant et commission</h2>
       <span className="rounded-full border border-dashed border-border px-3 py-1 text-[11px]">Interne</span>
     </div>
     <label htmlFor="request-amount" className="mt-4 block text-[13px] text-muted-foreground">Montant de la prestation (€)</label>
@@ -295,7 +298,7 @@ function ChangeBanner({ requestId, busy, run }: { requestId: string; busy: boole
   const pending = changes.find((c) => c.status === "en attente");
   if (!pending) return null;
   return <section aria-label="Demande de modification" className="mt-4 rounded-[28px] bg-foreground p-6 text-background">
-    <p className="eyebrow">( Demande de modification · {stamp(pending.created_at)} )</p>
+    <p className="eyebrow">Demande de modification · {stamp(pending.created_at)}</p>
     <p className="mt-3 text-[22px] leading-tight">{pending.label}</p>
     {pending.body && <p className="mt-2 whitespace-pre-line text-[15px] leading-6">{pending.body}</p>}
     <p className="mt-3 text-[13px] opacity-80">Accepter ne modifie rien automatiquement : mettez ensuite la demande à jour vous-même.</p>
@@ -334,7 +337,7 @@ function FilesBlock({ requestId, busy, run }: { requestId: string; busy: boolean
   }
 
   return <section aria-labelledby="files-title" className="team-panel rounded-[28px] p-6">
-    <h2 id="files-title" className="eyebrow team-mention">( Pièces jointes )</h2>
+    <h2 id="files-title" className="eyebrow team-mention">Pièces jointes</h2>
     {isLoading ? <Skeleton className="mt-4 h-16 bg-primary/10" />
       : isError ? <p role="alert" className="mt-4 text-[13px] text-muted-foreground">Les pièces jointes n’ont pas pu être chargées.</p>
       : files.length === 0 ? <p className="mt-4 text-[13px] text-muted-foreground">Aucune pièce jointe.</p>
@@ -360,7 +363,7 @@ function FilesBlock({ requestId, busy, run }: { requestId: string; busy: boolean
 function ReviewPanel({ requestId }: { requestId: string }) {
   const { data: review } = useQuery(requestReviewQuery(requestId));
   return <section className="team-panel rounded-[28px] p-6">
-    <h2 className="eyebrow team-mention">( Avis du membre )</h2>
+    <h2 className="eyebrow team-mention">Avis du membre</h2>
     {review ? <>
       <p className="mt-3 font-display text-[26px] italic">{review.rating}</p>
       {review.comment && <p className="mt-2 whitespace-pre-line text-[15px] leading-6">{review.comment}</p>}
@@ -377,6 +380,7 @@ function ProposalBlock({ requestId, cancelled, busy, run }: { requestId: string;
   const { data: proposals = [], isLoading } = useQuery(requestProposalsQuery(requestId));
   const send = useServerFn(sendProposal);
   const withdraw = useServerFn(withdrawProposal);
+  const resend = useServerFn(resendProposal);
   const [drafting, setDrafting] = useState(false);
   const [options, setOptions] = useState<DraftOption[]>([{ ...emptyOption }, { ...emptyOption }]);
   const [problem, setProblem] = useState<string | null>(null);
@@ -405,7 +409,7 @@ function ProposalBlock({ requestId, cancelled, busy, run }: { requestId: string;
 
   return <section aria-labelledby="proposal-title" className="team-panel rounded-[28px] p-6">
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <h2 id="proposal-title" className="eyebrow team-mention">( Proposition au membre )</h2>
+      <h2 id="proposal-title" className="eyebrow team-mention">Proposition au membre</h2>
       {latest && <span className={`rounded-full px-3 py-1 text-[11px] ${latest.status === "en attente" ? "border border-dashed border-border" : latest.status === "acceptée" ? "bg-primary text-primary-foreground" : "border border-border"}`}>{latest.status === "en attente" ? "En attente de réponse" : latest.status === "acceptée" ? "Option choisie" : "Aucune ne convient"}</span>}
     </div>
     {latest && !drafting && <>
@@ -415,7 +419,10 @@ function ProposalBlock({ requestId, cancelled, busy, run }: { requestId: string;
       </li>)}</ol>
       <p className="mt-3 text-[12px] text-muted-foreground">Envoyée le {stamp(latest.created_at)}{latest.decided_at ? ` · réponse le ${stamp(latest.decided_at)}` : ""}</p>
     </>}
-    {pending && !drafting && <Button type="button" variant="outline" disabled={busy} className="mt-4 h-11 rounded-full px-5" onClick={() => { if (window.confirm("Retirer cette proposition ? Le membre ne la verra plus.")) void run(() => withdraw({ data: { id: pending.id } }), "Proposition retirée."); }}>Retirer la proposition</Button>}
+    {pending && !drafting && <div className="mt-4 flex flex-wrap gap-2">
+      <Button type="button" variant="soft" disabled={busy} className="h-11 rounded-full px-5" onClick={() => void run(() => resend({ data: { id: pending.id } }), "Proposition renvoyée au membre.")}>Renvoyer la proposition</Button>
+      <Button type="button" variant="outline" disabled={busy} className="h-11 rounded-full px-5" onClick={() => { if (window.confirm("Retirer cette proposition ? Le membre ne la verra plus.")) void run(() => withdraw({ data: { id: pending.id } }), "Proposition retirée."); }}>Retirer la proposition</Button>
+    </div>}
     {!pending && !cancelled && !drafting && <Button type="button" variant="outline" className="mt-4 h-11 rounded-full px-5" onClick={() => setDrafting(true)}>{latest ? "Nouvelle proposition" : "Préparer une proposition"}</Button>}
     {drafting && <div className="mt-4 grid gap-3">
       {options.map((o, i) => <fieldset key={i} className="grid gap-2 rounded-2xl border border-border p-4">

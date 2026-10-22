@@ -183,3 +183,14 @@ export const statementSourceQuery = queryOptions({
     return (data ?? []) as Array<{ id: string; title: string; status: string; amount_cents: number | null; scheduled_date: string | null; created_at: string }>;
   },
 });
+
+/** Tarif de la formule du membre (table membership_plans). */
+export const planQuery = (name: string | null | undefined) => queryOptions({
+  queryKey: ["plan", name ?? ""],
+  enabled: !!name,
+  queryFn: async () => {
+    const { data, error } = await supabase.from("membership_plans").select("name, price_cents, period, min_commitment_months").eq("name", name ?? "").maybeSingle();
+    if (error) throw error;
+    return data as { name: string; price_cents: number; period: "an" | "mois"; min_commitment_months: number | null } | null;
+  },
+});
