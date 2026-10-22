@@ -255,12 +255,13 @@ export const updateRequestStatus = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), status: requestStatus }).parse(input))
   .handler(async ({ data, context }) => {
     const { admin, role } = await assertTeam(context as Ctx);
-    const { data: before } = await admin.from("requests").select("status").eq("id", data.id).maybeSingle();
-    const { error } = await admin.from("requests").update({ status: data.status }).eq("id", data.id);
-    if (error) return { ok: false as const, reason: "Le statut n’a pas pu être modifié." };
-    if (before && before.status !== data.status) {
-      await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: "statut changé", detail: `${before.status} → ${data.status}` });
-    }
+    const { data: before, error: readError } = await admin.from("requests").select("status").eq("id", data.id).maybeSingle();
+    if (readError || !before) return { ok: false as const, reason: "La demande est introuvable." };
+    if (before.status === data.status) return { ok: true as const };
+    const { data: row, error } = await admin.from("requests").update({ status: data.status }).eq("id", data.id).eq("status", before.status).select("id").maybeSingle();
+    if (error || !row) return { ok: false as const, reason: "Le statut n’a pas pu être modifié. Rechargez la demande." };
+    const { error: eventError } = await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: "statut changé", detail: `${before.status} → ${data.status}` });
+    if (eventError) return { ok: false as const, reason: "Le statut a changé, mais son historique n’a pas pu être enregistré. Rechargez la demande." };
     return { ok: true as const };
   });
 
@@ -271,9 +272,10 @@ export const setRequestConcierge = createServerFn({ method: "POST" })
     const { admin } = await assertTeam(context as Ctx);
     const resolved = await resolveConcierge(admin, data.conciergeId);
     if (!resolved) return { ok: false as const, reason: "Ce compte ne fait pas partie de l’équipe." };
-    const { error } = await admin.from("requests").update(resolved).eq("id", data.id);
-    if (error) return { ok: false as const, reason: "L’attribution a échoué." };
-    await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: "attribuée", detail: resolved.concierge_id ? resolved.concierge : null });
+    const { data: row, error } = await admin.from("requests").update(resolved).eq("id", data.id).select("id").maybeSingle();
+    if (error || !row) return { ok: false as const, reason: "L’attribution a échoué." };
+    const { error: eventError } = await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: "attribuée", detail: resolved.concierge_id ? resolved.concierge : null });
+    if (eventError) return { ok: false as const, reason: "L’attribution a changé, mais son historique n’a pas pu être enregistré. Rechargez la demande." };
     return { ok: true as const };
   });
 
@@ -283,9 +285,10 @@ export const setRequestReply = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { admin, role } = await assertTeam(context as Ctx);
     const { replyUpdate } = await import("./request-rules");
-    const { error } = await admin.from("requests").update(replyUpdate(data.reply)).eq("id", data.id);
-    if (error) return { ok: false as const, reason: "La réponse n’a pas pu être enregistrée." };
-    await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: data.reply.trim() ? "réponse publiée" : "réponse retirée", detail: null });
+    const { data: row, error } = await admin.from("requests").update(replyUpdate(data.reply)).eq("id", data.id).select("id").maybeSingle();
+    if (error || !row) return { ok: false as const, reason: "La réponse n’a pas pu être enregistrée." };
+    const { error: eventError } = await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: data.reply.trim() ? "réponse publiée" : "réponse retirée", detail: null });
+    if (eventError) return { ok: false as const, reason: "La réponse a été enregistrée, mais son historique n’a pas pu être enregistré. Rechargez la demande." };
     return { ok: true as const };
   });
 
@@ -378,7 +381,76 @@ export const createRequestForMember = createServerFn({ method: "POST" })
       image_key: REQUEST_IMAGE[data.category] ?? "entree-de-nuit",
     }).select("id").single();
     if (error || !row) return { ok: false as const, reason: "La demande n’a pas pu être créée." };
+    const { error: eventError } = await admin.from("request_events").insert({ request_id: row.id, actor_id: context.userId, kind: "créée par l'équipe", detail: null });
+    if (eventError) return { ok: false as const, reason: "La demande a été créée, mais son historique n’a pas pu être enregistré. Ne la recréez pas." };
     return { ok: true as const, id: row.id as string };
+  });
+
+export const listRequestEvents = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ requestId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const [{ data: request, error: requestError }, { data: events, error }] = await Promise.all([
+      admin.from("requests").select("user_id").eq("id", data.requestId).maybeSingle(),
+      admin.from("request_events").select("id, actor_id, kind, detail, created_at").eq("request_id", data.requestId).order("created_at").order("id"),
+    ]);
+    if (error || requestError) throw new Error("L’historique n’a pas pu être chargé.");
+    if (!request) return [];
+    const ids = [...new Set((events ?? []).flatMap((e) => e.actor_id && e.actor_id !== request.user_id ? [e.actor_id] : []))];
+    const { data: authors, error: authorsError } = ids.length ? await admin.from("profiles").select("id, full_name").in("id", ids) : { data: [], error: null };
+    if (authorsError) throw new Error("Les auteurs de l’historique n’ont pas pu être chargés.");
+    const names = new Map((authors ?? []).map((p) => [p.id, p.full_name.trim()]));
+    return (events ?? []).map((e) => ({ ...e, author_name: e.actor_id === request.user_id ? "Le membre" : (e.actor_id ? names.get(e.actor_id) : null) || "Équipe" }));
+  });
+
+const replyTemplateFields = { label: z.string().trim().min(1).max(100), body: z.string().max(4000), sortOrder: z.number().int().min(0).max(100000) };
+
+export const listReplyTemplates = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { data, error } = await admin.from("reply_templates").select("id, label, body, sort_order, created_at").order("sort_order").order("created_at").order("id");
+    if (error) throw new Error("Les réponses types n’ont pas pu être chargées.");
+    return data ?? [];
+  });
+
+export const createReplyTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object(replyTemplateFields).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { error } = await admin.from("reply_templates").insert({ label: data.label, body: data.body, sort_order: data.sortOrder });
+    return error ? { ok: false as const, reason: error.code === "23505" ? "Ce libellé existe déjà." : "La réponse type n’a pas pu être créée." } : { ok: true as const };
+  });
+
+export const updateReplyTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), ...replyTemplateFields }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { data: row, error } = await admin.from("reply_templates").update({ label: data.label, body: data.body, sort_order: data.sortOrder }).eq("id", data.id).select("id").maybeSingle();
+    return error || !row ? { ok: false as const, reason: error?.code === "23505" ? "Ce libellé existe déjà." : "La réponse type n’a pas pu être modifiée." } : { ok: true as const };
+  });
+
+export const deleteReplyTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { data: row, error } = await admin.from("reply_templates").delete().eq("id", data.id).select("id").maybeSingle();
+    return error || !row ? { ok: false as const, reason: "La réponse type n’a pas pu être supprimée." } : { ok: true as const };
+  });
+
+export const reorderReplyTemplates = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ ids: z.array(z.string().uuid()).min(1).max(1000).refine((ids) => new Set(ids).size === ids.length) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { data: rows, error } = await admin.from("reply_templates").select("id, label, body, created_at");
+    if (error || !rows || rows.length !== data.ids.length || rows.some((r) => !data.ids.includes(r.id))) return { ok: false as const, reason: "La liste a changé. Rechargez les réponses types." };
+    const { error: saveError } = await admin.from("reply_templates").upsert(rows.map((r) => ({ ...r, sort_order: data.ids.indexOf(r.id) + 1 })), { onConflict: "id" });
+    return saveError ? { ok: false as const, reason: "L’ordre n’a pas pu être enregistré." } : { ok: true as const };
   });
 
 export const listRequestNotes = createServerFn({ method: "GET" })

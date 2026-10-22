@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -80,6 +80,7 @@ function Page() {
       <p className="eyebrow team-mention">( Équipe )</p>
       <Title italic="équipe." className="mt-3 text-primary lg:text-[clamp(52px,6vw,88px)]">L’</Title>
       <p className="mt-2 text-[13px] text-muted-foreground">Comptes de l’équipe, rôles et invitations.</p>
+      <Button asChild variant="link" className="mt-2 px-0"><Link to="/admin/reponses-types">Rédiger les réponses types</Link></Button>
     </header>
 
     {notice && <p role="status" className={`mb-5 rounded-2xl p-4 text-xs leading-5 text-primary ${notice.ok ? "bg-primary/10" : "border border-primary/25"}`}>{notice.text}</p>}
