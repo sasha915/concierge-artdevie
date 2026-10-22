@@ -72,31 +72,46 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.944 0.013 102.0);
-  --foreground: oklch(0.31 0.07 298);
-  --card: oklch(0.984 0.007 97.4);
-  --card-foreground: oklch(0.31 0.07 298);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.400 0.100 299.6);
-  --primary-foreground: oklch(0.935 0.014 100);
+  --background: oklch(0.332 0.07 298.7); /* #3B2D55 — thème Profond (charte v1.4) */
+  --foreground: oklch(0.944 0.013 102);
+  --card: oklch(0.248 0.044 299.2); /* #241C33 — surface-carte */
+  --card-foreground: oklch(0.944 0.013 102);
+  --popover: oklch(0.248 0.044 299.2);
+  --popover-foreground: oklch(0.944 0.013 102);
+  --primary: oklch(0.944 0.013 102); /* bouton principal : beige sur fond violet */
+  --primary-foreground: oklch(0.332 0.07 298.7);
   --primary-light: oklch(0.405 0.077 298.9);
-  --primary-deep: oklch(0.332 0.070 298.7);
+  --primary-deep: oklch(0.332 0.07 298.7);
   --gold: oklch(0.664 0.083 77.4);
-  --photo-card-overlay: linear-gradient(to bottom, color-mix(in oklab, var(--primary-deep) 20%, transparent), color-mix(in oklab, var(--primary-deep) 8%, transparent) 38%, color-mix(in oklab, var(--primary-deep) 90%, transparent));
-  --photo-hero-overlay: linear-gradient(to bottom, color-mix(in oklab, var(--primary-deep) 52%, transparent), color-mix(in oklab, var(--primary-deep) 34%, transparent) 36%, color-mix(in oklab, var(--primary-deep) 93%, transparent));
-  --member-reflection: linear-gradient(115deg, transparent 42%, color-mix(in oklab, var(--primary-foreground) 16%, transparent) 50%, transparent 58%);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.525 0.054 298.0);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
+  --photo-card-overlay: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--primary-deep) 20%, transparent),
+    color-mix(in oklab, var(--primary-deep) 8%, transparent) 38%,
+    color-mix(in oklab, var(--primary-deep) 90%, transparent)
+  );
+  --photo-hero-overlay: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--primary-deep) 52%, transparent),
+    color-mix(in oklab, var(--primary-deep) 34%, transparent) 36%,
+    color-mix(in oklab, var(--primary-deep) 93%, transparent)
+  );
+  --member-reflection: linear-gradient(
+    115deg,
+    transparent 42%,
+    color-mix(in oklab, var(--foreground) 16%, transparent) 50%,
+    transparent 58%
+  );
+  --secondary: oklch(0.944 0.013 102 / 0.08);
+  --secondary-foreground: oklch(0.944 0.013 102);
+  --muted: oklch(0.944 0.013 102 / 0.08);
+  --muted-foreground: oklch(0.843 0.031 302.2); /* #CFC7DD */
+  --accent: oklch(0.944 0.013 102 / 0.08);
+  --accent-foreground: oklch(0.944 0.013 102);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.38 0.105 297 / 0.15);
-  --input: oklch(0.982 0.009 93);
-  --ring: oklch(0.38 0.105 297);
+  --border: oklch(0.944 0.013 102 / 0.2); /* filet beige 20 % */
+  --input: oklch(0.944 0.013 102 / 0.07);
+  --ring: oklch(0.944 0.013 102);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -158,26 +173,49 @@
     font-family: var(--font-sans);
     letter-spacing: 0;
   }
-  button, a, input, textarea { -webkit-tap-highlight-color: transparent; }
+  button,
+  a,
+  input,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
-@utility eyebrow { font-size: 0.75rem; line-height: 1.4; font-weight: 600; text-transform: uppercase; letter-spacing: 0.13em; color: var(--color-muted-foreground); }
-@utility no-scrollbar { scrollbar-width: none; &::-webkit-scrollbar { display: none; } }
+@utility eyebrow {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: var(--color-muted-foreground);
+}
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
 @utility member-grain {
   background-image:
     radial-gradient(oklch(0.935 0.014 100 / 0.12) 0.5px, transparent 0.5px),
-    linear-gradient(to bottom right, var(--primary), var(--primary-light), var(--primary-deep));
-  background-size: 5px 5px, 100% 100%;
+    linear-gradient(to bottom right, oklch(0.4 0.1 299.6), var(--primary-light), var(--primary-deep));
+  background-size:
+    5px 5px,
+    100% 100%;
 }
 
 @utility dark-glass {
   background: color-mix(in oklab, var(--primary-deep) 58%, transparent);
-  border: 1px solid color-mix(in oklab, var(--primary-foreground) 22%, transparent);
+  border: 1px solid color-mix(in oklab, var(--foreground) 22%, transparent);
   backdrop-filter: blur(18px);
-  color: var(--primary-foreground);
+  color: var(--foreground);
 }
-@utility photo-card-overlay { background: var(--photo-card-overlay); }
-@utility photo-hero-overlay { background: var(--photo-hero-overlay); }
+@utility photo-card-overlay {
+  background: var(--photo-card-overlay);
+}
+@utility photo-hero-overlay {
+  background: var(--photo-hero-overlay);
+}
 @utility v3-field {
   height: 48px;
   border-radius: 16px;
@@ -187,59 +225,113 @@
   padding-inline: 16px;
   box-shadow: none;
 }
-@utility v3-heading { font-family: var(--font-sans); font-weight: 400; line-height: 1; letter-spacing: 0; }
-@utility v3-card-title { font-family: var(--font-sans); font-weight: 400; line-height: 1.15; letter-spacing: 0; }
-@utility appear { animation: block-appear 250ms ease-out both; }
-@keyframes block-appear { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@utility v3-heading {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0;
+}
+@utility v3-card-title {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+@utility appear {
+  animation: block-appear 250ms ease-out both;
+}
+@keyframes block-appear {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 @layer base {
-  html { overflow-x: clip; }
-  h1, h2, h3 { overflow-wrap: anywhere; }
-  .eyebrow::before { content: "( "; }
-  .eyebrow::after { content: " )"; }
-  textarea.v3-field { height: auto; min-height: 120px; padding-block: 14px; }
-  a, button { touch-action: manipulation; }
+  html {
+    overflow-x: clip;
+  }
+  h1,
+  h2,
+  h3 {
+    overflow-wrap: anywhere;
+  }
+  .eyebrow::before {
+    content: "( ";
+  }
+  .eyebrow::after {
+    content: " )";
+  }
+  textarea.v3-field {
+    height: auto;
+    min-height: 120px;
+    padding-block: 14px;
+  }
+  a,
+  button {
+    touch-action: manipulation;
+  }
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
 /* Interface équipe : thème sombre limité à la coque /admin (tokens globaux inchangés). */
 .team-theme {
   --background: oklch(0.248 0.044 299.2);
-  --foreground: oklch(0.944 0.013 102.0);
-  --card: oklch(0.944 0.013 102.0 / 0.07);
-  --card-foreground: oklch(0.944 0.013 102.0);
-  --primary: oklch(0.944 0.013 102.0);
+  --foreground: oklch(0.944 0.013 102);
+  --card: oklch(0.944 0.013 102 / 0.07);
+  --card-foreground: oklch(0.944 0.013 102);
+  --primary: oklch(0.944 0.013 102);
   --primary-foreground: oklch(0.248 0.044 299.2);
   --primary-light: oklch(0.843 0.031 302.2);
-  --primary-deep: oklch(0.332 0.070 298.7);
+  --primary-deep: oklch(0.332 0.07 298.7);
   --muted-foreground: oklch(0.843 0.031 302.2);
-  --border: oklch(0.944 0.013 102.0 / 0.16);
-  --input: oklch(0.944 0.013 102.0 / 0.07);
-  --ring: oklch(0.944 0.013 102.0);
-  --team-panel: oklch(0.332 0.070 298.7);
+  --border: oklch(0.944 0.013 102 / 0.16);
+  --input: oklch(0.944 0.013 102 / 0.07);
+  --ring: oklch(0.944 0.013 102);
+  --team-panel: oklch(0.332 0.07 298.7);
   --team-mention: oklch(0.718 0.041 298.4);
   --team-confirmed: oklch(0.719 0.037 303.6);
   background: var(--background);
   color: var(--foreground);
 }
-.team-theme .team-glass { background: var(--card); border: 1px solid var(--border); }
-.team-theme .team-panel { background: var(--team-panel); }
-.team-theme .team-mention { color: var(--team-mention); }
-.team-theme input { border: 1px solid var(--border); color: var(--foreground); }
+.team-theme .team-glass {
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+.team-theme .team-panel {
+  background: var(--team-panel);
+}
+.team-theme .team-mention {
+  color: var(--team-mention);
+}
+.team-theme input {
+  border: 1px solid var(--border);
+  color: var(--foreground);
+}
 /* Aperçu membre dans l'interface équipe : rétablit les couleurs de l'espace membre. */
 .team-theme .member-preview {
-  --background: oklch(0.944 0.013 102.0);
-  --foreground: oklch(0.31 0.07 298);
-  --card: oklch(0.984 0.007 97.4);
-  --card-foreground: oklch(0.31 0.07 298);
-  --primary: oklch(0.400 0.100 299.6);
-  --primary-foreground: oklch(0.935 0.014 100);
+  --background: oklch(0.332 0.07 298.7);
+  --foreground: oklch(0.944 0.013 102);
+  --card: oklch(0.248 0.044 299.2);
+  --card-foreground: oklch(0.944 0.013 102);
+  --primary: oklch(0.944 0.013 102);
+  --primary-foreground: oklch(0.332 0.07 298.7);
   --primary-light: oklch(0.405 0.077 298.9);
-  --muted-foreground: oklch(0.525 0.054 298.0);
-  --border: oklch(0.38 0.105 297 / 0.15);
-  --input: oklch(0.982 0.009 93);
-  --ring: oklch(0.38 0.105 297);
+  --muted-foreground: oklch(0.843 0.031 302.2);
+  --border: oklch(0.944 0.013 102 / 0.2);
+  --input: oklch(0.944 0.013 102 / 0.07);
+  --ring: oklch(0.944 0.013 102);
   background: var(--background);
   color: var(--foreground);
 }
