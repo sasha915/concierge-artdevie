@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { listMembers, getMemberDetail, getMemberParrain, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames, listReferrals, listTeam, listOffersAdmin, listRequestEvents, listReplyTemplates, getRequestBilling, getMemberPreferences, listRequestMessages, type TeamRole } from "@/lib/admin.functions";
+import { listMembers, getMemberDetail, getMemberParrain, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames, listReferrals, listTeam, listOffersAdmin, listRequestEvents, listReplyTemplates, getRequestBilling, getMemberPreferences, listRequestMessages, listRequestFiles, listRequestChanges, getRequestReview, listMemberReviews, type TeamRole } from "@/lib/admin.functions";
 import type { Invoice, RequestItem } from "@/data/art-de-vie";
 
 export type AdminMember = {
@@ -57,11 +57,12 @@ export type AdminRequest = RequestItem & {
   member_name: string;
   member_email?: string | null;
   member_plan?: string | null;
+  pending_change?: boolean;
 };
 
 export const allRequestsQuery = queryOptions({
   queryKey: ["admin", "requests"],
-  queryFn: async (): Promise<AdminRequest[]> => (await listAllRequests()) as AdminRequest[],
+  queryFn: async (): Promise<AdminRequest[]> => (await listAllRequests()) as unknown as AdminRequest[],
 });
 
 export const requestDetailQuery = (id: string) =>
@@ -156,4 +157,24 @@ export const requestMessagesAdminQuery = (requestId: string) => queryOptions({
   queryKey: ["admin", "request", requestId, "messages"],
   queryFn: () => listRequestMessages({ data: { requestId } }),
   refetchInterval: 30_000,
+});
+
+export const requestFilesQuery = (requestId: string) => queryOptions({
+  queryKey: ["admin", "request", requestId, "files"],
+  queryFn: () => listRequestFiles({ data: { requestId } }),
+});
+
+export const requestChangesQuery = (requestId: string) => queryOptions({
+  queryKey: ["admin", "request", requestId, "changes"],
+  queryFn: () => listRequestChanges({ data: { requestId } }),
+});
+
+export const requestReviewQuery = (requestId: string) => queryOptions({
+  queryKey: ["admin", "request", requestId, "review"],
+  queryFn: () => getRequestReview({ data: { requestId } }),
+});
+
+export const memberReviewsQuery = (memberId: string) => queryOptions({
+  queryKey: ["admin", "member", memberId, "reviews"],
+  queryFn: () => listMemberReviews({ data: { memberId } }),
 });

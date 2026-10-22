@@ -2,10 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, CalendarPlus, Download, FileText, PencilLine, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
-import { sendMemberMessage } from "@/lib/messages.functions";
+import { getMemberFileUrl, sendMemberMessage, submitReview } from "@/lib/messages.functions";
+import { buildIcs, canAddToCalendar, canRenew, canRequestChange, canReview, changeKindLabel, FILE_TYPES, fileSizeLabel, REVIEW_RATINGS, type ReviewRating } from "@/lib/request-actions-rules";
+import type { RequestItem } from "@/data/art-de-vie";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft } from "lucide-react";
 import { AppShell, TopBar } from "@/components/art-de-vie/app-shell";
@@ -14,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { PillAction, StatusTimeline, Title } from "@/components/art-de-vie/v3";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, imageFor } from "@/data/art-de-vie";
-import { requestMessagesQuery, requestsQuery, unreadRequestNotificationsQuery } from "@/lib/adv-queries";
+import { requestChangesMemberQuery, requestFilesMemberQuery, requestMessagesQuery, requestReviewMemberQuery, requestsQuery, unreadRequestNotificationsQuery } from "@/lib/adv-queries";
 
 export const Route = createFileRoute("/_authenticated/demandes/$requestId")({
   head: () => ({
@@ -119,6 +121,7 @@ function Page() {
           </div>
         </section>
         <Exchanges requestId={item.id} description={item.description} cancelled={item.status === "Annulée"} />
+        <Documents requestId={item.id} />
         <section className="mt-8 px-2 text-primary lg:col-span-5 lg:mr-[clamp(20px,3.9vw,56px)] lg:mt-16 lg:px-0">
           <h2 className="eyebrow text-primary">Détails</h2>
           <dl className="mt-4 divide-y divide-primary/25 border-y border-primary/25 text-[14px]">
@@ -130,6 +133,7 @@ function Page() {
             <Detail label="Concierge" value={item.concierge} />
           </dl>
         </section>
+        <RequestActions item={item} />
         <div className="mt-6 lg:hidden">
           <PillAction asChild className="w-full">
             <Link to="/demandes/nouvelle" search={{ offer: undefined }}>
@@ -214,5 +218,161 @@ function Exchanges({ requestId, description, cancelled }: { requestId: string; d
         </form>
       )}
     </section>
+  );
+}
+
+/** Lot 5.2 — documents visibles par le membre ; la section n'apparaît que s'il y en a. */
+function Documents({ requestId }: { requestId: string }) {
+  const { data: files = [] } = useQuery(requestFilesMemberQuery(requestId));
+  const fileUrl = useServerFn(getMemberFileUrl);
+  const [busy, setBusy] = useState<string | null>(null);
+  if (files.length === 0) return null;
+
+  async function download(id: string) {
+    setBusy(id);
+    try {
+      const res = await fileUrl({ data: { id } });
+      if (!res.ok) { toast.error(res.reason); return; }
+      window.location.href = res.url;
+    } catch {
+      toast.error("Le téléchargement n’a pas pu être préparé.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <section aria-labelledby="documents-title" className="mt-3 rounded-[28px] bg-primary/10 p-5 text-primary lg:col-span-7 lg:col-start-1 lg:ml-[clamp(20px,3.9vw,56px)] lg:p-8">
+      <h2 id="documents-title" className="eyebrow text-primary">Documents</h2>
+      <ul className="mt-4 divide-y divide-primary/25">
+        {files.map((f) => (
+          <li key={f.id} className="flex items-center gap-3 py-3">
+            <FileText className="size-5 shrink-0" aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[14px] font-medium lg:text-[16px]">{f.name}</p>
+              <p className="mt-0.5 text-[12px] text-muted-foreground">{FILE_TYPES[f.mime]?.label ?? "Fichier"} · {fileSizeLabel(f.size)} · {new Date(f.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</p>
+            </div>
+            <Button type="button" variant="icon" size="icon" disabled={busy === f.id} onClick={() => download(f.id)} aria-label={`Télécharger ${f.name}`}>
+              <Download />
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** Lot 5.3 — modification, calendrier, renouvellement et avis, selon le statut de la demande. */
+function RequestActions({ item }: { item: RequestItem }) {
+  const { data: changes = [] } = useQuery(requestChangesMemberQuery(item.id));
+  const pending = changes.find((c) => c.status === "en attente");
+  const lastDecided = changes.find((c) => c.status !== "en attente");
+  const showChange = canRequestChange(item.status);
+  const showCalendar = canAddToCalendar(item);
+  const showRenew = canRenew(item.status);
+
+  function downloadIcs() {
+    if (!item.scheduled_date) return;
+    const blob = new Blob([buildIcs({ id: item.id, title: item.title, category: item.category, description: item.description, scheduled_date: item.scheduled_date, scheduled_time: item.scheduled_time })], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `art-de-vie-${item.scheduled_date}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  if (!showChange && !showCalendar && !showRenew && !canReview(item.status) && !lastDecided) return null;
+
+  return (
+    <section className="mt-3 grid gap-3 lg:col-span-5 lg:col-start-8 lg:mr-[clamp(20px,3.9vw,56px)] lg:self-start">
+      {pending && (
+        <p role="status" className="rounded-[22px] bg-primary/10 p-4 text-[13px] leading-5 text-primary">
+          Modification demandée · {changeKindLabel(pending.kind)}. Votre conciergerie vous confirme la modification ; d’ici là, votre demande reste telle qu’elle est.
+        </p>
+      )}
+      {!pending && lastDecided && (
+        <p className="rounded-[22px] bg-primary/10 p-4 text-[13px] leading-5 text-primary">
+          Votre dernière demande de modification ({changeKindLabel(lastDecided.kind).toLowerCase()}) a été {lastDecided.status === "acceptée" ? "acceptée" : "examinée et n’a pas pu être retenue"}.
+        </p>
+      )}
+      {showChange && !pending && (
+        <Button asChild variant="soft" size="lg" className="w-full justify-start">
+          <Link to="/demandes/$requestId/modifier" params={{ requestId: item.id }}>
+            <PencilLine />
+            Demander une modification
+          </Link>
+        </Button>
+      )}
+      {showCalendar && (
+        <Button type="button" variant="soft" size="lg" className="w-full justify-start" onClick={downloadIcs}>
+          <CalendarPlus />
+          Ajouter à mon calendrier
+        </Button>
+      )}
+      {showRenew && (
+        <Button asChild variant="soft" size="lg" className="w-full justify-start">
+          <Link to="/demandes/nouvelle" search={{ renew: item.id }}>
+            <RotateCcw />
+            Renouveler cette demande
+          </Link>
+        </Button>
+      )}
+      {canReview(item.status) && <ReviewBlock requestId={item.id} />}
+    </section>
+  );
+}
+
+function ReviewBlock({ requestId }: { requestId: string }) {
+  const queryClient = useQueryClient();
+  const { data: review, isLoading } = useQuery(requestReviewMemberQuery(requestId));
+  const send = useServerFn(submitReview);
+  const [rating, setRating] = useState<ReviewRating | null>(null);
+  const [comment, setComment] = useState("");
+  const [busy, setBusy] = useState(false);
+  if (isLoading) return null;
+
+  if (review)
+    return (
+      <div className="rounded-[22px] bg-primary/10 p-5 text-primary">
+        <h2 className="eyebrow text-primary">Votre avis</h2>
+        <p className="mt-3 font-display text-[24px] italic">{review.rating}</p>
+        {review.comment && <p className="mt-2 whitespace-pre-line text-[14px] leading-6">{review.comment}</p>}
+        <p className="mt-3 text-[12px] text-muted-foreground">Merci, votre avis a été transmis à votre conciergerie.</p>
+      </div>
+    );
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!rating) return;
+    setBusy(true);
+    try {
+      const res = await send({ data: { requestId, rating, comment } });
+      if (!res.ok) { toast.error(res.reason); return; }
+      await queryClient.invalidateQueries({ queryKey: ["requests", requestId, "review"] });
+    } catch {
+      toast.error("Votre avis n’a pas pu être enregistré.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="rounded-[22px] bg-primary/10 p-5 text-primary">
+      <h2 className="eyebrow text-primary">Votre avis</h2>
+      <div role="radiogroup" aria-label="Votre avis sur la prestation" className="mt-4 flex flex-wrap gap-2">
+        {REVIEW_RATINGS.map((r) => (
+          <button key={r} type="button" role="radio" aria-checked={rating === r} onClick={() => setRating(r)}
+            className={`h-11 rounded-full px-5 text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${rating === r ? "bg-primary text-background" : "border border-primary/25 hover:bg-primary/10"}`}>
+            {r}
+          </button>
+        ))}
+      </div>
+      <label htmlFor="review-comment" className="mt-4 block text-[13px] text-muted-foreground">Un mot (facultatif)</label>
+      <Textarea id="review-comment" value={comment} onChange={(e) => setComment(e.target.value)} maxLength={1000} rows={2} className="mt-2 min-h-[64px] bg-card" />
+      <Button type="submit" disabled={busy || !rating} className="mt-4 w-full">Envoyer mon avis</Button>
+    </form>
   );
 }

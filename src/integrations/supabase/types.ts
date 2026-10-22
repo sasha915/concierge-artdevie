@@ -324,6 +324,47 @@ export type Database = {
         }
         Relationships: []
       }
+      request_changes: {
+        Row: {
+          body: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          kind: string
+          request_id: string
+          status: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          kind: string
+          request_id: string
+          status?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          kind?: string
+          request_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_changes_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       request_events: {
         Row: {
           actor_id: string | null
@@ -352,6 +393,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "request_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      request_files: {
+        Row: {
+          created_at: string
+          id: string
+          mime: string
+          name: string
+          path: string
+          request_id: string
+          size: number
+          uploaded_by: string | null
+          visible_to_member: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mime: string
+          name: string
+          path: string
+          request_id: string
+          size: number
+          uploaded_by?: string | null
+          visible_to_member?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mime?: string
+          name?: string
+          path?: string
+          request_id?: string
+          size?: number
+          uploaded_by?: string | null
+          visible_to_member?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_files_request_id_fkey"
             columns: ["request_id"]
             isOneToOne: false
             referencedRelation: "requests"
@@ -421,6 +506,38 @@ export type Database = {
             foreignKeyName: "request_notes_request_id_fkey"
             columns: ["request_id"]
             isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      request_reviews: {
+        Row: {
+          comment: string
+          created_at: string
+          rating: string
+          request_id: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string
+          created_at?: string
+          rating: string
+          request_id: string
+          user_id: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          rating?: string
+          request_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_reviews_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: true
             referencedRelation: "requests"
             referencedColumns: ["id"]
           },

@@ -36,6 +36,7 @@ import { Route as AuthenticatedAdminDemandesRequestIdRouteImport } from './route
 import { Route as AuthenticatedAdminDemandesNouvelleRouteImport } from './routes/_authenticated/admin.demandes.nouvelle'
 import { Route as AuthenticatedAdminMembresIndexRouteImport } from './routes/_authenticated/admin.membres.index'
 import { Route as AuthenticatedAdminMembresMemberIdRouteImport } from './routes/_authenticated/admin.membres.$memberId'
+import { Route as AuthenticatedDemandesRequestIdModifierRouteImport } from './routes/_authenticated/demandes.$requestId_.modifier'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -190,6 +191,12 @@ const AuthenticatedAdminMembresMemberIdRoute =
     path: '/membres/$memberId',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedDemandesRequestIdModifierRoute =
+  AuthenticatedDemandesRequestIdModifierRouteImport.update({
+    id: '/demandes/$requestId_/modifier',
+    path: '/demandes/$requestId/modifier',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -216,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/admin/demandes/$requestId': typeof AuthenticatedAdminDemandesRequestIdRoute
   '/admin/demandes/nouvelle': typeof AuthenticatedAdminDemandesNouvelleRoute
   '/admin/membres/$memberId': typeof AuthenticatedAdminMembresMemberIdRoute
+  '/demandes/$requestId/modifier': typeof AuthenticatedDemandesRequestIdModifierRoute
   '/admin/demandes/': typeof AuthenticatedAdminDemandesIndexRoute
   '/admin/membres/': typeof AuthenticatedAdminMembresIndexRoute
 }
@@ -243,6 +251,7 @@ export interface FileRoutesByTo {
   '/admin/demandes/$requestId': typeof AuthenticatedAdminDemandesRequestIdRoute
   '/admin/demandes/nouvelle': typeof AuthenticatedAdminDemandesNouvelleRoute
   '/admin/membres/$memberId': typeof AuthenticatedAdminMembresMemberIdRoute
+  '/demandes/$requestId/modifier': typeof AuthenticatedDemandesRequestIdModifierRoute
   '/admin/demandes': typeof AuthenticatedAdminDemandesIndexRoute
   '/admin/membres': typeof AuthenticatedAdminMembresIndexRoute
 }
@@ -273,6 +282,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/demandes/$requestId': typeof AuthenticatedAdminDemandesRequestIdRoute
   '/_authenticated/admin/demandes/nouvelle': typeof AuthenticatedAdminDemandesNouvelleRoute
   '/_authenticated/admin/membres/$memberId': typeof AuthenticatedAdminMembresMemberIdRoute
+  '/_authenticated/demandes/$requestId_/modifier': typeof AuthenticatedDemandesRequestIdModifierRoute
   '/_authenticated/admin/demandes/': typeof AuthenticatedAdminDemandesIndexRoute
   '/_authenticated/admin/membres/': typeof AuthenticatedAdminMembresIndexRoute
 }
@@ -303,6 +313,7 @@ export interface FileRouteTypes {
     | '/admin/demandes/$requestId'
     | '/admin/demandes/nouvelle'
     | '/admin/membres/$memberId'
+    | '/demandes/$requestId/modifier'
     | '/admin/demandes/'
     | '/admin/membres/'
   fileRoutesByTo: FileRoutesByTo
@@ -330,6 +341,7 @@ export interface FileRouteTypes {
     | '/admin/demandes/$requestId'
     | '/admin/demandes/nouvelle'
     | '/admin/membres/$memberId'
+    | '/demandes/$requestId/modifier'
     | '/admin/demandes'
     | '/admin/membres'
   id:
@@ -359,6 +371,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/demandes/$requestId'
     | '/_authenticated/admin/demandes/nouvelle'
     | '/_authenticated/admin/membres/$memberId'
+    | '/_authenticated/demandes/$requestId_/modifier'
     | '/_authenticated/admin/demandes/'
     | '/_authenticated/admin/membres/'
   fileRoutesById: FileRoutesById
@@ -562,6 +575,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminMembresMemberIdRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/demandes/$requestId_/modifier': {
+      id: '/_authenticated/demandes/$requestId_/modifier'
+      path: '/demandes/$requestId/modifier'
+      fullPath: '/demandes/$requestId/modifier'
+      preLoaderRoute: typeof AuthenticatedDemandesRequestIdModifierRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -610,6 +630,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMembershipParrainerRoute: typeof AuthenticatedMembershipParrainerRoute
   AuthenticatedDemandesIndexRoute: typeof AuthenticatedDemandesIndexRoute
   AuthenticatedMembershipIndexRoute: typeof AuthenticatedMembershipIndexRoute
+  AuthenticatedDemandesRequestIdModifierRoute: typeof AuthenticatedDemandesRequestIdModifierRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -627,6 +648,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMembershipParrainerRoute: AuthenticatedMembershipParrainerRoute,
   AuthenticatedDemandesIndexRoute: AuthenticatedDemandesIndexRoute,
   AuthenticatedMembershipIndexRoute: AuthenticatedMembershipIndexRoute,
+  AuthenticatedDemandesRequestIdModifierRoute:
+    AuthenticatedDemandesRequestIdModifierRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

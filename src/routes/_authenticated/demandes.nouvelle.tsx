@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
 import { AppShell, Logo, TopBar } from "@/components/art-de-vie/app-shell";
 import { Photo } from "@/components/art-de-vie/cards";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { requestsQuery } from "@/lib/adv-queries";
 import { cn } from "@/lib/utils";
 import bassin from "@/assets/v3/bassin.jpg.asset.json";
 import entree from "@/assets/v3/entree-de-nuit.jpg.asset.json";
@@ -27,8 +28,9 @@ const surMesure = { name: "Sur mesure", note: "Billetterie, intendance, démarch
 const allCats = [...cats, surMesure];
 
 export const Route = createFileRoute("/_authenticated/demandes/nouvelle")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { offer?: string | undefined; renew?: string | undefined } => ({
     offer: typeof search["offer"] === "string" ? search["offer"] : undefined,
+    renew: typeof search["renew"] === "string" ? search["renew"] : undefined,
   }),
   head: () => ({
     meta: [
@@ -45,8 +47,9 @@ export const Route = createFileRoute("/_authenticated/demandes/nouvelle")({
 
 function Page() {
   const navigate = useNavigate();
-  const { offer } = Route.useSearch();
+  const { offer, renew } = Route.useSearch();
   const queryClient = useQueryClient();
+  const { data: previous = [] } = useQuery(requestsQuery);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [category, setCategory] = useState("Tables");
   const [title, setTitle] = useState(offer ?? "");
@@ -57,6 +60,20 @@ function Page() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
+
+  // « Renouveler cette demande » : catégorie, prestation, couverts et précisions repris, date laissée vide.
+  const [renewed, setRenewed] = useState(false);
+  useEffect(() => {
+    if (!renew || renewed) return;
+    const source = previous.find((r) => r.id === renew);
+    if (!source) return;
+    setCategory(source.category);
+    setTitle(source.title);
+    setGuests(source.guests ? String(source.guests) : "");
+    setDescription(source.description ?? "");
+    setStep(2);
+    setRenewed(true);
+  }, [renew, renewed, previous]);
 
   async function submit() {
     setBusy(true);

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { EmptyState, StatusBadge } from "@/components/art-de-vie/cards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatShortDate, formatMonth, imageFor, initials } from "@/data/art-de-vie";
-import { memberDetailQuery, memberParrainQuery, memberPaymentsQuery, memberPreferencesQuery } from "@/lib/admin-queries";
+import { memberDetailQuery, memberParrainQuery, memberPaymentsQuery, memberPreferencesQuery, memberReviewsQuery } from "@/lib/admin-queries";
 import { saveMemberPreferences, sendMemberInvite, setMemberDisabled, updateMember } from "@/lib/admin.functions";
 import { Textarea } from "@/components/ui/textarea";
 import { Field, PlanSelect } from "./admin.membres.index";
@@ -122,6 +122,7 @@ function Page() {
       {error && <p className="mt-4 rounded-2xl border border-primary/25 p-4 text-xs leading-5 text-primary">{error}</p>}
 
       <PreferencesBlock memberId={profile.id} />
+      <ReviewsBlock memberId={profile.id} />
 
       <div className="mt-6 grid min-w-0 gap-5">
         <section className="team-panel min-w-0 rounded-card p-5">
@@ -245,5 +246,20 @@ function PreferencesBlock({ memberId }: { memberId: string }) {
           <Button type="button" variant="outline" size="sm" className="mt-4" onClick={start}>Modifier</Button>
         </>}
     {message && <p role="status" className={`mt-3 rounded-2xl p-3 text-xs leading-5 text-primary ${message.ok ? "bg-primary/10" : "border border-primary/25"}`}>{message.text}</p>}
+  </section>;
+}
+
+function ReviewsBlock({ memberId }: { memberId: string }) {
+  const { data: reviews = [] } = useQuery(memberReviewsQuery(memberId));
+  return <section aria-labelledby="reviews-title" className="team-panel mt-5 min-w-0 rounded-card p-5">
+    <h2 id="reviews-title" className="eyebrow text-primary-light">Avis après prestation</h2>
+    {reviews.length === 0 ? <p className="mt-3 text-[13px] text-muted-foreground">Aucun avis pour le moment.</p>
+      : <ul className="mt-3 divide-y divide-border">{reviews.map((r) => <li key={r.request_id} className="py-3">
+          <Link to="/admin/demandes/$requestId" params={{ requestId: r.request_id }} className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <p className="flex flex-wrap items-baseline justify-between gap-2"><span className="text-[15px]">{r.title}</span><span className="font-display text-[18px] italic">{r.rating}</span></p>
+            {r.comment && <p className="mt-1 whitespace-pre-line text-[13px] text-muted-foreground">{r.comment}</p>}
+            <p className="mt-1 text-[12px] text-muted-foreground">{formatShortDate(r.created_at.slice(0, 10))}</p>
+          </Link>
+        </li>)}</ul>}
   </section>;
 }

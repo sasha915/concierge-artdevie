@@ -2,15 +2,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, ChevronLeft } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, Download, FileText, Paperclip } from "lucide-react";
 import { AdminShell, TeamStatus } from "@/components/art-de-vie/admin-shell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatDate, formatShortDate, initials, type RequestStatus } from "@/data/art-de-vie";
-import { requestDetailQuery, teamNamesQuery, requestEventsQuery, replyTemplatesQuery, requestBillingQuery, requestMessagesAdminQuery } from "@/lib/admin-queries";
+import { requestDetailQuery, teamNamesQuery, requestEventsQuery, replyTemplatesQuery, requestBillingQuery, requestMessagesAdminQuery, requestFilesQuery, requestChangesQuery, requestReviewQuery } from "@/lib/admin-queries";
 import { eurosInput, invoiceBreakdown, parseEuros, ratePercent } from "@/lib/billing-rules";
 import { insertReply, requestHistory } from "@/lib/team-request-rules";
+import { decideRequestChange, getRequestFileUrl, setRequestFileVisibility, uploadRequestFile } from "@/lib/admin.functions";
+import { FILE_TYPES, fileProblem, fileSizeLabel } from "@/lib/request-actions-rules";
 import { addRequestNote, createRequestInvoice, listRequestNotes, setRequestAmount, sendTeamMessage, setRequestConcierge, updateRequestStatus } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/demandes/$requestId")({
@@ -98,6 +100,8 @@ function Page() {
 
     <p role="status" aria-live="polite" className={`mt-4 min-h-0 text-[14px] ${notice ? (notice.ok ? "rounded-2xl border border-border px-4 py-3" : "rounded-2xl border border-dashed border-border px-4 py-3") : ""}`}>{notice?.text}</p>
 
+    <ChangeBanner requestId={r.id} busy={busy} run={run} />
+
     <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-12">
       <div className="grid min-w-0 content-start gap-4 lg:col-span-7">
         <section className="team-panel rounded-[28px] p-6">
@@ -137,6 +141,8 @@ function Page() {
             <Button type="button" disabled={busy || !reply.trim()} onClick={() => run(async () => { const res = await sendMessage({ data: { requestId: r.id, body: reply } }); if (res.ok) { setReplyText(""); cursorRef.current = null; } return res; }, "Message envoyé au membre.")} className="h-11 rounded-full px-5">Envoyer au membre</Button>
           </div>
         </section>
+
+        <FilesBlock requestId={r.id} busy={busy} run={run} />
 
         <section className="team-panel rounded-[28px] p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -198,6 +204,7 @@ function Page() {
             Fiche membre<span className="flex size-8 items-center justify-center rounded-full bg-primary-foreground text-primary"><ArrowUpRight className="size-4" /></span>
           </Link>
         </section>}
+        {r.status === "Terminée" && <ReviewPanel requestId={r.id} />}
         <section className="team-panel rounded-[28px] p-6">
           <h2 className="eyebrow team-mention">( Historique )</h2>
           {eventsLoading ? <Skeleton className="mt-4 h-28 bg-primary/10" /> : eventsError ? <p role="alert" className="mt-4 text-[13px] text-muted-foreground">L’historique n’a pas pu être chargé.</p> : <ol className="mt-4 divide-y divide-border border-y border-border">
@@ -274,5 +281,88 @@ function BillingBlock({ requestId, cancelled, isAdmin, busy, run }: { requestId:
       <p className="mt-4 text-[13px] text-muted-foreground">La facture est créée par un administrateur.</p>
     )}
     {!locked && isAdmin && cancelled && <p className="mt-2 text-[12px] text-muted-foreground">Une demande annulée ne peut pas être facturée.</p>}
+  </section>;
+}
+
+type Run = (action: () => Promise<{ ok: boolean; reason?: string }>, success: string) => Promise<void>;
+
+/** Lot 5.3 — bandeau clair en tête du détail quand le membre a demandé une modification. */
+function ChangeBanner({ requestId, busy, run }: { requestId: string; busy: boolean; run: Run }) {
+  const { data: changes = [] } = useQuery(requestChangesQuery(requestId));
+  const decide = useServerFn(decideRequestChange);
+  const pending = changes.find((c) => c.status === "en attente");
+  if (!pending) return null;
+  return <section aria-label="Demande de modification" className="mt-4 rounded-[28px] bg-foreground p-6 text-background">
+    <p className="eyebrow">( Demande de modification · {stamp(pending.created_at)} )</p>
+    <p className="mt-3 text-[22px] leading-tight">{pending.label}</p>
+    {pending.body && <p className="mt-2 whitespace-pre-line text-[15px] leading-6">{pending.body}</p>}
+    <p className="mt-3 text-[13px] opacity-80">Accepter ne modifie rien automatiquement : mettez ensuite la demande à jour vous-même.</p>
+    <div className="mt-4 flex flex-wrap gap-2">
+      <button type="button" disabled={busy} onClick={() => run(() => decide({ data: { id: pending.id, decision: "acceptée" } }), "Modification acceptée. Le membre est prévenu.")} className="h-11 rounded-full bg-background px-5 text-[14px] font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60">Accepter</button>
+      <button type="button" disabled={busy} onClick={() => run(() => decide({ data: { id: pending.id, decision: "refusée" } }), "Modification refusée. Le membre est prévenu.")} className="h-11 rounded-full border border-background/40 px-5 text-[14px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60">Refuser</button>
+    </div>
+  </section>;
+}
+
+/** Lot 5.2 — pièces jointes : visibles par le membre ou internes, téléchargement par lien signé. */
+function FilesBlock({ requestId, busy, run }: { requestId: string; busy: boolean; run: Run }) {
+  const { data: files = [], isLoading, isError } = useQuery(requestFilesQuery(requestId));
+  const upload = useServerFn(uploadRequestFile);
+  const setVisibility = useServerFn(setRequestFileVisibility);
+  const fileUrl = useServerFn(getRequestFileUrl);
+  const [visible, setVisible] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function pick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const p = fileProblem(file);
+    setProblem(p);
+    if (p) return;
+    const fd = new FormData();
+    fd.append("file", file); fd.append("requestId", requestId); fd.append("visible", String(visible));
+    void run(() => upload({ data: fd }), visible ? "Document ajouté et visible par le membre." : "Document interne ajouté.");
+  }
+
+  async function download(id: string) {
+    const res = await fileUrl({ data: { id } });
+    if (res.ok) window.location.href = res.url; else setProblem(res.reason);
+  }
+
+  return <section aria-labelledby="files-title" className="team-panel rounded-[28px] p-6">
+    <h2 id="files-title" className="eyebrow team-mention">( Pièces jointes )</h2>
+    {isLoading ? <Skeleton className="mt-4 h-16 bg-primary/10" />
+      : isError ? <p role="alert" className="mt-4 text-[13px] text-muted-foreground">Les pièces jointes n’ont pas pu être chargées.</p>
+      : files.length === 0 ? <p className="mt-4 text-[13px] text-muted-foreground">Aucune pièce jointe.</p>
+      : <ul className="mt-4 divide-y divide-border border-y border-border">{files.map((f) => <li key={f.id} className="flex flex-wrap items-center gap-3 py-3">
+          <FileText className="size-5 shrink-0" aria-hidden="true" />
+          <div className="min-w-0 flex-1"><p className="truncate text-[15px]">{f.name}</p><p className="mt-0.5 text-[12px] text-muted-foreground">{FILE_TYPES[f.mime]?.label ?? "Fichier"} · {fileSizeLabel(f.size)} · {f.uploaded_by_name} · {stamp(f.created_at)}</p></div>
+          <div role="group" aria-label={`Visibilité de ${f.name}`} className="flex gap-1">
+            {[true, false].map((v) => <button key={String(v)} type="button" disabled={busy} aria-pressed={f.visible_to_member === v} onClick={() => run(() => setVisibility({ data: { id: f.id, visible: v } }), v ? "Document rendu visible par le membre." : "Document rendu interne.")}
+              className={`h-9 rounded-full px-3 text-[12px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 ${f.visible_to_member === v ? "bg-primary text-primary-foreground" : "border border-border"}`}>{v ? "Visible par le membre" : "Interne"}</button>)}
+          </div>
+          <Button type="button" variant="outline" size="icon" className="size-9 rounded-full" aria-label={`Télécharger ${f.name}`} onClick={() => download(f.id)}><Download className="size-4" /></Button>
+        </li>)}</ul>}
+    {problem && <p role="alert" className="mt-3 text-[13px]">{problem}</p>}
+    <div className="mt-4 flex flex-wrap items-center gap-3">
+      <label className="flex items-center gap-2 text-[13px]"><input type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} className="size-4 accent-current" />Visible par le membre</label>
+      <input ref={inputRef} type="file" accept="application/pdf,image/jpeg,image/png,image/webp,image/heic" onChange={pick} className="sr-only" id="request-file" />
+      <Button type="button" variant="outline" disabled={busy} onClick={() => inputRef.current?.click()} className="h-11 rounded-full px-5"><Paperclip className="size-4" />Ajouter un fichier</Button>
+      <span className="text-[12px] text-muted-foreground">PDF ou image, 10 Mo au plus</span>
+    </div>
+  </section>;
+}
+
+function ReviewPanel({ requestId }: { requestId: string }) {
+  const { data: review } = useQuery(requestReviewQuery(requestId));
+  return <section className="team-panel rounded-[28px] p-6">
+    <h2 className="eyebrow team-mention">( Avis du membre )</h2>
+    {review ? <>
+      <p className="mt-3 font-display text-[26px] italic">{review.rating}</p>
+      {review.comment && <p className="mt-2 whitespace-pre-line text-[15px] leading-6">{review.comment}</p>}
+      <p className="mt-2 text-[12px] text-muted-foreground">{stamp(review.created_at)}</p>
+    </> : <p className="mt-3 text-[13px] text-muted-foreground">Le membre n’a pas encore donné son avis.</p>}
   </section>;
 }

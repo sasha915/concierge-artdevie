@@ -211,9 +211,11 @@ export const listAllRequests = createServerFn({ method: "GET" })
       admin.from("profiles").select("id, full_name, email, plan"),
     ]);
     const byId = new Map((profiles ?? []).map((p: { id: string }) => [p.id, p]));
-    return (requests ?? []).map((r: { user_id: string }) => {
+    const { data: pending } = await admin.from("request_changes").select("request_id").eq("status", "en attente");
+    const pendingIds = new Set((pending ?? []).map((c: { request_id: string }) => c.request_id));
+    return (requests ?? []).map((r: { id: string; user_id: string }) => {
       const p = byId.get(r.user_id) as { full_name: string; email: string | null; plan: string } | undefined;
-      return { ...r, member_name: p?.full_name ?? "", member_email: p?.email ?? null, member_plan: p?.plan ?? null };
+      return { ...r, member_name: p?.full_name ?? "", member_email: p?.email ?? null, member_plan: p?.plan ?? null, pending_change: pendingIds.has(r.id) };
     });
   });
 
@@ -768,12 +770,16 @@ export const createRequestInvoice = createServerFn({ method: "POST" })
 async function dashboardWatch(admin: any, role: TeamRole, rows: Array<{ id: string; title: string; status: string; created_at: string; member_name: string }>, teamIdList: string[], names: Map<string, string>) {
   const { isStaleRequest, isRenewalDue, waitingLabel, FAILED_INVOICE_STATUSES } = await import("./watch-rules");
   const staleRequests = rows.filter((r) => isStaleRequest(r)).map((r) => ({ id: r.id, title: r.title, member_name: r.member_name, waiting: waitingLabel(r.created_at) }));
+  const { data: changes } = await admin.from("request_changes").select("id, request_id, kind, created_at").eq("status", "en attente").order("created_at");
+  const titles = new Map(rows.map((r) => [r.id, r]));
+  const { changeKindLabel } = await import("./request-actions-rules");
+  const pendingChanges = ((changes ?? []) as Array<{ id: string; request_id: string; kind: string; created_at: string }>).map((c) => ({ id: c.id, request_id: c.request_id, label: changeKindLabel(c.kind), title: titles.get(c.request_id)?.title ?? "Demande", member_name: titles.get(c.request_id)?.member_name ?? "" }));
   const { data: members } = await admin.from("profiles").select("id, full_name, valid_until, disabled_at");
   const renewals = ((members ?? []) as Array<{ id: string; full_name: string; valid_until: string | null; disabled_at: string | null }>)
     .filter((m) => !m.disabled_at && !teamIdList.includes(m.id) && isRenewalDue(m.valid_until))
     .sort((a, b) => (a.valid_until ?? "").localeCompare(b.valid_until ?? ""))
     .map((m) => ({ id: m.id, full_name: m.full_name, valid_until: m.valid_until as string }));
-  if (role !== "admin") return { staleRequests, renewals, failedInvoices: null, receivedReferrals: null };
+  if (role !== "admin") return { staleRequests, renewals, pendingChanges, failedInvoices: null, receivedReferrals: null };
   const [{ data: invoices }, { data: referrals }] = await Promise.all([
     admin.from("invoices").select("id, number, user_id, amount_cents, status, issued_on").in("status", [...FAILED_INVOICE_STATUSES]).order("issued_on", { ascending: false }),
     admin.from("referrals").select("id, full_name, inviter_id, created_at").eq("status", "Invitation envoyée").order("created_at", { ascending: true }),
@@ -781,6 +787,7 @@ async function dashboardWatch(admin: any, role: TeamRole, rows: Array<{ id: stri
   return {
     staleRequests,
     renewals,
+    pendingChanges,
     failedInvoices: ((invoices ?? []) as Array<{ id: string; number: string; user_id: string; amount_cents: number; status: string }>).map((i) => ({ ...i, member_name: names.get(i.user_id) ?? "" })),
     receivedReferrals: ((referrals ?? []) as Array<{ id: string; full_name: string; inviter_id: string; created_at: string }>).map((r) => ({ id: r.id, full_name: r.full_name, inviter_name: names.get(r.inviter_id) ?? "", created_at: r.created_at })),
   };
@@ -884,4 +891,134 @@ export const sendTeamMessage = createServerFn({ method: "POST" })
     await admin.from("request_events").insert({ request_id: data.requestId, actor_id: (context as Ctx).userId, kind: "message envoyé", detail: null });
     await notifyMember(admin, data.requestId, "message", (title) => `Votre conciergerie vous a écrit au sujet de « ${title} ».`);
     return { ok: true as const };
+  });
+
+// ---- Lot 5.2 : pièces jointes ----
+
+export type TeamRequestFile = { id: string; name: string; size: number; mime: string; visible_to_member: boolean; created_at: string; uploaded_by_name: string };
+
+export const listRequestFiles = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ requestId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }): Promise<TeamRequestFile[]> => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { data: rows, error } = await admin.from("request_files").select("id, name, size, mime, visible_to_member, created_at, uploaded_by").eq("request_id", data.requestId).order("created_at");
+    if (error) throw new Error("Les pièces jointes n’ont pas pu être chargées.");
+    const ids = [...new Set((rows ?? []).flatMap((f) => (f.uploaded_by ? [f.uploaded_by] : [])))];
+    const { data: authors } = ids.length ? await admin.from("profiles").select("id, full_name").in("id", ids) : { data: [] };
+    const names = new Map((authors ?? []).map((p: { id: string; full_name: string }) => [p.id, p.full_name.trim()]));
+    return (rows ?? []).map((f) => ({ id: f.id, name: f.name, size: f.size, mime: f.mime, visible_to_member: f.visible_to_member, created_at: f.created_at, uploaded_by_name: (f.uploaded_by ? names.get(f.uploaded_by) : null) || "Équipe" }));
+  });
+
+export const uploadRequestFile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: FormData) => {
+    if (!(input instanceof FormData)) throw new Error("Format invalide.");
+    const file = input.get("file");
+    const requestId = z.string().uuid().parse(input.get("requestId"));
+    if (!(file instanceof File)) throw new Error("Aucun fichier.");
+    return { file, requestId, visible: input.get("visible") === "true" };
+  })
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { fileProblem, cleanFileName, FILE_TYPES } = await import("./request-actions-rules");
+    const problem = fileProblem(data.file);
+    if (problem) return { ok: false as const, reason: problem };
+    const { data: request } = await admin.from("requests").select("id").eq("id", data.requestId).maybeSingle();
+    if (!request) return { ok: false as const, reason: "Demande introuvable." };
+    const path = `${data.requestId}/${crypto.randomUUID()}.${FILE_TYPES[data.file.type]!.ext}`;
+    const { error: uploadError } = await admin.storage.from("request-files").upload(path, await data.file.arrayBuffer(), { contentType: data.file.type, upsert: false });
+    if (uploadError) return { ok: false as const, reason: "L’envoi du fichier a échoué." };
+    const name = cleanFileName(data.file.name);
+    const { error } = await admin.from("request_files").insert({ request_id: data.requestId, path, name, size: data.file.size, mime: data.file.type, uploaded_by: (context as Ctx).userId, visible_to_member: data.visible });
+    if (error) {
+      await admin.storage.from("request-files").remove([path]);
+      return { ok: false as const, reason: "Le fichier n’a pas pu être enregistré." };
+    }
+    await admin.from("request_events").insert({ request_id: data.requestId, actor_id: (context as Ctx).userId, kind: "pièce jointe ajoutée", detail: `${name}${data.visible ? " · visible par le membre" : " · interne"}` });
+    if (data.visible) await notifyMember(admin, data.requestId, "document", (title) => `Un document a été ajouté à votre demande « ${title} ».`);
+    return { ok: true as const };
+  });
+
+export const setRequestFileVisibility = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), visible: z.boolean() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { data: file } = await admin.from("request_files").select("request_id, name, visible_to_member").eq("id", data.id).maybeSingle();
+    if (!file) return { ok: false as const, reason: "Fichier introuvable." };
+    if (file.visible_to_member === data.visible) return { ok: true as const };
+    const { error } = await admin.from("request_files").update({ visible_to_member: data.visible }).eq("id", data.id);
+    if (error) return { ok: false as const, reason: "La visibilité n’a pas pu être modifiée." };
+    await admin.from("request_events").insert({ request_id: file.request_id, actor_id: (context as Ctx).userId, kind: data.visible ? "document rendu visible" : "document rendu interne", detail: file.name });
+    if (data.visible) await notifyMember(admin, file.request_id, "document", (title) => `Un document a été ajouté à votre demande « ${title} ».`);
+    return { ok: true as const };
+  });
+
+/** Lien de téléchargement signé, valable cinq minutes. */
+export const getRequestFileUrl = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { data: file } = await admin.from("request_files").select("path, name").eq("id", data.id).maybeSingle();
+    if (!file) return { ok: false as const, reason: "Fichier introuvable." };
+    const { data: signed, error } = await admin.storage.from("request-files").createSignedUrl(file.path, 300, { download: file.name });
+    if (error || !signed) return { ok: false as const, reason: "Le lien de téléchargement n’a pas pu être créé." };
+    return { ok: true as const, url: signed.signedUrl };
+  });
+
+// ---- Lot 5.3 : demandes de modification, avis ----
+
+export type TeamChange = { id: string; kind: string; label: string; body: string; status: string; created_at: string; decided_at: string | null; decided_by_name: string | null };
+
+export const listRequestChanges = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ requestId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }): Promise<TeamChange[]> => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { changeKindLabel } = await import("./request-actions-rules");
+    const { data: rows, error } = await admin.from("request_changes").select("id, kind, body, status, created_at, decided_at, decided_by").eq("request_id", data.requestId).order("created_at", { ascending: false });
+    if (error) throw new Error("Les demandes de modification n’ont pas pu être chargées.");
+    const ids = [...new Set((rows ?? []).flatMap((c) => (c.decided_by ? [c.decided_by] : [])))];
+    const { data: authors } = ids.length ? await admin.from("profiles").select("id, full_name").in("id", ids) : { data: [] };
+    const names = new Map((authors ?? []).map((p: { id: string; full_name: string }) => [p.id, p.full_name.trim()]));
+    return (rows ?? []).map((c) => ({ id: c.id, kind: c.kind, label: changeKindLabel(c.kind), body: c.body, status: c.status, created_at: c.created_at, decided_at: c.decided_at, decided_by_name: c.decided_by ? names.get(c.decided_by) ?? "Équipe" : null }));
+  });
+
+/** Accepter ne modifie rien automatiquement : l'équipe met ensuite la demande à jour elle-même. */
+export const decideRequestChange = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), decision: z.enum(["acceptée", "refusée"]) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { data: row, error } = await admin.from("request_changes").update({ status: data.decision, decided_by: (context as Ctx).userId, decided_at: new Date().toISOString() }).eq("id", data.id).eq("status", "en attente").select("request_id, kind").maybeSingle();
+    if (error || !row) return { ok: false as const, reason: "Cette demande de modification a déjà été traitée." };
+    const { changeKindLabel } = await import("./request-actions-rules");
+    await admin.from("request_events").insert({ request_id: row.request_id, actor_id: (context as Ctx).userId, kind: data.decision === "acceptée" ? "modification acceptée" : "modification refusée", detail: changeKindLabel(row.kind) });
+    await notifyMember(admin, row.request_id, "statut", (title) => data.decision === "acceptée" ? `Votre demande de modification pour « ${title} » est acceptée.` : `Votre demande de modification pour « ${title} » n’a pas pu être retenue.`);
+    return { ok: true as const };
+  });
+
+export type TeamReview = { rating: string; comment: string; created_at: string };
+
+export const getRequestReview = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ requestId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }): Promise<TeamReview | null> => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { data: review } = await admin.from("request_reviews").select("rating, comment, created_at").eq("request_id", data.requestId).maybeSingle();
+    return review ?? null;
+  });
+
+export const listMemberReviews = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ memberId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { data: reviews } = await admin.from("request_reviews").select("request_id, rating, comment, created_at").eq("user_id", data.memberId).order("created_at", { ascending: false });
+    const ids = (reviews ?? []).map((r) => r.request_id);
+    const { data: requests } = ids.length ? await admin.from("requests").select("id, title").in("id", ids) : { data: [] };
+    const titles = new Map((requests ?? []).map((r: { id: string; title: string }) => [r.id, r.title]));
+    return (reviews ?? []).map((r) => ({ ...r, title: titles.get(r.request_id) ?? "Demande" }));
   });

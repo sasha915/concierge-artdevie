@@ -100,3 +100,33 @@ export const requestMessagesQuery = (requestId: string) => queryOptions({
   },
   refetchInterval: 30_000,
 });
+
+export type MemberFile = { id: string; name: string; mime: string; size: number; created_at: string };
+export const requestFilesMemberQuery = (requestId: string) => queryOptions({
+  queryKey: ["requests", requestId, "files"],
+  queryFn: async (): Promise<MemberFile[]> => {
+    const { data, error } = await supabase.from("request_files").select("id, name, mime, size, created_at").eq("request_id", requestId).order("created_at");
+    if (error) throw error;
+    return (data ?? []) as MemberFile[];
+  },
+});
+
+export type MemberChange = { id: string; kind: string; body: string; status: string; created_at: string; decided_at: string | null };
+export const requestChangesMemberQuery = (requestId: string) => queryOptions({
+  queryKey: ["requests", requestId, "changes"],
+  queryFn: async (): Promise<MemberChange[]> => {
+    const { data, error } = await supabase.from("request_changes").select("id, kind, body, status, created_at, decided_at").eq("request_id", requestId).order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as MemberChange[];
+  },
+});
+
+export type MemberReview = { rating: string; comment: string; created_at: string };
+export const requestReviewMemberQuery = (requestId: string) => queryOptions({
+  queryKey: ["requests", requestId, "review"],
+  queryFn: async (): Promise<MemberReview | null> => {
+    const { data, error } = await supabase.from("request_reviews").select("rating, comment, created_at").eq("request_id", requestId).maybeSingle();
+    if (error) throw error;
+    return (data ?? null) as MemberReview | null;
+  },
+});

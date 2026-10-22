@@ -125,13 +125,16 @@ function WatchGroup({ title, children, count }: { title: string; children: React
 function WatchBlock({ watch }: { watch: Watch }) {
   const failed = watch.failedInvoices ?? [];
   const referrals = watch.receivedReferrals ?? [];
-  const total = watch.staleRequests.length + watch.renewals.length + failed.length + referrals.length;
+  const total = watch.staleRequests.length + watch.pendingChanges.length + watch.renewals.length + failed.length + referrals.length;
   return <section aria-labelledby="watch-title" className="team-panel mt-6 min-w-0 rounded-[28px] p-6">
     <h2 id="watch-title" className="eyebrow team-mention">( À surveiller )</h2>
     {total === 0 ? <p className="mt-4 text-[14px] text-muted-foreground">Rien à signaler pour le moment.</p>
       : <div className="mt-4 grid min-w-0 gap-6 lg:grid-cols-2">
         <WatchGroup title={`Demandes sans prise en charge depuis plus de ${STALE_REQUEST_HOURS} h`} count={watch.staleRequests.length}>
           {watch.staleRequests.map((r) => <li key={r.id} className="border-b border-border last:border-0"><Link to="/admin/demandes/$requestId" params={{ requestId: r.id }} className={watchLink}><WatchRow title={r.title} meta={r.member_name || "Membre"} signal={`En attente · ${r.waiting}`} /></Link></li>)}
+        </WatchGroup>
+        <WatchGroup title="Modifications demandées par les membres" count={watch.pendingChanges.length}>
+          {watch.pendingChanges.map((c) => <li key={c.id} className="border-b border-border last:border-0"><Link to="/admin/demandes/$requestId" params={{ requestId: c.request_id }} className={watchLink}><WatchRow title={c.title} meta={c.member_name || "Membre"} signal={c.label} /></Link></li>)}
         </WatchGroup>
         <WatchGroup title={`Adhésions à échéance sous ${RENEWAL_WINDOW_DAYS} jours`} count={watch.renewals.length}>
           {watch.renewals.map((m) => <li key={m.id} className="border-b border-border last:border-0"><Link to="/admin/membres/$memberId" params={{ memberId: m.id }} className={watchLink}><WatchRow title={m.full_name || "Membre"} meta="Adhésion" signal={formatShortDate(m.valid_until)} /></Link></li>)}
