@@ -255,12 +255,13 @@ export const updateRequestStatus = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), status: requestStatus }).parse(input))
   .handler(async ({ data, context }) => {
     const { admin, role } = await assertTeam(context as Ctx);
-    const { data: before } = await admin.from("requests").select("status").eq("id", data.id).maybeSingle();
-    const { error } = await admin.from("requests").update({ status: data.status }).eq("id", data.id);
-    if (error) return { ok: false as const, reason: "Le statut n’a pas pu être modifié." };
-    if (before && before.status !== data.status) {
-      await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: "statut changé", detail: `${before.status} → ${data.status}` });
-    }
+    const { data: before, error: readError } = await admin.from("requests").select("status").eq("id", data.id).maybeSingle();
+    if (readError || !before) return { ok: false as const, reason: "La demande est introuvable." };
+    if (before.status === data.status) return { ok: true as const };
+    const { data: row, error } = await admin.from("requests").update({ status: data.status }).eq("id", data.id).eq("status", before.status).select("id").maybeSingle();
+    if (error || !row) return { ok: false as const, reason: "Le statut n’a pas pu être modifié. Rechargez la demande." };
+    const { error: eventError } = await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: "statut changé", detail: `${before.status} → ${data.status}` });
+    if (eventError) return { ok: false as const, reason: "Le statut a changé, mais son historique n’a pas pu être enregistré. Rechargez la demande." };
     return { ok: true as const };
   });
 
@@ -271,9 +272,10 @@ export const setRequestConcierge = createServerFn({ method: "POST" })
     const { admin } = await assertTeam(context as Ctx);
     const resolved = await resolveConcierge(admin, data.conciergeId);
     if (!resolved) return { ok: false as const, reason: "Ce compte ne fait pas partie de l’équipe." };
-    const { error } = await admin.from("requests").update(resolved).eq("id", data.id);
-    if (error) return { ok: false as const, reason: "L’attribution a échoué." };
-    await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: "attribuée", detail: resolved.concierge_id ? resolved.concierge : null });
+    const { data: row, error } = await admin.from("requests").update(resolved).eq("id", data.id).select("id").maybeSingle();
+    if (error || !row) return { ok: false as const, reason: "L’attribution a échoué." };
+    const { error: eventError } = await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: "attribuée", detail: resolved.concierge_id ? resolved.concierge : null });
+    if (eventError) return { ok: false as const, reason: "L’attribution a changé, mais son historique n’a pas pu être enregistré. Rechargez la demande." };
     return { ok: true as const };
   });
 
@@ -283,9 +285,10 @@ export const setRequestReply = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { admin, role } = await assertTeam(context as Ctx);
     const { replyUpdate } = await import("./request-rules");
-    const { error } = await admin.from("requests").update(replyUpdate(data.reply)).eq("id", data.id);
-    if (error) return { ok: false as const, reason: "La réponse n’a pas pu être enregistrée." };
-    await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: data.reply.trim() ? "réponse publiée" : "réponse retirée", detail: null });
+    const { data: row, error } = await admin.from("requests").update(replyUpdate(data.reply)).eq("id", data.id).select("id").maybeSingle();
+    if (error || !row) return { ok: false as const, reason: "La réponse n’a pas pu être enregistrée." };
+    const { error: eventError } = await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: data.reply.trim() ? "réponse publiée" : "réponse retirée", detail: null });
+    if (eventError) return { ok: false as const, reason: "La réponse a été enregistrée, mais son historique n’a pas pu être enregistré. Rechargez la demande." };
     return { ok: true as const };
   });
 
