@@ -842,10 +842,46 @@ async function notifyMember(admin: any, requestId: string, kind: string, body: (
   try {
     const { data: request } = await admin.from("requests").select("user_id, title").eq("id", requestId).maybeSingle();
     if (!request) return;
-    const { data: profile } = await admin.from("profiles").select("notify_requests").eq("id", request.user_id).maybeSingle();
-    if (!profile?.notify_requests) return;
+    const { data: profile } = await admin.from("profiles").select("notify_requests, notify_messages").eq("id", request.user_id).maybeSingle();
+    // Messages de l'équipe : réglage « Messages » ; statuts et réponses : réglage « Mes demandes ».
+    if (!(kind === "message" ? profile?.notify_messages : profile?.notify_requests)) return;
     await admin.from("member_notifications").insert({ user_id: request.user_id, request_id: requestId, kind, body: body(request.title) });
   } catch (err) {
     console.error("[notifyMember] notification non créée", err);
   }
 }
+
+// ---- Lot 5.1 : fil d'échanges avec le membre ----
+
+export type RequestMessage = { id: string; author_role: "membre" | "équipe"; author_name: string; body: string; created_at: string };
+
+export const listRequestMessages = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ requestId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }): Promise<RequestMessage[]> => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { data: rows, error } = await admin.from("request_messages").select("id, author_id, author_role, body, created_at").eq("request_id", data.requestId).order("created_at").order("id");
+    if (error) throw new Error("Les échanges n’ont pas pu être chargés.");
+    const ids = [...new Set((rows ?? []).flatMap((m) => (m.author_id ? [m.author_id] : [])))];
+    const { data: authors } = ids.length ? await admin.from("profiles").select("id, full_name").in("id", ids) : { data: [] };
+    const names = new Map((authors ?? []).map((p: { id: string; full_name: string }) => [p.id, p.full_name.trim()]));
+    return (rows ?? []).map((m) => ({
+      id: m.id,
+      author_role: m.author_role as "membre" | "équipe",
+      author_name: (m.author_id ? names.get(m.author_id) : null) || (m.author_role === "membre" ? "Le membre" : "Équipe"),
+      body: m.body,
+      created_at: m.created_at,
+    }));
+  });
+
+export const sendTeamMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ requestId: z.string().uuid(), body: z.string().trim().min(1).max(4000) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { error } = await admin.from("request_messages").insert({ request_id: data.requestId, author_id: (context as Ctx).userId, author_role: "équipe", body: data.body });
+    if (error) return { ok: false as const, reason: "Le message n’a pas pu être envoyé." };
+    await admin.from("request_events").insert({ request_id: data.requestId, actor_id: (context as Ctx).userId, kind: "message envoyé", detail: null });
+    await notifyMember(admin, data.requestId, "message", (title) => `Votre conciergerie vous a écrit au sujet de « ${title} ».`);
+    return { ok: true as const };
+  });

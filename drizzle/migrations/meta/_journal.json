@@ -134,6 +134,13 @@
       "when": 1792684359038,
       "tag": "0018_member_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792684564959,
+      "tag": "0019_request_messages",
+      "breakpoints": true
     }
   ]
 }

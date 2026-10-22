@@ -8,10 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatDate, formatShortDate, initials, type RequestStatus } from "@/data/art-de-vie";
-import { requestDetailQuery, teamNamesQuery, requestEventsQuery, replyTemplatesQuery, requestBillingQuery } from "@/lib/admin-queries";
+import { requestDetailQuery, teamNamesQuery, requestEventsQuery, replyTemplatesQuery, requestBillingQuery, requestMessagesAdminQuery } from "@/lib/admin-queries";
 import { eurosInput, invoiceBreakdown, parseEuros, ratePercent } from "@/lib/billing-rules";
 import { insertReply, requestHistory } from "@/lib/team-request-rules";
-import { addRequestNote, createRequestInvoice, listRequestNotes, setRequestAmount, setRequestConcierge, setRequestReply, updateRequestStatus } from "@/lib/admin.functions";
+import { addRequestNote, createRequestInvoice, listRequestNotes, setRequestAmount, sendTeamMessage, setRequestConcierge, updateRequestStatus } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/demandes/$requestId")({
   validateSearch: (search: Record<string, unknown>): { cree?: boolean } => (search["cree"] === true || search["cree"] === "true" ? { cree: true } : {}),
@@ -50,14 +50,14 @@ function Page() {
   const { data: team = [] } = useQuery(teamNamesQuery);
   const setStatus = useServerFn(updateRequestStatus);
   const setConcierge = useServerFn(setRequestConcierge);
-  const setReply = useServerFn(setRequestReply);
+  const sendMessage = useServerFn(sendTeamMessage);
+  const { data: messages = [], isLoading: messagesLoading, isError: messagesError } = useQuery(requestMessagesAdminQuery(requestId));
   const r = data?.request ?? null;
   const m = data?.member ?? null;
 
   const [reply, setReplyText] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
-  useEffect(() => { setReplyText(r?.team_reply ?? ""); }, [r?.id, r?.team_reply]);
   useEffect(() => { if (cree) setNotice({ ok: true, text: "Demande créée. Elle apparaît dès maintenant dans l’espace du membre." }); }, [cree]);
 
   async function run(action: () => Promise<{ ok: boolean; reason?: string }>, success: string) {
@@ -112,20 +112,29 @@ function Page() {
           </dl>
         </section>
 
-        <section className="team-panel rounded-[28px] p-6">
+        <section aria-labelledby="exchanges-title" className="team-panel rounded-[28px] p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="eyebrow team-mention">( Réponse au membre )</h2>
+            <h2 id="exchanges-title" className="eyebrow team-mention">( Échanges avec le membre )</h2>
             <span className="rounded-full border border-border px-3 py-1 text-[11px]">Visible par le membre</span>
           </div>
-          {templatesError ? <p role="alert" className="mt-3 text-[13px] text-muted-foreground">Les réponses types n’ont pas pu être chargées.</p> : !templatesLoading && <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2">
+          {messagesLoading ? <Skeleton className="mt-4 h-24 bg-primary/10" />
+            : messagesError ? <p role="alert" className="mt-4 text-[13px] text-muted-foreground">Les échanges n’ont pas pu être chargés.</p>
+            : messages.length === 0 ? <p className="mt-4 text-[13px] text-muted-foreground">Aucun échange pour le moment. Le membre voit « Votre demande a bien été transmise. »</p>
+            : <ol className="mt-4 grid gap-3" aria-live="polite">{messages.map((msg) => {
+                const fromMember = msg.author_role === "membre";
+                return <li key={msg.id} className={`flex min-w-0 flex-col ${fromMember ? "items-start" : "items-end"}`}>
+                  <p className={`max-w-[85%] whitespace-pre-line break-words rounded-[18px] p-4 text-[15px] leading-6 ${fromMember ? "bg-foreground text-background" : "border border-border bg-card"}`}>{msg.body}</p>
+                  <p className="mt-1 px-1 text-[12px] text-muted-foreground">{msg.author_name} · {stamp(msg.created_at)}</p>
+                </li>;
+              })}</ol>}
+          {templatesError ? <p role="alert" className="mt-4 text-[13px] text-muted-foreground">Les réponses types n’ont pas pu être chargées.</p> : !templatesLoading && <div className="mt-4 flex min-w-0 flex-wrap items-center gap-2">
             {usableTemplates.map((t) => <Button key={t.id} type="button" variant="outline" className="h-auto min-h-9 max-w-full whitespace-normal py-2 text-[13px]" onClick={() => useTemplate(t.body)}>{t.label}</Button>)}
             {teamRole === "admin" && <Button asChild variant="link" className="h-auto whitespace-normal px-0 py-1 text-[12px]"><Link to="/admin/reponses-types">Rédiger les réponses types</Link></Button>}
           </div>}
-          <label htmlFor="team-reply" className="sr-only">Réponse au membre</label>
-          <Textarea ref={replyRef} id="team-reply" value={reply} onChange={(e) => { setReplyText(e.target.value); cursorRef.current = e.target.selectionStart; }} onSelect={(e) => { cursorRef.current = e.currentTarget.selectionStart; }} maxLength={4000} rows={6} placeholder="Écrire au membre…" className="mt-4 min-h-[140px]" />
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-[13px] text-muted-foreground">{r.team_reply_at ? `Dernière publication le ${stamp(r.team_reply_at)}` : "Aucune réponse publiée."}</p>
-            <Button type="button" disabled={busy} onClick={() => run(() => setReply({ data: { id: r.id, reply } }), reply.trim() ? "Réponse publiée." : "Réponse retirée.")} className="h-11 rounded-full px-5">Publier la réponse</Button>
+          <label htmlFor="team-reply" className="sr-only">Message au membre</label>
+          <Textarea ref={replyRef} id="team-reply" value={reply} onChange={(e) => { setReplyText(e.target.value); cursorRef.current = e.target.selectionStart; }} onSelect={(e) => { cursorRef.current = e.currentTarget.selectionStart; }} maxLength={4000} rows={5} placeholder="Écrire au membre…" className="mt-4 min-h-[120px]" />
+          <div className="mt-4 flex justify-end">
+            <Button type="button" disabled={busy || !reply.trim()} onClick={() => run(async () => { const res = await sendMessage({ data: { requestId: r.id, body: reply } }); if (res.ok) { setReplyText(""); cursorRef.current = null; } return res; }, "Message envoyé au membre.")} className="h-11 rounded-full px-5">Envoyer au membre</Button>
           </div>
         </section>
 

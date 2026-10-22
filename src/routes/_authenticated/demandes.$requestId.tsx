@@ -1,6 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { ArrowUp } from "lucide-react";
+import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
+import { sendMemberMessage } from "@/lib/messages.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft } from "lucide-react";
 import { AppShell, TopBar } from "@/components/art-de-vie/app-shell";
@@ -9,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { PillAction, StatusTimeline, Title } from "@/components/art-de-vie/v3";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, imageFor } from "@/data/art-de-vie";
-import { requestsQuery, unreadRequestNotificationsQuery } from "@/lib/adv-queries";
+import { requestMessagesQuery, requestsQuery, unreadRequestNotificationsQuery } from "@/lib/adv-queries";
 
 export const Route = createFileRoute("/_authenticated/demandes/$requestId")({
   head: () => ({
@@ -113,19 +118,7 @@ function Page() {
             <StatusTimeline status={item.status} dark />
           </div>
         </section>
-        <section className="mt-3 rounded-[28px] bg-primary/10 p-5 text-primary lg:col-span-7 lg:ml-[clamp(20px,3.9vw,56px)] lg:mt-16 lg:self-start lg:p-8">
-          <h2 className="eyebrow text-primary">Votre demande</h2>
-          <div className="mt-5 grid gap-3">
-            <p className="rounded-[18px] bg-card p-4 text-[14px] leading-6 lg:ml-auto lg:max-w-[78%] lg:text-[16px] lg:leading-7">
-              {item.description || "Aucune précision complémentaire n’a été indiquée."}
-            </p>
-            <p
-              className={`rounded-[18px] bg-primary p-4 text-[14px] text-background lg:mr-auto lg:max-w-[78%] lg:text-[16px]${item.team_reply ? " whitespace-pre-line" : ""}`}
-            >
-              {item.team_reply || "Votre demande a bien été transmise."}
-            </p>
-          </div>
-        </section>
+        <Exchanges requestId={item.id} description={item.description} cancelled={item.status === "Annulée"} />
         <section className="mt-8 px-2 text-primary lg:col-span-5 lg:mr-[clamp(20px,3.9vw,56px)] lg:mt-16 lg:px-0">
           <h2 className="eyebrow text-primary">Détails</h2>
           <dl className="mt-4 divide-y divide-primary/25 border-y border-primary/25 text-[14px]">
@@ -155,5 +148,71 @@ function Detail({ label, value }: { label: string; value: string }) {
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="text-right text-[16px] lg:text-[24px]">{value}</dd>
     </div>
+  );
+}
+
+function stamp(iso: string) {
+  return new Date(iso).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+}
+
+/** Lot 5.1 — fil d'échanges : messages du membre à droite, de la conciergerie à gauche dans la bulle violette. */
+function Exchanges({ requestId, description, cancelled }: { requestId: string; description: string; cancelled: boolean }) {
+  const queryClient = useQueryClient();
+  const { data: messages = [], isLoading } = useQuery(requestMessagesQuery(requestId));
+  const send = useServerFn(sendMemberMessage);
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const hasTeamMessage = messages.some((m) => m.author_role === "équipe");
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!text.trim()) return;
+    setBusy(true);
+    try {
+      const res = await send({ data: { requestId, body: text } });
+      if (!res.ok) { toast.error(res.reason); return; }
+      setText("");
+      await queryClient.invalidateQueries({ queryKey: ["requests", requestId, "messages"] });
+    } catch {
+      toast.error("Votre message n’a pas pu être envoyé.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section aria-labelledby="exchanges-title" className="mt-3 rounded-[28px] bg-primary/10 p-5 text-primary lg:col-span-7 lg:ml-[clamp(20px,3.9vw,56px)] lg:mt-16 lg:self-start lg:p-8">
+      <h2 id="exchanges-title" className="eyebrow text-primary">Échanges</h2>
+      <ol className="mt-5 grid gap-3" aria-live="polite">
+        <li className="ml-auto max-w-[88%] lg:max-w-[78%]">
+          <p className="whitespace-pre-line rounded-[18px] bg-card p-4 text-[14px] leading-6 lg:text-[16px] lg:leading-7">
+            {description || "Aucune précision complémentaire n’a été indiquée."}
+          </p>
+        </li>
+        {!isLoading && !hasTeamMessage && (
+          <li className="mr-auto max-w-[88%] lg:max-w-[78%]">
+            <p className="rounded-[18px] bg-primary p-4 text-[14px] text-background lg:text-[16px]">Votre demande a bien été transmise.</p>
+          </li>
+        )}
+        {messages.map((m) => {
+          const mine = m.author_role === "membre";
+          return (
+            <li key={m.id} className={mine ? "ml-auto max-w-[88%] text-right lg:max-w-[78%]" : "mr-auto max-w-[88%] lg:max-w-[78%]"}>
+              <p className={`whitespace-pre-line break-words rounded-[18px] p-4 text-left text-[14px] leading-6 lg:text-[16px] lg:leading-7 ${mine ? "bg-card" : "bg-primary text-background"}`}>{m.body}</p>
+              <p className="mt-1 px-1 text-[11px] text-muted-foreground">{mine ? "Vous" : "Votre conciergerie"} · {stamp(m.created_at)}</p>
+            </li>
+          );
+        })}
+      </ol>
+      {!cancelled && (
+        <form onSubmit={submit} className="mt-5 flex items-end gap-2">
+          <label htmlFor="member-reply" className="sr-only">Répondre à votre conciergerie</label>
+          <Textarea id="member-reply" value={text} onChange={(e) => setText(e.target.value)} maxLength={4000} rows={1} placeholder="Répondre…" className="min-h-12 flex-1 resize-none rounded-[22px] bg-card py-3" />
+          <Button type="submit" size="icon" disabled={busy || !text.trim()} aria-label="Envoyer" className="size-12 shrink-0 rounded-full">
+            <ArrowUp className="size-5" />
+          </Button>
+        </form>
+      )}
+    </section>
   );
 }

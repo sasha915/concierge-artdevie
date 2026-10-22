@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { listMembers, getMemberDetail, getMemberParrain, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames, listReferrals, listTeam, listOffersAdmin, listRequestEvents, listReplyTemplates, getRequestBilling, getMemberPreferences, type TeamRole } from "@/lib/admin.functions";
+import { listMembers, getMemberDetail, getMemberParrain, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames, listReferrals, listTeam, listOffersAdmin, listRequestEvents, listReplyTemplates, getRequestBilling, getMemberPreferences, listRequestMessages, type TeamRole } from "@/lib/admin.functions";
 import type { Invoice, RequestItem } from "@/data/art-de-vie";
 
 export type AdminMember = {
@@ -150,4 +150,10 @@ export const requestBillingQuery = (id: string) => queryOptions({
 export const memberPreferencesQuery = (id: string) => queryOptions({
   queryKey: ["admin", "member", id, "preferences"],
   queryFn: () => getMemberPreferences({ data: { id } }),
+});
+
+export const requestMessagesAdminQuery = (requestId: string) => queryOptions({
+  queryKey: ["admin", "request", requestId, "messages"],
+  queryFn: () => listRequestMessages({ data: { requestId } }),
+  refetchInterval: 30_000,
 });

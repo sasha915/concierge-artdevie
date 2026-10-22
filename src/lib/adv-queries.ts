@@ -83,3 +83,20 @@ export const unreadRequestNotificationsQuery = queryOptions({
   },
   staleTime: 30_000,
 });
+
+export type MemberMessage = { id: string; author_role: "membre" | "équipe"; body: string; created_at: string };
+
+/** Échanges d'une demande du membre (RLS : ses seules demandes). */
+export const requestMessagesQuery = (requestId: string) => queryOptions({
+  queryKey: ["requests", requestId, "messages"],
+  queryFn: async (): Promise<MemberMessage[]> => {
+    const { data, error } = await supabase
+      .from("request_messages")
+      .select("id, author_role, body, created_at")
+      .eq("request_id", requestId)
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    return (data ?? []) as MemberMessage[];
+  },
+  refetchInterval: 30_000,
+});
