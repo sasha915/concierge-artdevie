@@ -70,6 +70,51 @@ export type Database = {
           },
         ]
       }
+      member_notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          kind: string
+          read_at: string | null
+          request_id: string | null
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          kind: string
+          read_at?: string | null
+          request_id?: string | null
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          read_at?: string | null
+          request_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_notifications_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_preferences: {
         Row: {
           calendrier: string
@@ -437,6 +482,7 @@ export type Database = {
         Returns: boolean
       }
       is_team: { Args: { _user_id: string }; Returns: boolean }
+      mark_request_notifications_read: { Args: { _request_id: string }; Returns: undefined }
       next_invoice_number: { Args: never; Returns: string }
     }
     Enums: {

@@ -261,6 +261,7 @@ export const updateRequestStatus = createServerFn({ method: "POST" })
     const { data: row, error } = await admin.from("requests").update({ status: data.status }).eq("id", data.id).eq("status", before.status).select("id").maybeSingle();
     if (error || !row) return { ok: false as const, reason: "Le statut n’a pas pu être modifié. Rechargez la demande." };
     const { error: eventError } = await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: "statut changé", detail: `${before.status} → ${data.status}` });
+    await notifyMember(admin, data.id, "statut", (title) => statusNotice(title, data.status));
     if (eventError) return { ok: false as const, reason: "Le statut a changé, mais son historique n’a pas pu être enregistré. Rechargez la demande." };
     return { ok: true as const };
   });
@@ -288,6 +289,7 @@ export const setRequestReply = createServerFn({ method: "POST" })
     const { data: row, error } = await admin.from("requests").update(replyUpdate(data.reply)).eq("id", data.id).select("id").maybeSingle();
     if (error || !row) return { ok: false as const, reason: "La réponse n’a pas pu être enregistrée." };
     const { error: eventError } = await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: data.reply.trim() ? "réponse publiée" : "réponse retirée", detail: null });
+    if (data.reply.trim()) await notifyMember(admin, data.id, "réponse", (title) => `Votre conciergerie a répondu à votre demande « ${title} ».`);
     if (eventError) return { ok: false as const, reason: "La réponse a été enregistrée, mais son historique n’a pas pu être enregistré. Rechargez la demande." };
     return { ok: true as const };
   });
@@ -822,3 +824,28 @@ export const saveMemberPreferences = createServerFn({ method: "POST" })
     if (error) return { ok: false as const, reason: "Les préférences n’ont pas pu être enregistrées." };
     return { ok: true as const };
   });
+
+// ---- Lot 4.3 : notifications au membre, dans l'application ----
+
+function statusNotice(title: string, status: string): string {
+  switch (status) {
+    case "En cours": return `Votre demande « ${title} » est prise en charge.`;
+    case "Confirmée": return `Votre demande « ${title} » est confirmée.`;
+    case "Terminée": return `Votre demande « ${title} » est terminée.`;
+    case "Annulée": return `Votre demande « ${title} » a été annulée.`;
+    default: return `Votre demande « ${title} » est de nouveau en attente de prise en charge.`;
+  }
+}
+
+/** Crée une notification pour le membre, s'il a laissé « Mes demandes » activé. Ne bloque jamais l'action de l'équipe. */
+async function notifyMember(admin: any, requestId: string, kind: string, body: (title: string) => string) {
+  try {
+    const { data: request } = await admin.from("requests").select("user_id, title").eq("id", requestId).maybeSingle();
+    if (!request) return;
+    const { data: profile } = await admin.from("profiles").select("notify_requests").eq("id", request.user_id).maybeSingle();
+    if (!profile?.notify_requests) return;
+    await admin.from("member_notifications").insert({ user_id: request.user_id, request_id: requestId, kind, body: body(request.title) });
+  } catch (err) {
+    console.error("[notifyMember] notification non créée", err);
+  }
+}

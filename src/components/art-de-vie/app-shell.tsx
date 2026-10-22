@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import logoBeige from "@/assets/logo-beige.svg";
 import logoViolet from "@/assets/logo-violet.svg";
 import { initials } from "@/data/art-de-vie";
-import { profileQuery } from "@/lib/adv-queries";
+import { profileQuery, unreadRequestNotificationsQuery } from "@/lib/adv-queries";
 import { BookmarkIcon, HomeIcon, InboxIcon, UserIcon } from "./icons";
 import { PillAction, Title } from "./v3";
 
@@ -23,6 +23,7 @@ const nav = [
 
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { data: unread = [] } = useQuery(unreadRequestNotificationsQuery);
   return (
     <nav
       aria-label="Navigation principale"
@@ -34,11 +35,12 @@ export function BottomNav() {
           <Link
             key={to}
             to={to}
-            aria-label={label}
+            aria-label={to === "/demandes" && unread.length > 0 ? `${label}, nouveautés` : label}
             aria-current={active ? "page" : undefined}
-            className={`flex size-12 items-center justify-center rounded-full transition-colors active:scale-95 ${index > 1 ? (index === 2 ? "col-start-4" : "col-start-5") : ""} ${active ? "bg-foreground/16" : "hover:bg-foreground/10"}`}
+            className={`relative flex size-12 items-center justify-center rounded-full transition-colors active:scale-95 ${index > 1 ? (index === 2 ? "col-start-4" : "col-start-5") : ""} ${active ? "bg-foreground/16" : "hover:bg-foreground/10"}`}
           >
             <Icon filled={active} aria-hidden="true" />
+            {to === "/demandes" && unread.length > 0 && <span aria-hidden="true" className="absolute right-2.5 top-2.5 size-2 rounded-full bg-foreground" />}
           </Link>
         );
       })}
@@ -73,6 +75,7 @@ export function AppShell({
 
 export function TopBar({ title, action }: { title?: string; action?: ReactNode }) {
   const { data: profile } = useQuery(profileQuery);
+  const { data: unread = [] } = useQuery(unreadRequestNotificationsQuery);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
     <>
@@ -102,8 +105,14 @@ export function TopBar({ title, action }: { title?: string; action?: ReactNode }
               variant="ghost"
               className={`lg:h-11 lg:px-4 lg:text-[15px] lg:text-foreground lg:hover:bg-foreground/10 ${active ? "lg:bg-foreground/16 lg:font-medium" : "lg:font-normal"}`}
             >
-              <Link to={to} aria-current={active ? "page" : undefined}>
+              <Link to={to} aria-current={active ? "page" : undefined} className="relative">
                 {to === "/demandes" ? "Mes demandes" : label}
+                {to === "/demandes" && unread.length > 0 && (
+                  <>
+                    <span aria-hidden="true" className="absolute right-2 top-2 size-1.5 rounded-full bg-foreground" />
+                    <span className="sr-only">, nouveautés</span>
+                  </>
+                )}
               </Link>
             </Button>
           );

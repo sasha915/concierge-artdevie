@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft } from "lucide-react";
 import { AppShell, TopBar } from "@/components/art-de-vie/app-shell";
 import { EmptyState, Photo, StatusBadge } from "@/components/art-de-vie/cards";
@@ -7,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { PillAction, StatusTimeline, Title } from "@/components/art-de-vie/v3";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, imageFor } from "@/data/art-de-vie";
-import { requestsQuery } from "@/lib/adv-queries";
+import { requestsQuery, unreadRequestNotificationsQuery } from "@/lib/adv-queries";
 
 export const Route = createFileRoute("/_authenticated/demandes/$requestId")({
   head: () => ({
@@ -27,6 +29,16 @@ function Page() {
   const { requestId } = Route.useParams();
   const { data: requests = [], isLoading } = useQuery(requestsQuery);
   const item = requests.find((r) => r.id === requestId);
+  const queryClient = useQueryClient();
+  const { data: unread = [] } = useQuery(unreadRequestNotificationsQuery);
+  const hasUnread = unread.includes(requestId);
+  useEffect(() => {
+    if (!hasUnread) return;
+    // Ouvrir la demande vaut lecture de ses notifications.
+    void supabase.rpc("mark_request_notifications_read", { _request_id: requestId }).then(() =>
+      queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+    );
+  }, [hasUnread, requestId, queryClient]);
   if (!item)
     return (
       <AppShell nav={false}>

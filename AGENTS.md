@@ -13,3 +13,4 @@
 - Team presentation is scoped to AdminShell and admin routes; use team-theme tokens and existing member queries so member screens and access controls remain unchanged.
 - Request history and reply templates are accessed only through authenticated team server functions; template writes require admin, and client-safe history/filter/insertion rules are isolated for tests without touching real requests.
 - Request billing (lot 4.2): amounts and commissions follow src/lib/billing-rules.ts; invoice numbers come only from public.next_invoice_number(); request amounts are team-only and invoices are created by admins through server functions.
+- Member notifications (lot 4.3) are in-app only: team server functions insert into member_notifications when profiles.notify_requests is true; members read their own rows and mark them read through mark_request_notifications_read.

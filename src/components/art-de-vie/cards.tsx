@@ -1,4 +1,6 @@
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { unreadRequestNotificationsQuery } from "@/lib/adv-queries";
 import { MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -26,6 +28,16 @@ export function StatusBadge({ status, onPhoto = false }: { status: RequestStatus
   );
 }
 
+/** Pastille discrète « Nouveau » : une notification non lue concerne cette demande. */
+function NewMark({ onPhoto = false }: { onPhoto?: boolean }) {
+  return (
+    <span className={cn("inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium", onPhoto ? "border border-foreground/22 bg-primary-deep text-foreground" : "bg-primary text-background")}>
+      <span aria-hidden="true" className={cn("size-1.5 rounded-full", onPhoto ? "bg-foreground" : "bg-background")} />
+      Nouveau
+    </span>
+  );
+}
+
 export function RequestCard({
   item,
   featured = false,
@@ -35,6 +47,8 @@ export function RequestCard({
   featured?: boolean;
   desktop?: boolean;
 }) {
+  const { data: unread = [] } = useQuery(unreadRequestNotificationsQuery);
+  const isNew = unread.includes(item.id);
   if (featured && item.status !== "Annulée")
     return (
       <Link
@@ -65,7 +79,7 @@ export function RequestCard({
         >
           <div className="flex items-center justify-between gap-3">
             <p className="text-[13px]">{formatRequestDate(item)}</p>
-            <StatusBadge status={item.status} onPhoto />
+            <span className="flex shrink-0 items-center gap-2">{isNew && <NewMark onPhoto />}<StatusBadge status={item.status} onPhoto /></span>
           </div>
           <h2 className={cn("v3-card-title mt-5 text-[29px]", desktop && "lg:text-[40px]")}>{item.title}</h2>
           <div className="mt-5">
@@ -99,7 +113,7 @@ export function RequestCard({
         <div className="min-w-0">
           <div className="flex items-start justify-between gap-2">
             <span className="eyebrow text-primary">{item.category}</span>
-            <StatusBadge status={item.status} />
+            <span className="flex shrink-0 flex-wrap items-center justify-end gap-2">{isNew && <NewMark />}<StatusBadge status={item.status} /></span>
           </div>
           <h2 className={cn("v3-card-title mt-4 text-[22px]", desktop && "lg:text-[26px]")}>{item.title}</h2>
           <p className="mt-2 text-[13px] text-muted-foreground">{formatDate(item.scheduled_date)}</p>

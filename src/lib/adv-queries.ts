@@ -72,3 +72,14 @@ export const referralsQuery = queryOptions({
     return (data ?? []) as Referral[];
   },
 });
+
+/** Demandes ayant au moins une notification non lue (changement de statut, réponse publiée). */
+export const unreadRequestNotificationsQuery = queryOptions({
+  queryKey: ["notifications", "unread"],
+  queryFn: async (): Promise<string[]> => {
+    const { data, error } = await supabase.from("member_notifications").select("request_id").is("read_at", null);
+    if (error) return [];
+    return [...new Set((data ?? []).flatMap((n) => (n.request_id ? [n.request_id] : [])))];
+  },
+  staleTime: 30_000,
+});
