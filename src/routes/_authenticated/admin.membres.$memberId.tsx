@@ -11,7 +11,7 @@ import { EmptyState, StatusBadge } from "@/components/art-de-vie/cards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatShortDate, formatMonth, imageFor, initials } from "@/data/art-de-vie";
 import { memberDetailQuery, memberParrainQuery, memberPaymentsQuery, memberPreferencesQuery, memberReviewsQuery } from "@/lib/admin-queries";
-import { getMemberStatement, saveMemberPreferences, sendMemberInvite, setMemberDisabled, updateMember, type MemberAnswers as Answers } from "@/lib/admin.functions";
+import { getMemberStatement, saveMemberPreferences, setMemberLanguage, sendMemberInvite, setMemberDisabled, updateMember, type MemberAnswers as Answers } from "@/lib/admin.functions";
 import { monthLabel, shiftMonth, WELCOME_STEPS } from "@/lib/member-rules";
 import { Textarea } from "@/components/ui/textarea";
 import { Field, PlanSelect } from "./admin.membres.index";
@@ -120,6 +120,7 @@ function Page() {
         <Button variant="outline" size="sm" onClick={toggleDisabled}>{profile.disabled_at ? <UserPlus /> : <UserMinus />}{profile.disabled_at ? "Réactiver" : "Désactiver"}</Button>
       </div>}
 
+      <LanguageField memberId={profile.id} language={(profile as { language?: string }).language === "en" ? "en" : "fr"} />
       <StatementButton memberId={profile.id} />
 
       {notice && <p className="mt-4 rounded-2xl bg-primary/10 p-4 text-xs leading-5 text-primary">{notice}</p>}
@@ -297,7 +298,7 @@ function StatementButton({ memberId }: { memberId: string }) {
     try {
       const data = await fetchStatement({ data: { id: memberId, month } });
       const { downloadStatement } = await import("@/lib/statement-pdf");
-      await downloadStatement({ month, memberName: data.member_name, memberNumber: data.member_number, lines: data.lines });
+      await downloadStatement({ lang: data.language, month, memberName: data.member_name, memberNumber: data.member_number, lines: data.lines });
     } catch {
       toast.error("Le relevé n’a pas pu être préparé.");
     } finally {
@@ -311,5 +312,35 @@ function StatementButton({ memberId }: { memberId: string }) {
       {options.map((m) => <option key={m} value={m} className="text-black">{monthLabel(m)}</option>)}
     </select>
     <Button type="button" variant="soft" size="sm" disabled={busy} onClick={() => void download()}><Download />Relevé du mois</Button>
+  </div>;
+}
+
+/** Lot 6.5 : langue de l'espace membre, visible et modifiable par l'équipe. */
+function LanguageField({ memberId, language }: { memberId: string; language: "fr" | "en" }) {
+  const queryClient = useQueryClient();
+  const save = useServerFn(setMemberLanguage);
+  const [busy, setBusy] = useState(false);
+
+  async function change(next: "fr" | "en") {
+    if (next === language) return;
+    setBusy(true);
+    try {
+      const r = await save({ data: { id: memberId, language: next } });
+      if (!r.ok) { toast.error(r.reason); return; }
+      toast.success("La langue du membre a été enregistrée.");
+      await queryClient.invalidateQueries({ queryKey: ["admin", "member", memberId] });
+    } catch {
+      toast.error("La langue n’a pas pu être enregistrée.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return <div className="mt-4 flex flex-wrap items-center gap-3">
+    <label htmlFor="member-language" className="eyebrow team-mention">Langue de l’application</label>
+    <select id="member-language" value={language} disabled={busy} onChange={(e) => void change(e.target.value as "fr" | "en")} className="h-11 rounded-full border border-border bg-transparent px-4 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <option value="fr" className="text-black">Français</option>
+      <option value="en" className="text-black">English</option>
+    </select>
   </div>;
 }

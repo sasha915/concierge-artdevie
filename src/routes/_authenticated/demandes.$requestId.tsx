@@ -16,16 +16,17 @@ import { EmptyState, Photo, StatusBadge } from "@/components/art-de-vie/cards";
 import { Button } from "@/components/ui/button";
 import { PillAction, StatusTimeline, Title } from "@/components/art-de-vie/v3";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatDate, imageFor } from "@/data/art-de-vie";
+import { formatDate, imageFor, formatTime } from "@/data/art-de-vie";
 import { requestChangesMemberQuery, requestFilesMemberQuery, requestProposalMemberQuery, requestMessagesQuery, requestReviewMemberQuery, requestsQuery, unreadRequestNotificationsQuery } from "@/lib/adv-queries";
+import { getLang, locale, t } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/demandes/$requestId")({
   head: () => ({
     meta: [
-      { title: "Détail de la demande — Art de Vie" },
-      { name: "description", content: "Détails et suivi de votre demande." },
-      { property: "og:title", content: "Détail de la demande — Art de Vie" },
-      { property: "og:description", content: "Détails et suivi de votre demande." },
+      { title: t("Détail de la demande — Art de Vie") },
+      { name: "description", content: t("Détails et suivi de votre demande.") },
+      { property: "og:title", content: t("Détail de la demande — Art de Vie") },
+      { property: "og:description", content: t("Détails et suivi de votre demande.") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -54,7 +55,7 @@ function Page() {
           {isLoading ? (
             <Skeleton className="h-[452px] rounded-[28px] bg-primary/10" />
           ) : (
-            <EmptyState>Cette demande est introuvable.</EmptyState>
+            <EmptyState>{t("Cette demande est introuvable.")}</EmptyState>
           )}
         </div>
       </AppShell>
@@ -71,7 +72,7 @@ function Page() {
           />
           <div className="absolute inset-x-4 top-4 flex items-center justify-between lg:hidden">
             <Button asChild variant="ghost" size="icon" className="dark-glass text-foreground hover:bg-primary-deep/70">
-              <Link to="/demandes" aria-label="Retour">
+              <Link to="/demandes" aria-label={t("Retour")}>
                 <ChevronLeft />
               </Link>
             </Button>
@@ -87,7 +88,7 @@ function Page() {
               <Button asChild variant="ghost" className="lg:dark-glass lg:h-11 lg:text-foreground">
                 <Link to="/demandes">
                   <ChevronLeft />
-                  Mes demandes
+                  {t("Mes demandes")}
                 </Link>
               </Button>
               <span className="lg:dark-glass lg:rounded-full lg:px-4 lg:py-3 lg:text-[12px]">{item.category}</span>
@@ -102,11 +103,11 @@ function Page() {
             <div className="lg:mt-8 lg:flex lg:flex-wrap lg:items-center lg:justify-between lg:gap-6 lg:border-t lg:border-foreground/22 lg:pt-6">
               <p className="mt-3 text-[13px] lg:mt-0 lg:text-[18px]">
                 {formatDate(item.scheduled_date)}
-                {item.scheduled_time ? ` · ${item.scheduled_time.slice(0, 5).replace(":", " h ")}` : ""}
+                {item.scheduled_time ? ` · ${formatTime(item.scheduled_time)}` : ""}
               </p>
               <PillAction asChild light className="hidden lg:inline-flex">
                 <Link to="/demandes/nouvelle" search={{ offer: undefined }}>
-                  Faire une nouvelle demande
+                  {t("Faire une nouvelle demande")}
                 </Link>
               </PillAction>
             </div>
@@ -114,7 +115,7 @@ function Page() {
         </section>
         <section className="mt-3 rounded-[28px] bg-primary-deep p-5 text-foreground lg:dark-glass lg:absolute lg:right-[clamp(20px,3.9vw,56px)] lg:top-[160px] lg:mt-0 lg:w-[420px] lg:p-6">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="eyebrow text-foreground">Suivi</h2>
+            <h2 className="eyebrow text-foreground">{t("Suivi")}</h2>
             <StatusBadge status={item.status} onPhoto />
           </div>
           <div className="mt-5">
@@ -125,21 +126,21 @@ function Page() {
         <Exchanges requestId={item.id} description={item.description} cancelled={item.status === "Annulée"} />
         <Documents requestId={item.id} />
         <section className="mt-8 px-2 text-primary lg:col-span-5 lg:mr-[clamp(20px,3.9vw,56px)] lg:mt-16 lg:px-0">
-          <h2 className="eyebrow text-primary">Détails</h2>
+          <h2 className="eyebrow text-primary">{t("Détails")}</h2>
           <dl className="mt-4 divide-y divide-primary/25 border-y border-primary/25 text-[14px]">
-            <Detail label="Date" value={formatDate(item.scheduled_date)} />
-            <Detail label="Heure" value={item.scheduled_time?.slice(0, 5).replace(":", " h ") ?? "À définir"} />
+            <Detail label={t("Date")} value={formatDate(item.scheduled_date)} />
+            <Detail label={t("Heure")} value={item.scheduled_time ? formatTime(item.scheduled_time) : t("À définir")} />
             {item.guests && (
-              <Detail label={item.category === "Tables" ? "Couverts" : "Personnes"} value={String(item.guests)} />
+              <Detail label={item.category === "Tables" ? t("Couverts") : t("Personnes")} value={String(item.guests)} />
             )}
-            <Detail label="Concierge" value={item.concierge} />
+            <Detail label={t("Concierge")} value={item.concierge} />
           </dl>
         </section>
         <RequestActions item={item} />
         <div className="mt-6 lg:hidden">
           <PillAction asChild className="w-full">
             <Link to="/demandes/nouvelle" search={{ offer: undefined }}>
-              Faire une nouvelle demande
+              {t("Faire une nouvelle demande")}
             </Link>
           </PillAction>
         </div>
@@ -176,11 +177,11 @@ function Exchanges({ requestId, description, cancelled }: { requestId: string; d
     setBusy(true);
     try {
       const res = await send({ data: { requestId, body: text } });
-      if (!res.ok) { toast.error(res.reason); return; }
+      if (!res.ok) { toast.error(t(res.reason)); return; }
       setText("");
       await queryClient.invalidateQueries({ queryKey: ["requests", requestId, "messages"] });
     } catch {
-      toast.error("Votre message n’a pas pu être envoyé.");
+      toast.error(t("Votre message n’a pas pu être envoyé."));
     } finally {
       setBusy(false);
     }
@@ -188,16 +189,16 @@ function Exchanges({ requestId, description, cancelled }: { requestId: string; d
 
   return (
     <section aria-labelledby="exchanges-title" className="mt-3 rounded-[28px] bg-primary/10 p-5 text-primary lg:col-span-7 lg:ml-[clamp(20px,3.9vw,56px)] lg:mt-16 lg:self-start lg:p-8">
-      <h2 id="exchanges-title" className="eyebrow text-primary">Échanges</h2>
+      <h2 id="exchanges-title" className="eyebrow text-primary">{t("Échanges")}</h2>
       <ol className="mt-5 grid gap-3" aria-live="polite">
         <li className="ml-auto max-w-[88%] lg:max-w-[78%]">
           <p className="whitespace-pre-line rounded-[18px] bg-card p-4 text-[14px] leading-6 lg:text-[16px] lg:leading-7">
-            {description || "Aucune précision complémentaire n’a été indiquée."}
+            {description || t("Aucune précision complémentaire n’a été indiquée.")}
           </p>
         </li>
         {!isLoading && !hasTeamMessage && (
           <li className="mr-auto max-w-[88%] lg:max-w-[78%]">
-            <p className="rounded-[18px] bg-primary p-4 text-[14px] text-background lg:text-[16px]">Votre demande a bien été transmise.</p>
+            <p className="rounded-[18px] bg-primary p-4 text-[14px] text-background lg:text-[16px]">{t("Votre demande a bien été transmise.")}</p>
           </li>
         )}
         {messages.map((m) => {
@@ -205,16 +206,16 @@ function Exchanges({ requestId, description, cancelled }: { requestId: string; d
           return (
             <li key={m.id} className={mine ? "ml-auto max-w-[88%] text-right lg:max-w-[78%]" : "mr-auto max-w-[88%] lg:max-w-[78%]"}>
               <p className={`whitespace-pre-line break-words rounded-[18px] p-4 text-left text-[14px] leading-6 lg:text-[16px] lg:leading-7 ${mine ? "bg-card" : "bg-primary text-background"}`}>{m.body}</p>
-              <p className="mt-1 px-1 text-[11px] text-muted-foreground">{mine ? "Vous" : "Votre conciergerie"} · {stamp(m.created_at)}</p>
+              <p className="mt-1 px-1 text-[11px] text-muted-foreground">{mine ? t("Vous") : t("Votre conciergerie")} · {stamp(m.created_at)}</p>
             </li>
           );
         })}
       </ol>
       {!cancelled && (
         <form onSubmit={submit} className="mt-5 flex items-end gap-2">
-          <label htmlFor="member-reply" className="sr-only">Répondre à votre conciergerie</label>
-          <Textarea id="member-reply" value={text} onChange={(e) => setText(e.target.value)} maxLength={4000} rows={1} placeholder="Répondre…" className="min-h-12 flex-1 resize-none rounded-[22px] bg-card py-3" />
-          <Button type="submit" size="icon" disabled={busy || !text.trim()} aria-label="Envoyer" className="size-12 shrink-0 rounded-full">
+          <label htmlFor="member-reply" className="sr-only">{t("Répondre à votre conciergerie")}</label>
+          <Textarea id="member-reply" value={text} onChange={(e) => setText(e.target.value)} maxLength={4000} rows={1} placeholder={t("Répondre…")} className="min-h-12 flex-1 resize-none rounded-[22px] bg-card py-3" />
+          <Button type="submit" size="icon" disabled={busy || !text.trim()} aria-label={t("Envoyer")} className="size-12 shrink-0 rounded-full">
             <ArrowUp className="size-5" />
           </Button>
         </form>
@@ -234,10 +235,10 @@ function Documents({ requestId }: { requestId: string }) {
     setBusy(id);
     try {
       const res = await fileUrl({ data: { id } });
-      if (!res.ok) { toast.error(res.reason); return; }
+      if (!res.ok) { toast.error(t(res.reason)); return; }
       window.location.href = res.url;
     } catch {
-      toast.error("Le téléchargement n’a pas pu être préparé.");
+      toast.error(t("Le téléchargement n’a pas pu être préparé."));
     } finally {
       setBusy(null);
     }
@@ -245,16 +246,16 @@ function Documents({ requestId }: { requestId: string }) {
 
   return (
     <section aria-labelledby="documents-title" className="mt-3 rounded-[28px] bg-primary/10 p-5 text-primary lg:col-span-7 lg:col-start-1 lg:ml-[clamp(20px,3.9vw,56px)] lg:p-8">
-      <h2 id="documents-title" className="eyebrow text-primary">Documents</h2>
+      <h2 id="documents-title" className="eyebrow text-primary">{t("Documents")}</h2>
       <ul className="mt-4 divide-y divide-primary/25">
         {files.map((f) => (
           <li key={f.id} className="flex items-center gap-3 py-3">
             <FileText className="size-5 shrink-0" aria-hidden="true" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[14px] font-medium lg:text-[16px]">{f.name}</p>
-              <p className="mt-0.5 text-[12px] text-muted-foreground">{FILE_TYPES[f.mime]?.label ?? "Fichier"} · {fileSizeLabel(f.size)} · {new Date(f.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</p>
+              <p className="mt-0.5 text-[12px] text-muted-foreground">{t(FILE_TYPES[f.mime]?.label ?? "Fichier")} · {fileSizeLabel(f.size, getLang())} · {new Date(f.created_at).toLocaleDateString(locale(), { day: "numeric", month: "long" })}</p>
             </div>
-            <Button type="button" variant="icon" size="icon" disabled={busy === f.id} onClick={() => download(f.id)} aria-label={`Télécharger ${f.name}`}>
+            <Button type="button" variant="icon" size="icon" disabled={busy === f.id} onClick={() => download(f.id)} aria-label={t("Télécharger {name}", { name: f.name })}>
               <Download />
             </Button>
           </li>
@@ -275,7 +276,7 @@ function RequestActions({ item }: { item: RequestItem }) {
 
   function downloadIcs() {
     if (!item.scheduled_date) return;
-    const blob = new Blob([buildIcs({ id: item.id, title: item.title, category: item.category, description: item.description, scheduled_date: item.scheduled_date, scheduled_time: item.scheduled_time })], { type: "text/calendar;charset=utf-8" });
+    const blob = new Blob([buildIcs({ id: item.id, title: item.title, category: t(item.category), description: item.description, scheduled_date: item.scheduled_date, scheduled_time: item.scheduled_time })], { type: "text/calendar;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -292,33 +293,35 @@ function RequestActions({ item }: { item: RequestItem }) {
     <section className="mt-3 grid gap-3 lg:col-span-5 lg:col-start-8 lg:mr-[clamp(20px,3.9vw,56px)] lg:self-start">
       {pending && (
         <p role="status" className="rounded-[22px] bg-primary/10 p-4 text-[13px] leading-5 text-primary">
-          Modification demandée · {changeKindLabel(pending.kind)}. Votre conciergerie vous confirme la modification ; d’ici là, votre demande reste telle qu’elle est.
+          {t("Modification demandée · {type}. Votre conciergerie vous confirme la modification ; d’ici là, votre demande reste telle qu’elle est.", { type: t(changeKindLabel(pending.kind)) })}
         </p>
       )}
       {!pending && lastDecided && (
         <p className="rounded-[22px] bg-primary/10 p-4 text-[13px] leading-5 text-primary">
-          Votre dernière demande de modification ({changeKindLabel(lastDecided.kind).toLowerCase()}) a été {lastDecided.status === "acceptée" ? "acceptée" : "examinée et n’a pas pu être retenue"}.
+          {lastDecided.status === "acceptée"
+            ? t("Votre dernière demande de modification ({type}) a été acceptée.", { type: t(changeKindLabel(lastDecided.kind)).toLowerCase() })
+            : t("Votre dernière demande de modification ({type}) a été examinée et n’a pas pu être retenue.", { type: t(changeKindLabel(lastDecided.kind)).toLowerCase() })}
         </p>
       )}
       {showChange && !pending && (
         <Button asChild variant="soft" size="lg" className="w-full justify-start">
           <Link to="/demandes/$requestId/modifier" params={{ requestId: item.id }}>
             <PencilLine />
-            Demander une modification
+            {t("Demander une modification")}
           </Link>
         </Button>
       )}
       {showCalendar && (
         <Button type="button" variant="soft" size="lg" className="w-full justify-start" onClick={downloadIcs}>
           <CalendarPlus />
-          Ajouter à mon calendrier
+          {t("Ajouter à mon calendrier")}
         </Button>
       )}
       {showRenew && (
         <Button asChild variant="soft" size="lg" className="w-full justify-start">
           <Link to="/demandes/nouvelle" search={{ renew: item.id }}>
             <RotateCcw />
-            Renouveler cette demande
+            {t("Renouveler cette demande")}
           </Link>
         </Button>
       )}
@@ -339,10 +342,10 @@ function ReviewBlock({ requestId }: { requestId: string }) {
   if (review)
     return (
       <div className="rounded-[22px] bg-primary/10 p-5 text-primary">
-        <h2 className="eyebrow text-primary">Votre avis</h2>
-        <p className="mt-3 font-display text-[24px] italic">{review.rating}</p>
+        <h2 className="eyebrow text-primary">{t("Votre avis")}</h2>
+        <p className="mt-3 font-display text-[24px] italic">{t(review.rating)}</p>
         {review.comment && <p className="mt-2 whitespace-pre-line text-[14px] leading-6">{review.comment}</p>}
-        <p className="mt-3 text-[12px] text-muted-foreground">Merci, votre avis a été transmis à votre conciergerie.</p>
+        <p className="mt-3 text-[12px] text-muted-foreground">{t("Merci, votre avis a été transmis à votre conciergerie.")}</p>
       </div>
     );
 
@@ -352,10 +355,10 @@ function ReviewBlock({ requestId }: { requestId: string }) {
     setBusy(true);
     try {
       const res = await send({ data: { requestId, rating, comment } });
-      if (!res.ok) { toast.error(res.reason); return; }
+      if (!res.ok) { toast.error(t(res.reason)); return; }
       await queryClient.invalidateQueries({ queryKey: ["requests", requestId, "review"] });
     } catch {
-      toast.error("Votre avis n’a pas pu être enregistré.");
+      toast.error(t("Votre avis n’a pas pu être enregistré."));
     } finally {
       setBusy(false);
     }
@@ -363,18 +366,18 @@ function ReviewBlock({ requestId }: { requestId: string }) {
 
   return (
     <form onSubmit={submit} className="rounded-[22px] bg-primary/10 p-5 text-primary">
-      <h2 className="eyebrow text-primary">Votre avis</h2>
-      <div role="radiogroup" aria-label="Votre avis sur la prestation" className="mt-4 flex flex-wrap gap-2">
+      <h2 className="eyebrow text-primary">{t("Votre avis")}</h2>
+      <div role="radiogroup" aria-label={t("Votre avis sur la prestation")} className="mt-4 flex flex-wrap gap-2">
         {REVIEW_RATINGS.map((r) => (
           <button key={r} type="button" role="radio" aria-checked={rating === r} onClick={() => setRating(r)}
             className={`h-11 rounded-full px-5 text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${rating === r ? "bg-primary text-background" : "border border-primary/25 hover:bg-primary/10"}`}>
-            {r}
+            {t(r)}
           </button>
         ))}
       </div>
-      <label htmlFor="review-comment" className="mt-4 block text-[13px] text-muted-foreground">Un mot (facultatif)</label>
+      <label htmlFor="review-comment" className="mt-4 block text-[13px] text-muted-foreground">{t("Un mot (facultatif)")}</label>
       <Textarea id="review-comment" value={comment} onChange={(e) => setComment(e.target.value)} maxLength={1000} rows={2} className="mt-2 min-h-[64px] bg-card" />
-      <Button type="submit" disabled={busy || !rating} className="mt-4 w-full">Envoyer mon avis</Button>
+      <Button type="submit" disabled={busy || !rating} className="mt-4 w-full">{t("Envoyer mon avis")}</Button>
     </form>
   );
 }
@@ -386,8 +389,8 @@ function ProposalBanner({ requestId }: { requestId: string }) {
   return (
     <Link to="/demandes/$requestId/proposition" params={{ requestId }} className="mt-3 flex items-center justify-between gap-4 rounded-[28px] bg-primary p-5 text-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:col-span-7 lg:col-start-1 lg:ml-[clamp(20px,3.9vw,56px)] lg:mt-16 lg:p-8">
       <span>
-        <span className="eyebrow block text-background/80">Votre conciergerie vous propose</span>
-        <span className="mt-2 block text-[20px] lg:text-[26px]">{proposalBanner(proposal.options.length)}</span>
+        <span className="eyebrow block text-background/80">{t("Votre conciergerie vous propose")}</span>
+        <span className="mt-2 block text-[20px] lg:text-[26px]">{t(proposalBanner(proposal.options.length))}</span>
       </span>
       <ArrowUp className="size-5 rotate-45" aria-hidden="true" />
     </Link>

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { imageFor } from "@/data/art-de-vie";
 import { supabase } from "@/integrations/supabase/client";
+import { t } from "@/lib/i18n";
 
 let greetingInitialized = false;
 
@@ -15,10 +16,10 @@ export const Route = createFileRoute("/connexion")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Connexion — Art de Vie" },
-      { name: "description", content: "Accédez à votre espace membre Art de Vie." },
-      { property: "og:title", content: "Connexion — Art de Vie" },
-      { property: "og:description", content: "Accédez à votre espace membre Art de Vie." },
+      { title: t("Connexion — Art de Vie") },
+      { name: "description", content: t("Accédez à votre espace membre Art de Vie.") },
+      { property: "og:title", content: t("Connexion — Art de Vie") },
+      { property: "og:description", content: t("Accédez à votre espace membre Art de Vie.") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -53,7 +54,7 @@ function Page() {
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (signInError) {
-      setError("Email ou mot de passe incorrect.");
+      setError(t("Email ou mot de passe incorrect."));
       return;
     }
     navigate({ to: "/", replace: true });
@@ -61,22 +62,22 @@ function Page() {
 
   async function reset() {
     if (!email) {
-      setError("Indiquez votre email pour recevoir un lien.");
+      setError(t("Indiquez votre email pour recevoir un lien."));
       return;
     }
     setError(null);
     await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
-    setNotice("Un lien de réinitialisation vient de vous être envoyé.");
+    setNotice(t("Un lien de réinitialisation vient de vous être envoyé."));
   }
 
-  const parts = greeting.split(" ");
+  const parts = t(greeting).split(" ");
   const italic = `${parts.at(-1) ?? greeting}.`;
   const start = parts.slice(0, -1).join(" ");
   return (
     <main className="relative min-h-[100svh] overflow-hidden bg-primary-deep text-foreground">
       <Photo
         src={imageFor("entree-de-nuit")}
-        alt="Entrée Art de Vie de nuit"
+        alt={t("Entrée Art de Vie de nuit")}
         hero
         eager
         className="absolute inset-0 h-full w-full"
@@ -85,7 +86,7 @@ function Page() {
         <Logo inverse className="h-[24px] w-auto self-center lg:self-start" />
         <div className="my-auto grid items-end gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_440px] lg:gap-12">
           <div className="lg:min-w-0">
-            <p className="eyebrow text-foreground/80">Espace membre</p>
+            <p className="eyebrow text-foreground/80">{t("Espace membre")}</p>
             <Title
               italic={italic}
               className={`mt-5 text-[58px] lg:leading-[0.96] lg:[&_em]:whitespace-nowrap lg:text-[clamp(64px,9.2vw,132px)]`}
@@ -94,13 +95,13 @@ function Page() {
               {start ? " " : ""}
             </Title>
             <p className="mt-5 max-w-sm text-[14px] leading-5 lg:text-[18px] lg:leading-7">
-              Connectez-vous pour accéder à votre espace membre.
+              {t("Connectez-vous pour accéder à votre espace membre.")}
             </p>
           </div>
           <form className="dark-glass rounded-card p-5 sm:p-7" onSubmit={submit}>
             <div>
               <Label htmlFor="email" className="eyebrow text-foreground/80">
-                Email
+                {t("Email")}
               </Label>
               <Input
                 id="email"
@@ -108,13 +109,13 @@ function Page() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="vous@exemple.fr"
+                placeholder={t("vous@exemple.fr")}
                 className="mt-2"
               />
             </div>
             <div className="mt-5">
               <Label htmlFor="password" className="eyebrow text-foreground/80">
-                Mot de passe
+                {t("Mot de passe")}
               </Label>
               <Input
                 id="password"
@@ -135,20 +136,20 @@ function Page() {
                 onClick={reset}
                 className="text-foreground hover:bg-foreground/10 hover:text-foreground"
               >
-                Mot de passe oublié ?
+                {t("Mot de passe oublié ?")}
               </Button>
             </div>
             {error ? <p className="mt-3 rounded-[16px] bg-foreground/10 p-4 text-xs leading-5">{error}</p> : null}
             {notice ? <p className="mt-3 rounded-[16px] bg-foreground/10 p-4 text-xs leading-5">{notice}</p> : null}
             <PillAction type="submit" light className="mt-5 w-full" disabled={busy}>
-              {busy ? "Connexion en cours" : "Se connecter"}
+              {busy ? t("Connexion en cours") : t("Se connecter")}
             </PillAction>
           </form>
         </div>
         <p className="text-center text-[13px] leading-5 text-foreground/80 lg:text-left">
-          Pas encore membre ?{" "}
+          {t("Pas encore membre ?")}{" "}
           <span className="font-medium text-foreground">
-            Demander une invitation : 58 avenue de Wagram, 75017 Paris
+            {t("Demander une invitation : 58 avenue de Wagram, 75017 Paris")}
           </span>
         </p>
       </div>

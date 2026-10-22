@@ -4,9 +4,10 @@ import { unreadRequestNotificationsQuery } from "@/lib/adv-queries";
 import { MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { formatDate, imageFor, offerImage, type Offer, type RequestItem, type RequestStatus } from "@/data/art-de-vie";
+import { formatDate, formatTime, imageFor, offerImage, type Offer, type RequestItem, type RequestStatus } from "@/data/art-de-vie";
 import logoBeige from "@/assets/logo-beige.svg";
 import { ArrowCircle, StatusTimeline } from "./v3";
+import { t } from "@/lib/i18n";
 
 const statusClass: Record<RequestStatus, string> = {
   Nouvelle: "bg-primary/10 text-primary",
@@ -23,7 +24,7 @@ export function StatusBadge({ status, onPhoto = false }: { status: RequestStatus
         onPhoto ? "border border-foreground/22 bg-primary-deep text-foreground" : statusClass[status],
       )}
     >
-      {status}
+      {t(status)}
     </span>
   );
 }
@@ -33,7 +34,7 @@ function NewMark({ onPhoto = false }: { onPhoto?: boolean }) {
   return (
     <span className={cn("inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium", onPhoto ? "border border-foreground/22 bg-primary-deep text-foreground" : "bg-primary text-background")}>
       <span aria-hidden="true" className={cn("size-1.5 rounded-full", onPhoto ? "bg-foreground" : "bg-background")} />
-      Nouveau
+      {t("Nouveau")}
     </span>
   );
 }
@@ -67,7 +68,7 @@ export function RequestCard({
         />
         <div className="absolute inset-x-4 top-4 flex items-start justify-between gap-3">
           <span className="dark-glass rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.13em]">
-            {item.category}
+            {t(item.category)}
           </span>
           <ArrowCircle diagonal />
         </div>
@@ -112,7 +113,7 @@ export function RequestCard({
         />
         <div className="min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <span className="eyebrow text-primary">{item.category}</span>
+            <span className="eyebrow text-primary">{t(item.category)}</span>
             <span className="flex shrink-0 flex-wrap items-center justify-end gap-2">{isNew && <NewMark />}<StatusBadge status={item.status} /></span>
           </div>
           <h2 className={cn("v3-card-title mt-4 text-[22px]", desktop && "lg:text-[26px]")}>{item.title}</h2>
@@ -129,7 +130,7 @@ export function RequestCard({
 }
 
 function formatRequestDate(item: RequestItem) {
-  const time = item.scheduled_time?.slice(0, 5).replace(":", " h ");
+  const time = formatTime(item.scheduled_time);
   return `${formatDate(item.scheduled_date)}${time ? ` · ${time}` : ""}`;
 }
 
@@ -170,7 +171,7 @@ export function Photo({
             />
           )}
           <span className="absolute inset-0 flex items-center justify-center px-5 text-center font-display text-[38px] italic text-foreground/80">
-            {category ?? alt}
+            {category ? t(category) : alt}
           </span>
         </>
       )}
@@ -189,7 +190,7 @@ export function OfferCard({ offer, compact = false }: { offer: Offer; compact?: 
       <article className="min-w-[248px] overflow-hidden rounded-card bg-card sm:min-w-0">
         <Photo src={offerImage(offer)} alt={offer.title} className="aspect-[4/3]" />
         <div className="p-4">
-          <span className="eyebrow">{offer.category}</span>
+          <span className="eyebrow">{t(offer.category)}</span>
           <h3 className="mt-2 font-display text-xl text-primary">{offer.title}</h3>
           <p className="mt-1 text-xs text-muted-foreground">{offer.partner}</p>
         </div>
@@ -204,7 +205,7 @@ export function OfferCard({ offer, compact = false }: { offer: Offer; compact?: 
         </span>
       </div>
       <div className="p-5">
-        <span className="eyebrow">{offer.category}</span>
+        <span className="eyebrow">{t(offer.category)}</span>
         <h2 className="mt-3 font-display text-2xl text-primary">{offer.title}</h2>
         <p className="mt-1 text-sm font-medium text-foreground">{offer.partner}</p>
         <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
@@ -235,14 +236,14 @@ export function EditorialOfferCard({ offer, variant }: { offer: Offer; variant: 
         />
         <div className="px-3 pb-2 pt-6 lg:flex lg:min-w-0 lg:flex-col lg:justify-center lg:px-0 lg:py-6">
           <span className="eyebrow text-primary">
-            {offer.category} · {offer.promo}
+            {t(offer.category)} · {offer.promo}
           </span>
           <h2 className="v3-card-title mt-5 text-[32px] lg:text-[clamp(26px,2.8vw,40px)]">{offer.title}</h2>
           <p className="mt-4 text-[14px] leading-6 lg:text-[16px]">
             {offer.partner} · {offer.place} · {offer.validity}
           </p>
           <div className="mt-7 flex items-center justify-between border-t border-primary/25 pt-4">
-            <span className="text-[14px] font-medium">Demander cette offre</span>
+            <span className="text-[14px] font-medium">{t("Demander cette offre")}</span>
             <ArrowCircle inverse />
           </div>
         </div>
@@ -265,7 +266,7 @@ export function EditorialOfferCard({ offer, variant }: { offer: Offer; variant: 
       />
       <div className="absolute inset-x-4 top-4 flex items-start justify-between gap-3">
         <span className="dark-glass rounded-full px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.13em]">
-          {offer.category}
+          {t(offer.category)}
           {variant === "hero" ? ` · ${offer.promo}` : ""}
         </span>
         {variant === "hero" && <ArrowCircle diagonal />}
@@ -331,7 +332,7 @@ export function Filters({
                 : "lg:border-foreground/22 lg:bg-foreground/10 lg:text-foreground lg:hover:bg-foreground/20"),
           )}
         >
-          {value}
+          {t(value)}
         </Button>
       ))}
     </div>

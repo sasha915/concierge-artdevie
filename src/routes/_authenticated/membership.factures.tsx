@@ -14,14 +14,15 @@ import { formatAmount, formatShortDate } from "@/data/art-de-vie";
 import { ratePercent } from "@/lib/billing-rules";
 import { invoicesQuery, profileQuery } from "@/lib/adv-queries";
 import { activateAutoDebit, billingStatus, payInvoice } from "@/lib/mollie.functions";
+import { getLang, locale, t } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/membership/factures")({
   head: () => ({
     meta: [
-      { title: "Mes factures — Art de Vie" },
-      { name: "description", content: "Consultez votre formule et vos factures." },
-      { property: "og:title", content: "Mes factures — Art de Vie" },
-      { property: "og:description", content: "Consultez votre formule et vos factures." },
+      { title: t("Mes factures — Art de Vie") },
+      { name: "description", content: t("Consultez votre formule et vos factures.") },
+      { property: "og:title", content: t("Mes factures — Art de Vie") },
+      { property: "og:description", content: t("Consultez votre formule et vos factures.") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -57,13 +58,13 @@ function Page() {
         window.location.href = res.checkoutUrl;
         return;
       }
-      toast.error(
+      toast.error(t(
         res.reason === "mollie_not_configured"
           ? "Le paiement en ligne n'est pas encore activé."
           : "Impossible de préparer ce paiement.",
-      );
+      ));
     } catch {
-      toast.error("Impossible de préparer ce paiement.");
+      toast.error(t("Impossible de préparer ce paiement."));
     } finally {
       setBusy(false);
     }
@@ -77,13 +78,13 @@ function Page() {
         window.location.href = res.checkoutUrl;
         return;
       }
-      toast.error(
+      toast.error(t(
         res.reason === "mollie_not_configured"
           ? "Le prélèvement automatique n'est pas encore activé."
           : "Impossible de préparer le prélèvement.",
-      );
+      ));
     } catch {
-      toast.error("Impossible de préparer le prélèvement.");
+      toast.error(t("Impossible de préparer le prélèvement."));
     } finally {
       setBusy(false);
     }
@@ -94,31 +95,31 @@ function Page() {
       <div className="mx-auto max-w-3xl lg:max-w-none">
         <SubHeader title="Mes factures" />
         <section className="rounded-[28px] bg-primary-deep p-6 text-foreground sm:p-8 lg:mx-[clamp(20px,3.9vw,56px)] lg:p-10">
-          <span className="eyebrow text-foreground/80">Formule {profile?.plan ?? "Signature"}</span>
+          <span className="eyebrow text-foreground/80">{t("Formule {name}", { name: profile?.plan ?? "Signature" })}</span>
           <div className="mt-6 flex items-end justify-between gap-5">
             <div>
               <strong className="font-display text-[40px] lg:text-[88px] font-normal">
-                {essentiel ? "890 €" : "1 490 €"}
+                {essentiel ? formatAmount(89000) : formatAmount(149000)}
               </strong>
-              <span className="text-sm">{essentiel ? " / an" : " / mois"}</span>
+              <span className="text-sm">{essentiel ? t(" / an") : t(" / mois")}</span>
             </div>
             <div className="text-right text-[10px] leading-4 opacity-80">
               <p>
-                Prochain prélèvement
+                {t("Prochain prélèvement")}
                 <br />
-                {next.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                {next.toLocaleDateString(locale(), { day: "numeric", month: "long", year: "numeric" })}
               </p>
               {!essentiel && (
                 <p className="mt-2">
-                  Engagement minimum
+                  {t("Engagement minimum")}
                   <br />
-                  12 mois
+                  {t("12 mois")}
                 </p>
               )}
             </div>
           </div>
           {essentiel && (
-            <p className="mt-4 text-[10px] leading-4 opacity-80">+ 10 % de commission sur les prestations</p>
+            <p className="mt-4 text-[10px] leading-4 opacity-80">{t("+ 10 % de commission sur les prestations")}</p>
           )}
           {billing && !billing.hasMandate && (
             <div className="mt-5">
@@ -131,15 +132,15 @@ function Page() {
               >
                 <RefreshCcw className="size-4" />
                 {billing.configured
-                  ? "Activer le prélèvement automatique"
-                  : "Prélèvement automatique bientôt disponible"}
+                  ? t("Activer le prélèvement automatique")
+                  : t("Prélèvement automatique bientôt disponible")}
               </Button>
             </div>
           )}
           {billing?.hasMandate && (
             <p className="mt-5 flex items-center gap-2 text-[11px] opacity-80">
               <RefreshCcw className="size-3.5" />
-              Prélèvement automatique actif
+              {t("Prélèvement automatique actif")}
             </p>
           )}
         </section>
@@ -166,16 +167,16 @@ function Page() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">{i.number}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {formatShortDate(i.issued_on)} · {i.kind}
+                      {formatShortDate(i.issued_on)} · {t(i.kind)}
                     </p>
                     {i.service_cents != null && (
                       <dl className="mt-2 grid gap-0.5 text-xs text-muted-foreground">
                         <div className="flex gap-2">
-                          <dt>Prestation</dt>
+                          <dt>{t("Prestation")}</dt>
                           <dd>{formatAmount(i.service_cents)}</dd>
                         </div>
                         <div className="flex gap-2">
-                          <dt>Commission{i.commission_rate ? ` (${ratePercent(i.commission_rate)})` : ""}</dt>
+                          <dt>{t("Commission")}{i.commission_rate ? ` (${getLang() === "en" ? ratePercent(i.commission_rate).replace(" %", "%") : ratePercent(i.commission_rate)})` : ""}</dt>
                           <dd>{formatAmount(i.commission_cents ?? 0)}</dd>
                         </div>
                       </dl>
@@ -186,13 +187,13 @@ function Page() {
                     {unpaid && billing?.configured ? (
                       <PillAction size="sm" className="mt-1 h-11 pl-4" disabled={busy} onClick={() => pay(i.id)}>
                         <CreditCard className="size-3.5" />
-                        Payer
+                        {t("Payer")}
                       </PillAction>
                     ) : (
                       <span
                         className={`mt-1 inline-block rounded-full px-2.5 py-1 text-[9px] font-semibold ${i.status === "Payée" ? "bg-primary text-background" : "border border-primary/25 text-muted-foreground"}`}
                       >
-                        {i.status}
+                        {t(i.status)}
                       </span>
                     )}
                   </div>
@@ -203,7 +204,7 @@ function Page() {
         )}
         {!isLoading && list.length === 0 && (
           <div className="mt-6">
-            <EmptyState>Aucune facture dans cette catégorie.</EmptyState>
+            <EmptyState>{t("Aucune facture dans cette catégorie.")}</EmptyState>
           </div>
         )}
       </div>

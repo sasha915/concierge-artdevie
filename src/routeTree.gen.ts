@@ -31,6 +31,7 @@ import { Route as AuthenticatedMembershipIndexRouteImport } from './routes/_auth
 import { Route as AuthenticatedMembershipFacturesRouteImport } from './routes/_authenticated/membership.factures'
 import { Route as AuthenticatedMembershipHistoriqueRouteImport } from './routes/_authenticated/membership.historique'
 import { Route as AuthenticatedMembershipInformationsRouteImport } from './routes/_authenticated/membership.informations'
+import { Route as AuthenticatedMembershipLangueRouteImport } from './routes/_authenticated/membership.langue'
 import { Route as AuthenticatedMembershipParrainerRouteImport } from './routes/_authenticated/membership.parrainer'
 import { Route as AuthenticatedMembershipPreferencesRouteImport } from './routes/_authenticated/membership.preferences'
 import { Route as AuthenticatedMembershipReleveRouteImport } from './routes/_authenticated/membership.releve'
@@ -167,6 +168,12 @@ const AuthenticatedMembershipInformationsRoute =
     path: '/membership/informations',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMembershipLangueRoute =
+  AuthenticatedMembershipLangueRouteImport.update({
+    id: '/membership/langue',
+    path: '/membership/langue',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMembershipParrainerRoute =
   AuthenticatedMembershipParrainerRouteImport.update({
     id: '/membership/parrainer',
@@ -258,6 +265,7 @@ export interface FileRoutesByFullPath {
   '/membership/factures': typeof AuthenticatedMembershipFacturesRoute
   '/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
   '/membership/informations': typeof AuthenticatedMembershipInformationsRoute
+  '/membership/langue': typeof AuthenticatedMembershipLangueRoute
   '/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
   '/membership/preferences': typeof AuthenticatedMembershipPreferencesRoute
   '/membership/releve': typeof AuthenticatedMembershipReleveRoute
@@ -292,6 +300,7 @@ export interface FileRoutesByTo {
   '/membership/factures': typeof AuthenticatedMembershipFacturesRoute
   '/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
   '/membership/informations': typeof AuthenticatedMembershipInformationsRoute
+  '/membership/langue': typeof AuthenticatedMembershipLangueRoute
   '/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
   '/membership/preferences': typeof AuthenticatedMembershipPreferencesRoute
   '/membership/releve': typeof AuthenticatedMembershipReleveRoute
@@ -329,6 +338,7 @@ export interface FileRoutesById {
   '/_authenticated/membership/factures': typeof AuthenticatedMembershipFacturesRoute
   '/_authenticated/membership/historique': typeof AuthenticatedMembershipHistoriqueRoute
   '/_authenticated/membership/informations': typeof AuthenticatedMembershipInformationsRoute
+  '/_authenticated/membership/langue': typeof AuthenticatedMembershipLangueRoute
   '/_authenticated/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
   '/_authenticated/membership/preferences': typeof AuthenticatedMembershipPreferencesRoute
   '/_authenticated/membership/releve': typeof AuthenticatedMembershipReleveRoute
@@ -366,6 +376,7 @@ export interface FileRouteTypes {
     | '/membership/factures'
     | '/membership/historique'
     | '/membership/informations'
+    | '/membership/langue'
     | '/membership/parrainer'
     | '/membership/preferences'
     | '/membership/releve'
@@ -400,6 +411,7 @@ export interface FileRouteTypes {
     | '/membership/factures'
     | '/membership/historique'
     | '/membership/informations'
+    | '/membership/langue'
     | '/membership/parrainer'
     | '/membership/preferences'
     | '/membership/releve'
@@ -436,6 +448,7 @@ export interface FileRouteTypes {
     | '/_authenticated/membership/factures'
     | '/_authenticated/membership/historique'
     | '/_authenticated/membership/informations'
+    | '/_authenticated/membership/langue'
     | '/_authenticated/membership/parrainer'
     | '/_authenticated/membership/preferences'
     | '/_authenticated/membership/releve'
@@ -617,6 +630,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMembershipInformationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/membership/langue': {
+      id: '/_authenticated/membership/langue'
+      path: '/membership/langue'
+      fullPath: '/membership/langue'
+      preLoaderRoute: typeof AuthenticatedMembershipLangueRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/membership/parrainer': {
       id: '/_authenticated/membership/parrainer'
       path: '/membership/parrainer'
@@ -750,6 +770,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMembershipFacturesRoute: typeof AuthenticatedMembershipFacturesRoute
   AuthenticatedMembershipHistoriqueRoute: typeof AuthenticatedMembershipHistoriqueRoute
   AuthenticatedMembershipInformationsRoute: typeof AuthenticatedMembershipInformationsRoute
+  AuthenticatedMembershipLangueRoute: typeof AuthenticatedMembershipLangueRoute
   AuthenticatedMembershipParrainerRoute: typeof AuthenticatedMembershipParrainerRoute
   AuthenticatedMembershipPreferencesRoute: typeof AuthenticatedMembershipPreferencesRoute
   AuthenticatedMembershipReleveRoute: typeof AuthenticatedMembershipReleveRoute
@@ -773,6 +794,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedMembershipHistoriqueRoute,
   AuthenticatedMembershipInformationsRoute:
     AuthenticatedMembershipInformationsRoute,
+  AuthenticatedMembershipLangueRoute: AuthenticatedMembershipLangueRoute,
   AuthenticatedMembershipParrainerRoute: AuthenticatedMembershipParrainerRoute,
   AuthenticatedMembershipPreferencesRoute:
     AuthenticatedMembershipPreferencesRoute,

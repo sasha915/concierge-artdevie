@@ -9,9 +9,10 @@ import { initials } from "@/data/art-de-vie";
 import { profileQuery, unreadRequestNotificationsQuery } from "@/lib/adv-queries";
 import { BookmarkIcon, HomeIcon, InboxIcon, UserIcon } from "./icons";
 import { PillAction, Title } from "./v3";
+import { t, tPair } from "@/lib/i18n";
 
 export function Logo({ inverse = false, className = "h-8 w-auto" }: { inverse?: boolean; className?: string }) {
-  return <img src={inverse ? logoBeige : logoViolet} alt="Art de Vie" className={className} />;
+  return <img src={inverse ? logoBeige : logoViolet} alt={t("Art de Vie")} className={className} />;
 }
 
 const nav = [
@@ -26,7 +27,7 @@ export function BottomNav() {
   const { data: unread = [] } = useQuery(unreadRequestNotificationsQuery);
   return (
     <nav
-      aria-label="Navigation principale"
+      aria-label={t("Navigation principale")}
       className="fixed bottom-[max(16px,env(safe-area-inset-bottom))] left-1/2 z-50 grid h-16 w-[calc(100%-32px)] max-w-[500px] -translate-x-1/2 grid-cols-5 items-center justify-items-center rounded-full border border-foreground/22 bg-primary-deep/86 px-2 text-foreground shadow-nav backdrop-blur-[18px] lg:hidden"
     >
       {nav.map(({ to, label, Icon }, index) => {
@@ -35,7 +36,7 @@ export function BottomNav() {
           <Link
             key={to}
             to={to}
-            aria-label={to === "/demandes" && unread.length > 0 ? `${label}, nouveautés` : label}
+            aria-label={to === "/demandes" && unread.length > 0 ? t("{label}, nouveautés", { label: t(label) }) : t(label)}
             aria-current={active ? "page" : undefined}
             className={`relative flex size-12 items-center justify-center rounded-full transition-colors active:scale-95 ${index > 1 ? (index === 2 ? "col-start-4" : "col-start-5") : ""} ${active ? "bg-foreground/16" : "hover:bg-foreground/10"}`}
           >
@@ -44,8 +45,8 @@ export function BottomNav() {
           </Link>
         );
       })}
-      <Button asChild variant="light" size="icon" className="col-start-3 row-start-1 size-12" title="Nouvelle demande">
-        <Link to="/demandes/nouvelle" search={{ offer: undefined }} aria-label="Nouvelle demande">
+      <Button asChild variant="light" size="icon" className="col-start-3 row-start-1 size-12" title={t("Nouvelle demande")}>
+        <Link to="/demandes/nouvelle" search={{ offer: undefined }} aria-label={t("Nouvelle demande")}>
           <Plus className="size-6" />
         </Link>
       </Button>
@@ -85,14 +86,14 @@ export function TopBar({ title, action }: { title?: string; action?: ReactNode }
         </div>
         {action ?? (
           <Button asChild variant="light" size="icon" className="size-11 font-medium">
-            <Link to="/membership" aria-label="Votre Membership">
+            <Link to="/membership" aria-label={t("Votre Membership")}>
               {initials(profile?.full_name ?? "")}
             </Link>
           </Button>
         )}
       </header>
       <nav
-        aria-label="Navigation desktop"
+        aria-label={t("Navigation desktop")}
         className="hidden lg:dark-glass lg:mx-auto lg:flex lg:min-h-[60px] lg:w-fit lg:max-w-full lg:flex-wrap lg:items-center lg:justify-center lg:gap-2 lg:rounded-full lg:px-4 lg:py-2 lg:text-foreground"
       >
         <Logo inverse className="lg:mr-3 lg:h-[24px] lg:w-auto" />
@@ -106,11 +107,11 @@ export function TopBar({ title, action }: { title?: string; action?: ReactNode }
               className={`lg:h-11 lg:px-4 lg:text-[15px] lg:text-foreground lg:hover:bg-foreground/10 ${active ? "lg:bg-foreground/16 lg:font-medium" : "lg:font-normal"}`}
             >
               <Link to={to} aria-current={active ? "page" : undefined} className="relative">
-                {to === "/demandes" ? "Mes demandes" : label}
+                {to === "/demandes" ? t("Mes demandes") : t(label)}
                 {to === "/demandes" && unread.length > 0 && (
                   <>
                     <span aria-hidden="true" className="absolute right-2 top-2 size-1.5 rounded-full bg-foreground" />
-                    <span className="sr-only">, nouveautés</span>
+                    <span className="sr-only">{t(", nouveautés")}</span>
                   </>
                 )}
               </Link>
@@ -119,7 +120,7 @@ export function TopBar({ title, action }: { title?: string; action?: ReactNode }
         })}
         <Button asChild variant="light" className="lg:ml-2 lg:h-11 lg:px-5 lg:text-[15px]">
           <Link to="/demandes/nouvelle" search={{ offer: undefined }}>
-            Nouvelle demande
+            {t("Nouvelle demande")}
           </Link>
         </Button>
         <Button
@@ -128,7 +129,7 @@ export function TopBar({ title, action }: { title?: string; action?: ReactNode }
           size="icon"
           className="lg:size-11 lg:border-foreground/22 lg:bg-transparent lg:text-foreground lg:hover:bg-foreground/10"
         >
-          <Link to="/membership" aria-label="Votre Membership">
+          <Link to="/membership" aria-label={t("Votre Membership")}>
             {initials(profile?.full_name ?? "")}
           </Link>
         </Button>
@@ -137,7 +138,8 @@ export function TopBar({ title, action }: { title?: string; action?: ReactNode }
   );
 }
 
-export function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+export function PageHeader({ title: rawTitle, subtitle }: { title: string; subtitle?: string }) {
+  const title = t(rawTitle);
   return (
     <>
       <div className="mb-6">
@@ -147,7 +149,7 @@ export function PageHeader({ title, subtitle }: { title: string; subtitle?: stri
         {title.split(" ").slice(0, -1).join(" ")}
         {title.includes(" ") ? " " : ""}
       </Title>
-      {subtitle && <p className="mt-2 mb-6 text-[13px] text-muted-foreground">{subtitle}</p>}
+      {subtitle && <p className="mt-2 mb-6 text-[13px] text-muted-foreground">{t(subtitle)}</p>}
     </>
   );
 }
@@ -156,7 +158,7 @@ export function NewRequestButton({ className }: { className?: string }) {
   return (
     <PillAction asChild className={className}>
       <Link to="/demandes/nouvelle" search={{ offer: undefined }}>
-        Nouvelle demande
+        {t("Nouvelle demande")}
       </Link>
     </PillAction>
   );
@@ -177,6 +179,7 @@ export function ListHeader({
   introduction: string;
   children?: ReactNode;
 }) {
+  const [head, tail] = tPair(title, italic);
   return (
     <section
       className={`relative -mx-2 -mt-3 overflow-hidden rounded-[28px] bg-primary-deep p-4 text-foreground sm:mx-0 sm:mt-0 ${desktop ? "lg:flex lg:min-h-[520px] lg:flex-col lg:px-[clamp(20px,3.9vw,56px)] lg:py-6" : ""}`}
@@ -184,17 +187,17 @@ export function ListHeader({
       <Logo inverse className="pointer-events-none absolute bottom-16 left-3 w-[150%] max-w-none opacity-5" />
       <div className={`relative ${desktop ? "lg:flex lg:flex-1 lg:flex-col" : ""}`}>
         <TopBar />
-        <p className={`eyebrow mt-7 text-foreground/80 ${desktop ? "lg:mt-24" : ""}`}>{eyebrow}</p>
+        <p className={`eyebrow mt-7 text-foreground/80 ${desktop ? "lg:mt-24" : ""}`}>{t(eyebrow)}</p>
         <Title
-          italic={italic}
+          italic={tail}
           className={`mt-4 ${desktop ? "lg:text-[clamp(70px,10vw,144px)] lg:leading-[0.96]" : ""}`}
         >
-          {title}
+          {head}
         </Title>
         <p
           className={`mb-5 mt-5 border-t border-foreground/22 pt-4 text-[13px] leading-5 text-foreground ${desktop ? "lg:hidden" : ""}`}
         >
-          {introduction}
+          {t(introduction)}
         </p>
         <div
           className={

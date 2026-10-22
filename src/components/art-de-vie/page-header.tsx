@@ -3,8 +3,9 @@ import { ChevronLeft, X } from "lucide-react";
 import { Logo, TopBar } from "@/components/art-de-vie/app-shell";
 import { Button } from "@/components/ui/button";
 import { Title } from "@/components/art-de-vie/v3";
+import { t } from "@/lib/i18n";
 export function SubHeader({
-  title,
+  title: rawTitle,
   close = false,
   backTo = "/membership",
 }: {
@@ -12,6 +13,7 @@ export function SubHeader({
   close?: boolean;
   backTo?: "/membership" | "/demandes";
 }) {
+  const title = t(rawTitle);
   return (
     <>
       <div className="mb-7 flex items-center justify-between lg:hidden">
@@ -20,7 +22,7 @@ export function SubHeader({
         <div className="w-11" />
       </div>
       <header className="mb-8 flex items-start gap-4 lg:hidden">
-        <Button asChild variant="outline" size="icon" aria-label={close ? "Fermer" : "Retour"} className="shrink-0">
+        <Button asChild variant="outline" size="icon" aria-label={close ? t("Fermer") : t("Retour")} className="shrink-0">
           <Link to={backTo}>{close ? <X /> : <ChevronLeft />}</Link>
         </Button>
         <Title
@@ -48,7 +50,7 @@ export function SubHeader({
           >
             <Link to={backTo}>
               {close ? <X /> : <ChevronLeft />}
-              {close ? "Fermer" : "Retour"}
+              {close ? t("Fermer") : t("Retour")}
             </Link>
           </Button>
         </div>

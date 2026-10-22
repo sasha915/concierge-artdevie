@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { requestsQuery } from "@/lib/adv-queries";
+import { formatTime } from "@/data/art-de-vie";
 import { RHYTHMS, rhythmLabel, type Rhythm } from "@/lib/planning-rules";
 import { createRecurringFromRequest } from "@/lib/messages.functions";
 import { useServerFn } from "@tanstack/react-start";
@@ -20,6 +21,7 @@ import bassin from "@/assets/v3/bassin.jpg.asset.json";
 import entree from "@/assets/v3/entree-de-nuit.jpg.asset.json";
 import vendome from "@/assets/v3/place-vendome.jpg.asset.json";
 import village from "@/assets/v3/village-cotier.jpg.asset.json";
+import { locale, t, tPair } from "@/lib/i18n";
 
 const cats = [
   { name: "Tables", note: "Restaurants et tables privées", image: entree.url, imageKey: "entree-de-nuit" },
@@ -38,10 +40,10 @@ export const Route = createFileRoute("/_authenticated/demandes/nouvelle")({
   }),
   head: () => ({
     meta: [
-      { title: "Nouvelle demande — Art de Vie" },
-      { name: "description", content: "Confiez une nouvelle demande à votre concierge." },
-      { property: "og:title", content: "Nouvelle demande — Art de Vie" },
-      { property: "og:description", content: "Confiez une nouvelle demande à votre concierge." },
+      { title: t("Nouvelle demande — Art de Vie") },
+      { name: "description", content: t("Confiez une nouvelle demande à votre concierge.") },
+      { property: "og:title", content: t("Nouvelle demande — Art de Vie") },
+      { property: "og:description", content: t("Confiez une nouvelle demande à votre concierge.") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -91,7 +93,7 @@ function Page() {
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) {
       setBusy(false);
-      setError("Votre session a expiré. Reconnectez-vous.");
+      setError(t("Votre session a expiré. Reconnectez-vous."));
       return;
     }
     const { data, error } = await supabase
@@ -99,7 +101,7 @@ function Page() {
       .insert({
         user_id: auth.user.id,
         category,
-        title: title || `Demande ${category.toLowerCase()}`,
+        title: title || `${t("Demande")} ${t(category).toLowerCase()}`,
         description,
         scheduled_date: date || null,
         scheduled_time: time || null,
@@ -110,15 +112,15 @@ function Page() {
       .single();
     setBusy(false);
     if (error || !data) {
-      setError("L’envoi a échoué. Réessayez dans un instant.");
+      setError(t("L’envoi a échoué. Réessayez dans un instant."));
       return;
     }
     if (rhythm !== "aucune") {
       try {
         const rec = await createRecurring({ data: { requestId: data.id, recurrence: { rhythm, dates: extraDates, endDate: endDate || null } } });
-        if (!rec.ok) toast.error(`Votre demande est transmise, mais pas sa récurrence : ${rec.reason}`);
+        if (!rec.ok) toast.error(t("Votre demande est transmise, mais pas sa récurrence : {reason}", { reason: t(rec.reason) }));
       } catch {
-        toast.error("Votre demande est transmise, mais sa récurrence n’a pas pu être enregistrée.");
+        toast.error(t("Votre demande est transmise, mais sa récurrence n’a pas pu être enregistrée."));
       }
       await queryClient.invalidateQueries({ queryKey: ["recurring"] });
     }
@@ -138,17 +140,17 @@ function Page() {
             <span className="flex size-20 items-center justify-center rounded-full lg:col-start-8 lg:row-start-1 bg-primary text-background">
               <Check className="size-8" />
             </span>
-            <Title italic="transmise." className="mt-8 text-[46px] lg:hidden">
-              Demande
+            <Title italic={tPair("Demande", "transmise.")[1]} className="mt-8 text-[46px] lg:hidden">
+              {tPair("Demande", "transmise.")[0]}
               <br />
             </Title>
             <p className="mt-5 max-w-md text-[14px] leading-6 text-muted-foreground lg:col-span-5 lg:col-start-8 lg:row-start-2 lg:text-[18px] lg:leading-7">
-              Vous pouvez suivre son avancement à tout moment depuis Mes demandes.
+              {t("Vous pouvez suivre son avancement à tout moment depuis Mes demandes.")}
             </p>
             <div className="mt-7 rounded-[28px] bg-primary/10 p-5 lg:col-span-7 lg:col-start-1 lg:row-span-4 lg:row-start-1 lg:mt-0 lg:p-8">
               <div className="flex items-center justify-between">
-                <span className="eyebrow text-primary">{category}</span>
-                <span className="rounded-full bg-primary/10 px-3 py-1 text-[11px] font-medium">Nouvelle</span>
+                <span className="eyebrow text-primary">{t(category)}</span>
+                <span className="rounded-full bg-primary/10 px-3 py-1 text-[11px] font-medium">{t("Nouvelle")}</span>
               </div>
               <h2 className="v3-card-title mt-6 text-[23px] lg:text-[40px]">{title}</h2>
               <div className="mt-5">
@@ -156,14 +158,14 @@ function Page() {
               </div>
             </div>
             <PillAction asChild className="mt-7 w-full lg:col-span-5 lg:col-start-8 lg:row-start-3 lg:w-fit">
-              <Link to="/demandes">Voir mes demandes</Link>
+              <Link to="/demandes">{t("Voir mes demandes")}</Link>
             </PillAction>
             <Button
               variant="link"
               className="mt-2 px-0 lg:col-span-5 lg:col-start-8 lg:row-start-4 lg:justify-start"
               onClick={() => navigate({ to: "/" })}
             >
-              Retour à l’accueil
+              {t("Retour à l’accueil")}
             </Button>
           </section>
         </div>
@@ -179,9 +181,9 @@ function Page() {
         <DesktopWizardHeader step={step} />
         {step === 1 && (
           <section className="pt-8 lg:mx-[clamp(20px,3.9vw,56px)] lg:pt-16">
-            <p className="eyebrow text-primary lg:hidden">Catégorie</p>
-            <Title italic="organiser ?" className="mt-4 text-[38px] text-primary lg:hidden">
-              Que pouvons-nous
+            <p className="eyebrow text-primary lg:hidden">{t("Catégorie")}</p>
+            <Title italic={tPair("Que pouvons-nous", "organiser ?")[1]} className="mt-4 text-[38px] text-primary lg:hidden">
+              {tPair("Que pouvons-nous", "organiser ?")[0]}
               <br />
             </Title>
             <div className="mt-6 grid grid-cols-2 gap-3 lg:mt-0 lg:grid-cols-4 lg:gap-4">
@@ -196,13 +198,13 @@ function Page() {
                     category === cat.name ? "border-primary" : "border-transparent",
                   )}
                 >
-                  <Photo src={cat.image} alt={cat.name} className="absolute inset-0 h-full w-full" />
+                  <Photo src={cat.image} alt={t(cat.name)} className="absolute inset-0 h-full w-full" />
                   <span className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full border border-foreground/60 bg-foreground/10">
                     {category === cat.name && <Check className="size-4" />}
                   </span>
                   <span className="absolute inset-x-4 bottom-4 whitespace-normal">
-                    <strong className="block text-[20px] font-normal lg:text-[40px]">{cat.name}</strong>
-                    <small className="mt-1 block text-[11px] leading-4">{cat.note}</small>
+                    <strong className="block text-[20px] font-normal lg:text-[40px]">{t(cat.name)}</strong>
+                    <small className="mt-1 block text-[11px] leading-4">{t(cat.note)}</small>
                   </span>
                 </Button>
               ))}
@@ -225,56 +227,56 @@ function Page() {
               </span>
               <span className="absolute inset-x-5 bottom-4 whitespace-normal">
                 <strong className="block text-[20px] font-normal lg:text-[32px]">
-                  Sur <span className="font-display italic">mesure</span>
+                  {tPair("Sur", "mesure")[0]}{" "}<span className="font-display italic">{tPair("Sur", "mesure")[1]}</span>
                 </strong>
-                <small className="mt-1 block text-[11px] leading-4">{surMesure.note}</small>
+                <small className="mt-1 block text-[11px] leading-4">{t(surMesure.note)}</small>
               </span>
             </Button>
             <PillAction className="mt-6 w-full lg:ml-auto lg:flex lg:w-[220px]" onClick={() => setStep(2)}>
-              Continuer
+              {t("Continuer")}
             </PillAction>
           </section>
         )}
         {step === 2 && (
           <section className="pt-8 lg:mx-[clamp(20px,3.9vw,56px)] lg:grid lg:grid-cols-12 lg:gap-6 lg:pt-16">
             <aside className="hidden lg:col-span-4 lg:flex lg:flex-col lg:rounded-[28px] lg:bg-primary-deep lg:p-8 lg:text-foreground">
-              <p className="lg:eyebrow lg:text-foreground/80">Catégorie</p>
+              <p className="lg:eyebrow lg:text-foreground/80">{t("Catégorie")}</p>
               <h2 className="lg:v3-card-title lg:mt-auto lg:pt-24 lg:text-[64px]">{category}</h2>
               <p className="lg:mt-5 lg:text-[16px] lg:leading-7">
-                Indiquez l’essentiel ; votre concierge reviendra vers vous pour le reste.
+                {t("Indiquez l’essentiel ; votre concierge reviendra vers vous pour le reste.")}
               </p>
             </aside>
-            <p className="eyebrow text-primary lg:hidden">Détails · {category}</p>
-            <Title italic="demande." className="mt-4 text-[38px] text-primary lg:hidden">
-              Votre{" "}
+            <p className="eyebrow text-primary lg:hidden">{t("Détails")} · {t(category)}</p>
+            <Title italic={tPair("Votre", "demande.")[1]} className="mt-4 text-[38px] text-primary lg:hidden">
+              {tPair("Votre", "demande.")[0]}{" "}
             </Title>
             <form
               className="mt-6 rounded-card bg-card p-4 sm:p-7 lg:col-span-8 lg:mt-0 lg:p-8"
               onSubmit={(e) => {
                 e.preventDefault();
-                if (rhythm !== "aucune" && !date) { setStepError("Indiquez la date de la première échéance."); return; }
-                if (rhythm === "dates" && extraDates.length === 0) { setStepError("Ajoutez au moins une autre date."); return; }
+                if (rhythm !== "aucune" && !date) { setStepError(t("Indiquez la date de la première échéance.")); return; }
+                if (rhythm === "dates" && extraDates.length === 0) { setStepError(t("Ajoutez au moins une autre date.")); return; }
                 setStepError(null);
                 setStep(3);
               }}
             >
               <div className="grid gap-5 lg:grid-cols-3">
-                <Field label="Prestation souhaitée" desktopFull>
+                <Field label={t("Prestation souhaitée")} desktopFull>
                   <Input
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     required
-                    placeholder="Ex. Une table avec vue"
+                    placeholder={t("Ex. Une table avec vue")}
                   />
                 </Field>
-                <Field label="Date souhaitée">
+                <Field label={t("Date souhaitée")}>
                   <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
                 </Field>
                 <div className="grid grid-cols-2 gap-3 lg:col-span-2">
-                  <Field label="Heure">
+                  <Field label={t("Heure")}>
                     <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
                   </Field>
-                  <Field label={category === "Tables" ? "Couverts" : "Personnes"}>
+                  <Field label={category === "Tables" ? t("Couverts") : t("Personnes")}>
                     <Input
                       type="number"
                       min="1"
@@ -284,39 +286,39 @@ function Page() {
                     />
                   </Field>
                 </div>
-                <Field label="Précisions pour votre concierge" desktopFull>
+                <Field label={t("Précisions pour votre concierge")} desktopFull>
                   <Textarea
                     rows={5}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Vos envies, contraintes ou attentions particulières…"
+                    placeholder={t("Vos envies, contraintes ou attentions particulières…")}
                   />
                 </Field>
-                <Field label="Récurrence" desktopFull>
+                <Field label={t("Récurrence")} desktopFull>
                   <select
                     value={rhythm}
                     onChange={(e) => setRhythm(e.target.value as "aucune" | Rhythm)}
                     className="v3-field flex w-full py-1 text-base focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
                   >
                     {RHYTHMS.map((r) => (
-                      <option key={r.value} value={r.value}>{r.label}</option>
+                      <option key={r.value} value={r.value}>{t(r.label)}</option>
                     ))}
                   </select>
                   {rhythm !== "aucune" && (
                     <div className="mt-3 grid gap-3 rounded-[16px] bg-primary/10 p-4 text-primary">
                       {rhythm === "dates" && (
                         <div>
-                          <p className="text-[12px] text-muted-foreground">Autres dates (la première est la date souhaitée)</p>
+                          <p className="text-[12px] text-muted-foreground">{t("Autres dates (la première est la date souhaitée)")}</p>
                           <div className="mt-2 flex gap-2">
-                            <Input type="date" value={nextDate} onChange={(e) => setNextDate(e.target.value)} aria-label="Ajouter une date" />
-                            <Button type="button" variant="soft" onClick={() => { if (nextDate && !extraDates.includes(nextDate)) setExtraDates([...extraDates, nextDate].sort()); setNextDate(""); }}>Ajouter</Button>
+                            <Input type="date" value={nextDate} onChange={(e) => setNextDate(e.target.value)} aria-label={t("Ajouter une date")} />
+                            <Button type="button" variant="soft" onClick={() => { if (nextDate && !extraDates.includes(nextDate)) setExtraDates([...extraDates, nextDate].sort()); setNextDate(""); }}>{t("Ajouter")}</Button>
                           </div>
                           {extraDates.length > 0 && (
                             <ul className="mt-2 flex flex-wrap gap-2">
                               {extraDates.map((d) => (
                                 <li key={d}>
-                                  <button type="button" onClick={() => setExtraDates(extraDates.filter((x) => x !== d))} className="inline-flex h-9 items-center gap-1 rounded-full bg-card px-3 text-[12px]" aria-label={`Retirer le ${d}`}>
-                                    {new Date(`${d}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} <X className="size-3" />
+                                  <button type="button" onClick={() => setExtraDates(extraDates.filter((x) => x !== d))} className="inline-flex h-9 items-center gap-1 rounded-full bg-card px-3 text-[12px]" aria-label={t("Retirer le {date}", { date: d })}>
+                                    {new Date(`${d}T12:00:00`).toLocaleDateString(locale(), { day: "numeric", month: "short" })} <X className="size-3" />
                                   </button>
                                 </li>
                               ))}
@@ -325,10 +327,10 @@ function Page() {
                         </div>
                       )}
                       <div>
-                        <p className="text-[12px] text-muted-foreground">Date de fin (facultative)</p>
-                        <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-2" aria-label="Date de fin de la récurrence" />
+                        <p className="text-[12px] text-muted-foreground">{t("Date de fin (facultative)")}</p>
+                        <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-2" aria-label={t("Date de fin de la récurrence")} />
                       </div>
-                      <p className="text-[12px] leading-5 text-muted-foreground">Chaque échéance crée une demande sept jours avant sa date, que vous suivez comme les autres.</p>
+                      <p className="text-[12px] leading-5 text-muted-foreground">{t("Chaque échéance crée une demande sept jours avant sa date, que vous suivez comme les autres.")}</p>
                     </div>
                   )}
                 </Field>
@@ -336,10 +338,10 @@ function Page() {
               {stepError && <p role="alert" className="mt-4 rounded-[18px] bg-primary/10 p-4 text-xs leading-5 text-primary">{stepError}</p>}
               <div className="mt-6 grid grid-cols-[auto_minmax(0,1fr)] gap-2 lg:flex lg:justify-between">
                 <Button type="button" variant="outline" size="lg" onClick={() => setStep(1)}>
-                  Retour
+                  {t("Retour")}
                 </Button>
                 <PillAction type="submit" className="w-full lg:w-[220px]">
-                  Continuer
+                  {t("Continuer")}
                 </PillAction>
               </div>
             </form>
@@ -347,26 +349,26 @@ function Page() {
         )}
         {step === 3 && (
           <section className="pt-8 lg:mx-[clamp(20px,3.9vw,56px)] lg:grid lg:grid-cols-12 lg:gap-x-10 lg:pt-16">
-            <p className="eyebrow text-primary lg:hidden">Récapitulatif</p>
-            <Title italic="exact ?" className="mt-4 text-[38px] text-primary lg:hidden">
-              Tout est{" "}
+            <p className="eyebrow text-primary lg:hidden">{t("Récapitulatif")}</p>
+            <Title italic={tPair("Tout est", "exact ?")[1]} className="mt-4 text-[38px] text-primary lg:hidden">
+              {tPair("Tout est", "exact ?")[0]}{" "}
             </Title>
             <div className="mt-6 rounded-[28px] bg-primary-deep p-5 text-foreground lg:col-span-7 lg:row-span-3 lg:mt-0 lg:p-8">
-              <p className="eyebrow text-foreground">{category}</p>
+              <p className="eyebrow text-foreground">{t(category)}</p>
               <h2 className="v3-card-title mt-5 text-[29px] lg:text-[52px]">{title}</h2>
               <dl className="mt-5 divide-y divide-foreground/22 border-t border-foreground/22 text-[13px]">
                 <Review
-                  label="Date"
-                  value={date ? new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR") : "À définir"}
+                  label={t("Date")}
+                  value={date ? new Date(`${date}T12:00:00`).toLocaleDateString(locale()) : t("À définir")}
                 />
-                <Review label="Heure" value={time || "À définir"} />
-                <Review label={category === "Tables" ? "Couverts" : "Personnes"} value={guests || "À définir"} />
-                <Review label="Précisions" value={description || "Aucune"} />
-                {rhythm !== "aucune" && <Review label="Récurrence" value={rhythmLabel(rhythm)} />}
+                <Review label={t("Heure")} value={time ? formatTime(time) : t("À définir")} />
+                <Review label={category === "Tables" ? t("Couverts") : t("Personnes")} value={guests || t("À définir")} />
+                <Review label={t("Précisions")} value={description || t("Aucune")} />
+                {rhythm !== "aucune" && <Review label={t("Récurrence")} value={t(rhythmLabel(rhythm))} />}
               </dl>
             </div>
             <p className="mt-5 text-[13px] leading-5 text-muted-foreground lg:col-span-5 lg:mt-0 lg:self-end lg:border-t lg:border-primary/25 lg:pt-6 lg:text-[18px] lg:leading-7">
-              Votre demande sera transmise à votre conciergerie dès l’envoi.
+              {t("Votre demande sera transmise à votre conciergerie dès l’envoi.")}
             </p>
             {error && (
               <p className="mt-4 rounded-[18px] lg:col-span-5 bg-primary/10 p-4 text-xs leading-5 text-primary">
@@ -375,10 +377,10 @@ function Page() {
             )}
             <div className="mt-6 grid grid-cols-[auto_minmax(0,1fr)] gap-2 lg:col-span-5 lg:flex lg:items-start lg:justify-between">
               <Button type="button" variant="outline" size="lg" onClick={() => setStep(2)}>
-                Modifier
+                {t("Modifier")}
               </Button>
               <PillAction onClick={() => void submit()} disabled={busy} className="w-full lg:w-[220px]">
-                {busy ? "Envoi…" : "Envoyer"}
+                {busy ? t("Envoi…") : t("Envoyer")}
               </PillAction>
             </div>
           </section>
@@ -398,7 +400,7 @@ function WizardHeader({ step, complete = false }: { step: 1 | 2 | 3; complete?: 
           size="icon"
           className="border border-foreground/22 text-foreground hover:bg-foreground/10"
         >
-          <Link to="/demandes" aria-label="Fermer">
+          <Link to="/demandes" aria-label={t("Fermer")}>
             <X />
           </Link>
         </Button>
@@ -441,13 +443,14 @@ function Review({ label, value }: { label: string; value: string }) {
 }
 
 function DesktopWizardHeader({ step, complete = false }: { step: 1 | 2 | 3; complete?: boolean }) {
-  const heading = complete
-    ? ["Demande ", "transmise."]
+  const pair = complete
+    ? tPair("Demande", "transmise.")
     : step === 1
-      ? ["Que pouvons-nous ", "organiser ?"]
+      ? tPair("Que pouvons-nous", "organiser ?")
       : step === 2
-        ? ["Votre ", "demande."]
-        : ["Tout est ", "exact ?"];
+        ? tPair("Votre", "demande.")
+        : tPair("Tout est", "exact ?");
+  const heading = [`${pair[0]} `, pair[1]] as const;
   return (
     <section className="hidden lg:relative lg:flex lg:min-h-[440px] lg:flex-col lg:overflow-hidden lg:rounded-[28px] lg:bg-primary-deep lg:px-[clamp(20px,3.9vw,56px)] lg:py-6 lg:text-foreground">
       <Logo inverse className="lg:pointer-events-none lg:absolute lg:bottom-10 lg:left-1/3 lg:w-full lg:opacity-5" />
@@ -455,8 +458,8 @@ function DesktopWizardHeader({ step, complete = false }: { step: 1 | 2 | 3; comp
         <TopBar />
         <p className="lg:eyebrow lg:mt-16 lg:text-foreground/80">
           {complete
-            ? "Confirmation"
-            : `${step === 1 ? "Catégorie" : step === 2 ? "Détails" : "Récapitulatif"} · ${step} / 3`}
+            ? t("Confirmation")
+            : `${step === 1 ? t("Catégorie") : step === 2 ? t("Détails") : t("Récapitulatif")} · ${step} / 3`}
         </p>
         <Title italic={heading[1]} className="lg:mt-6 lg:text-[clamp(48px,6.1vw,88px)] lg:leading-[0.96]">
           {heading[0]}
@@ -475,7 +478,7 @@ function DesktopWizardHeader({ step, complete = false }: { step: 1 | 2 | 3; comp
             variant="outline"
             className="lg:h-11 lg:border-foreground/22 lg:text-foreground lg:hover:bg-foreground/10"
           >
-            <Link to="/demandes">Fermer</Link>
+            <Link to="/demandes">{t("Fermer")}</Link>
           </Button>
         </div>
       </div>

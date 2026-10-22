@@ -3,6 +3,7 @@ import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { RequestStatus } from "@/data/art-de-vie";
+import { t } from "@/lib/i18n";
 
 export function Title({
   children,
@@ -79,7 +80,7 @@ export function StatusTimeline({ status, dark = false }: { status: RequestStatus
   if (status === "Annulée") return null;
   const current = steps.indexOf(status);
   return (
-    <ol aria-label={`Suivi : ${status}`} className="grid grid-cols-4 gap-1.5">
+    <ol aria-label={t("Suivi : {status}", { status: t(status) })} className="grid grid-cols-4 gap-1.5">
       {steps.map((step, index) => (
         <li
           key={step}
@@ -98,7 +99,7 @@ export function StatusTimeline({ status, dark = false }: { status: RequestStatus
                   : "bg-primary/15",
             )}
           />
-          <span className={current === index ? "font-medium" : "font-normal"}>{step}</span>
+          <span className={current === index ? "font-medium" : "font-normal"}>{t(step)}</span>
         </li>
       ))}
     </ol>

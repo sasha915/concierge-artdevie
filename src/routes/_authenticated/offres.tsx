@@ -5,10 +5,11 @@ import { AppShell, ListHeader } from "@/components/art-de-vie/app-shell";
 import { EditorialOfferCard, EmptyState, Filters } from "@/components/art-de-vie/cards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { offersQuery } from "@/lib/adv-queries";
+import { t, tPair } from "@/lib/i18n";
 
 const cats = ["Toutes", "Restaurant", "Bien-être", "Voyage", "Culture"];
 
-export const Route = createFileRoute("/_authenticated/offres")({ head: () => ({ meta: [{ title: "Offres privées — Art de Vie" }, { name: "description", content: "Les privilèges partenaires réservés aux membres." }, { property: "og:title", content: "Offres privées — Art de Vie" }, { property: "og:description", content: "Les privilèges partenaires réservés aux membres." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
+export const Route = createFileRoute("/_authenticated/offres")({ head: () => ({ meta: [{ title: t("Offres privées — Art de Vie") }, { name: "description", content: t("Les privilèges partenaires réservés aux membres.") }, { property: "og:title", content: t("Offres privées — Art de Vie") }, { property: "og:description", content: t("Les privilèges partenaires réservés aux membres.") }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
 
 function Page() {
   const [active, setActive] = useState("Toutes");
@@ -18,11 +19,11 @@ function Page() {
   return <AppShell>
     <div className="lg:hidden"><ListHeader eyebrow="Offres" title="Les " italic="offres." introduction="Privilèges négociés par votre conciergerie."><Filters values={cats} active={active} onChange={setActive} dark /></ListHeader></div>
     <header className="mb-[22px] hidden lg:hidden">
-      <h1 className="v3-heading text-[32px] text-primary">Les <em className="font-display font-normal">offres.</em></h1>
-      <p className="mt-2 text-[13px] text-muted-foreground">Privilèges négociés par votre conciergerie.</p>
+      <h1 className="v3-heading text-[32px] text-primary">{tPair("Les ", "offres.")[0]}<em className="font-display font-normal">{tPair("Les ", "offres.")[1]}</em></h1>
+      <p className="mt-2 text-[13px] text-muted-foreground">{t("Privilèges négociés par votre conciergerie.")}</p>
     </header>
     <div className="hidden lg:block"><ListHeader desktop eyebrow="Offres" title="Les " italic="offres." introduction="Privilèges négociés par votre conciergerie."><Filters values={cats} active={active} onChange={setActive} dark desktop/></ListHeader></div>
     {isLoading ? <div className="mt-4 grid grid-cols-2 gap-3 lg:mx-[clamp(20px,3.9vw,56px)] lg:mt-16"><Skeleton className="col-span-2 h-[412px] rounded-card bg-primary/10" /><Skeleton className="h-[268px] rounded-card bg-primary/10" /><Skeleton className="h-[268px] rounded-card bg-primary/10" /></div> : <div className="mt-4 grid gap-4 lg:mx-[clamp(20px,3.9vw,56px)] lg:mt-16 lg:gap-8">{groups.map((group, groupIndex) => <div key={group[0]?.id ?? groupIndex} className="grid grid-cols-2 gap-3 lg:grid-cols-12 lg:gap-6">{group[0] && <div className="col-span-2 lg:col-span-7"><EditorialOfferCard offer={group[0]} variant="hero" /></div>}{group[1] && <div className="lg:col-span-5 lg:h-[520px]"><EditorialOfferCard offer={group[1]} variant="tile" /></div>}{group[2] && <div className="lg:col-span-5 lg:h-[440px]"><EditorialOfferCard offer={group[2]} variant="tile" /></div>}{group[3] && <div className="col-span-2 lg:col-span-7"><EditorialOfferCard offer={group[3]} variant="feature" /></div>}</div>)}</div>}
-    {!isLoading && list.length === 0 && <div className="mt-6"><EmptyState>Aucune offre dans cette catégorie pour le moment.</EmptyState></div>}
+    {!isLoading && list.length === 0 && <div className="mt-6"><EmptyState>{t("Aucune offre dans cette catégorie pour le moment.")}</EmptyState></div>}
   </AppShell>;
 }

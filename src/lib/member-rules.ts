@@ -63,7 +63,7 @@ export function shiftMonth(month: string, delta: number): string {
   return d.toISOString().slice(0, 7);
 }
 
-export function monthLabel(month: string): string {
-  const label = new Date(`${month}-15T12:00:00Z`).toLocaleDateString("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
+export function monthLabel(month: string, lang: "fr" | "en" = "fr"): string {
+  const label = new Date(`${month}-15T12:00:00Z`).toLocaleDateString(lang === "en" ? "en-GB" : "fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
   return label.charAt(0).toUpperCase() + label.slice(1);
 }

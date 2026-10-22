@@ -221,6 +221,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          language: string
           onboarded_at: string | null
           concierge_referent: string | null
           concierge_whatsapp: string | null
@@ -242,6 +243,7 @@ export type Database = {
           valid_until: string
         }
         Insert: {
+          language?: string
           onboarded_at?: string | null
           concierge_referent?: string | null
           concierge_whatsapp?: string | null
@@ -263,6 +265,7 @@ export type Database = {
           valid_until?: string
         }
         Update: {
+          language?: string
           onboarded_at?: string | null
           concierge_referent?: string | null
           concierge_whatsapp?: string | null

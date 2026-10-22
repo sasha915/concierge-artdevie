@@ -17,9 +17,10 @@ export function fileProblem(file: { type: string; size: number }): string | null
   return null;
 }
 
-export function fileSizeLabel(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} Ko`;
-  return `${(bytes / (1024 * 1024)).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Mo`;
+export function fileSizeLabel(bytes: number, lang: "fr" | "en" = "fr"): string {
+  const en = lang === "en";
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} ${en ? "KB" : "Ko"}`;
+  return `${(bytes / (1024 * 1024)).toLocaleString(en ? "en-GB" : "fr-FR", { maximumFractionDigits: 1 })} ${en ? "MB" : "Mo"}`;
 }
 
 /** Nom affiché, sans chemin ni caractère de contrôle. */

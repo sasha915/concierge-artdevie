@@ -2,6 +2,7 @@ import { Logo } from "@/components/art-de-vie/app-shell";
 import { Star } from "lucide-react";
 import { useState, type MouseEvent } from "react";
 import { formatMonth, initials, type Profile } from "@/data/art-de-vie";
+import { t } from "@/lib/i18n";
 
 export function MemberCard({ profile }: { profile: Profile | null }) {
   const [tilt, setTilt] = useState({ x: 4, y: -4 });
@@ -9,7 +10,7 @@ export function MemberCard({ profile }: { profile: Profile | null }) {
     const r = e.currentTarget.getBoundingClientRect();
     setTilt({ x: ((e.clientY - r.top) / r.height - 0.5) * -8, y: ((e.clientX - r.left) / r.width - 0.5) * 10 });
   }
-  const name = profile?.full_name?.trim() || "Membre Art de Vie";
+  const name = profile?.full_name?.trim() || t("Membre Art de Vie");
   return (
     <div className="perspective-distant" onMouseMove={move} onMouseLeave={() => setTilt({ x: 4, y: -4 })}>
       <div
@@ -29,19 +30,19 @@ export function MemberCard({ profile }: { profile: Profile | null }) {
             <span className="font-display text-2xl sm:text-3xl">{profile?.plan ?? "Signature"}</span>
             <span className="relative top-[2px] inline-flex items-center gap-1 rounded-full border border-gold px-2.5 py-1 text-[9px] font-semibold text-foreground">
               <Star className="size-2.5 text-gold" />
-              VIP
+              {t("VIP")}
             </span>
           </div>
-          <p className="mt-[10px] text-[11px] tracking-[0.13em]">{profile?.member_number ?? "N° ADV"}</p>
+          <p className="mt-[10px] text-[11px] tracking-[0.13em]">{profile?.member_number ?? t("N° ADV")}</p>
           <p className="mt-1 text-sm font-medium">{name}</p>
           <div className="mt-5 flex justify-between border-t border-foreground/[0.18] pt-3 text-[9px] uppercase tracking-[0.13em] opacity-80">
             <span>
-              Membre depuis
+              {t("Membre depuis")}
               <br />
               <b className="font-medium normal-case tracking-normal">{formatMonth(profile?.member_since)}</b>
             </span>
             <span className="text-right">
-              Validité
+              {t("Validité")}
               <br />
               <b className="font-medium normal-case tracking-normal">{formatMonth(profile?.valid_until)}</b>
             </span>

@@ -5,6 +5,7 @@ import bassin from "@/assets/v3/bassin.jpg.asset.json";
 import entreeDeNuit from "@/assets/v3/entree-de-nuit.jpg.asset.json";
 import placeVendome from "@/assets/v3/place-vendome.jpg.asset.json";
 import villageCotier from "@/assets/v3/village-cotier.jpg.asset.json";
+import { getLang, locale, t } from "@/lib/i18n";
 
 export type RequestStatus = "Nouvelle" | "En cours" | "Confirmée" | "Terminée" | "Annulée";
 
@@ -64,6 +65,7 @@ export type Profile = {
   notify_requests: boolean;
   notify_offers: boolean;
   notify_messages: boolean;
+  language?: "fr" | "en";
 };
 
 const images: Record<string, string> = {
@@ -86,22 +88,32 @@ export function offerImage(offer: Pick<Offer, "image_key" | "image_url">): strin
 }
 
 export function formatDate(iso: string | null | undefined): string {
-  if (!iso) return "Date à définir";
-  return new Date(`${iso}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  if (!iso) return t("Date à définir");
+  return new Date(`${iso}T12:00:00`).toLocaleDateString(locale(), { weekday: "long", day: "numeric", month: "long" });
+}
+
+/** « 20:30:00 » → « 20 h 30 » en français, « 20:30 » en anglais. */
+export function formatTime(time: string | null | undefined): string {
+  if (!time) return "";
+  const hhmm = time.slice(0, 5);
+  return getLang() === "en" ? hhmm : hhmm.replace(":", " h ");
 }
 
 export function formatShortDate(iso: string | null | undefined): string {
   if (!iso) return "—";
-  return new Date(`${iso}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  return new Date(`${iso}T12:00:00`).toLocaleDateString(locale(), { day: "numeric", month: "long", year: "numeric" });
 }
 
 export function formatMonth(iso: string | null | undefined): string {
   if (!iso) return "—";
-  const label = new Date(`${iso}T12:00:00`).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  const label = new Date(`${iso}T12:00:00`).toLocaleDateString(locale(), { month: "long", year: "numeric" });
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 export function formatAmount(cents: number): string {
+  if (getLang() === "en") {
+    return (cents / 100).toLocaleString("en-GB", { style: "currency", currency: "EUR", minimumFractionDigits: cents % 100 === 0 ? 0 : 2, maximumFractionDigits: 2 });
+  }
   return `${(cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: cents % 100 === 0 ? 0 : 2, maximumFractionDigits: 2 })} €`;
 }
 

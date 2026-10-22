@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { t } from "@/lib/i18n";
 
 /** Clé de session posée par « Plus tard » : le questionnaire ne se représente qu'à la connexion suivante. */
 export const WELCOME_LATER_KEY = "adv-welcome-later";
@@ -35,7 +36,7 @@ export function ChoiceGroup({
             )}
           >
             {on && <Check className="size-4" aria-hidden />}
-            {option}
+            {t(option)}
           </button>
         );
       })}

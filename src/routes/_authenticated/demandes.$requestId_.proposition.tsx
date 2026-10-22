@@ -12,14 +12,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount } from "@/data/art-de-vie";
 import { requestProposalMemberQuery, requestsQuery } from "@/lib/adv-queries";
 import { answerProposal } from "@/lib/messages.functions";
+import { t } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/demandes/$requestId_/proposition")({
   head: () => ({
     meta: [
-      { title: "Votre conciergerie vous propose — Art de Vie" },
-      { name: "description", content: "Choisissez l’option qui vous convient." },
-      { property: "og:title", content: "Votre conciergerie vous propose — Art de Vie" },
-      { property: "og:description", content: "Choisissez l’option qui vous convient." },
+      { title: t("Votre conciergerie vous propose — Art de Vie") },
+      { name: "description", content: t("Choisissez l’option qui vous convient.") },
+      { property: "og:title", content: t("Votre conciergerie vous propose — Art de Vie") },
+      { property: "og:description", content: t("Choisissez l’option qui vous convient.") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -41,15 +42,15 @@ function Page() {
 
   async function respond(optionId: string | null) {
     if (!proposal) return;
-    if (optionId === null && !window.confirm("Aucune option ne vous convient ? Votre conciergerie en sera prévenue.")) return;
+    if (optionId === null && !window.confirm(t("Aucune option ne vous convient ? Votre conciergerie en sera prévenue."))) return;
     setBusy(true); setError(null);
     try {
       const res = await answer({ data: { proposalId: proposal.id, optionId } });
-      if (!res.ok) { setError(res.reason); return; }
+      if (!res.ok) { setError(t(res.reason)); return; }
       await queryClient.invalidateQueries({ queryKey: ["requests"] });
       await navigate({ to: "/demandes/$requestId", params: { requestId } });
     } catch {
-      setError("Votre réponse n’a pas pu être envoyée. Réessayez dans un instant.");
+      setError(t("Votre réponse n’a pas pu être envoyée. Réessayez dans un instant."));
     } finally {
       setBusy(false);
     }
@@ -63,13 +64,13 @@ function Page() {
           <Skeleton className="h-[420px] rounded-[28px] bg-primary/10" />
         ) : !proposal || proposal.status !== "en attente" ? (
           <div className="lg:mx-[clamp(20px,3.9vw,56px)]">
-            <EmptyState>{proposal ? "Vous avez déjà répondu à cette proposition." : "Aucune proposition en attente."}</EmptyState>
-            <Link to="/demandes/$requestId" params={{ requestId }} className="mt-4 inline-block text-[14px] text-primary underline underline-offset-4">Revenir à la demande</Link>
+            <EmptyState>{proposal ? t("Vous avez déjà répondu à cette proposition.") : t("Aucune proposition en attente.")}</EmptyState>
+            <Link to="/demandes/$requestId" params={{ requestId }} className="mt-4 inline-block text-[14px] text-primary underline underline-offset-4">{t("Revenir à la demande")}</Link>
           </div>
         ) : (
           <div className="text-primary lg:mx-[clamp(20px,3.9vw,56px)]">
-            {item && <p className="mb-4 text-[14px] text-muted-foreground lg:text-[18px]">{item.category} · {item.title}</p>}
-            <div role="radiogroup" aria-label="Options proposées" className="grid gap-3 lg:grid-cols-2">
+            {item && <p className="mb-4 text-[14px] text-muted-foreground lg:text-[18px]">{t(item.category)} · {item.title}</p>}
+            <div role="radiogroup" aria-label={t("Options proposées")} className="grid gap-3 lg:grid-cols-2">
               {proposal.options.map((o) => {
                 const active = choice === o.id;
                 return (
@@ -85,11 +86,11 @@ function Page() {
                 );
               })}
             </div>
-            <p className="mt-5 text-[13px] leading-5 text-muted-foreground lg:text-[15px]">Les montants sont estimatifs. Le montant définitif figure sur votre relevé.</p>
+            <p className="mt-5 text-[13px] leading-5 text-muted-foreground lg:text-[15px]">{t("Les montants sont estimatifs. Le montant définitif figure sur votre relevé.")}</p>
             {error && <p role="alert" className="mt-4 rounded-2xl bg-primary/10 p-4 text-xs leading-5">{error}</p>}
             <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center">
-              <PillAction type="button" className="w-full sm:max-w-sm" disabled={busy || !choice} onClick={() => void respond(choice)}>Valider ce choix</PillAction>
-              <Button type="button" variant="link" disabled={busy} onClick={() => void respond(null)}>Aucune ne me convient</Button>
+              <PillAction type="button" className="w-full sm:max-w-sm" disabled={busy || !choice} onClick={() => void respond(choice)}>{t("Valider ce choix")}</PillAction>
+              <Button type="button" variant="link" disabled={busy} onClick={() => void respond(null)}>{t("Aucune ne me convient")}</Button>
             </div>
           </div>
         )}

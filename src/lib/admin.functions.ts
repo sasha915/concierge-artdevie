@@ -3,6 +3,7 @@ import { getRequest } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { mollie, mollieKey, statusLabel, type MolliePayment } from "./mollie.server";
+import { translate } from "@/lib/i18n";
 
 type Ctx = { supabase: any; userId: string };
 
@@ -82,7 +83,7 @@ export const getMemberDetail = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { admin, role } = await assertTeam(context as Ctx);
     const [{ data: profile }, { data: requests }, { data: invoices }] = await Promise.all([
-      admin.from("profiles").select("id, full_name, email, phone, plan, role_label, member_number, member_since, valid_until, disabled_at, concierge_referent, concierge_whatsapp").eq("id", data.id).maybeSingle(),
+      admin.from("profiles").select("id, full_name, email, phone, plan, role_label, member_number, member_since, valid_until, disabled_at, concierge_referent, concierge_whatsapp, language").eq("id", data.id).maybeSingle(),
       admin.from("requests").select("id, category, status, title, description, scheduled_date, scheduled_time, concierge, image_key").eq("user_id", data.id).order("created_at", { ascending: false }),
       admin.from("invoices").select("id, number, kind, issued_on, amount_cents, status").eq("user_id", data.id).order("issued_on", { ascending: false }),
     ]);
@@ -130,6 +131,19 @@ export const updateMember = createServerFn({ method: "POST" })
       concierge_whatsapp: data.conciergeWhatsapp || null,
     }).eq("id", data.id);
     if (error) return { ok: false as const, reason: "La modification a échoué." };
+    return { ok: true as const };
+  });
+
+/** Lot 6.5 : langue de l'espace membre, modifiable par toute l'équipe. */
+export const setMemberLanguage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), language: z.enum(["fr", "en"]) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const ids = await teamIds(admin);
+    if (ids.includes(data.id)) return { ok: false as const, reason: "Ce compte appartient à l’équipe." };
+    const { data: row, error } = await admin.from("profiles").update({ language: data.language }).eq("id", data.id).select("id").maybeSingle();
+    if (error || !row) return { ok: false as const, reason: "La langue n’a pas pu être enregistrée." };
     return { ok: true as const };
   });
 
@@ -263,7 +277,7 @@ export const updateRequestStatus = createServerFn({ method: "POST" })
     const { data: row, error } = await admin.from("requests").update({ status: data.status }).eq("id", data.id).eq("status", before.status).select("id").maybeSingle();
     if (error || !row) return { ok: false as const, reason: "Le statut n’a pas pu être modifié. Rechargez la demande." };
     const { error: eventError } = await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: "statut changé", detail: `${before.status} → ${data.status}` });
-    await notifyMember(admin, data.id, "statut", (title) => statusNotice(title, data.status));
+    await notifyMember(admin, data.id, "statut", (title, tr) => statusNotice(title, data.status, tr));
     if (eventError) return { ok: false as const, reason: "Le statut a changé, mais son historique n’a pas pu être enregistré. Rechargez la demande." };
     return { ok: true as const };
   });
@@ -291,7 +305,7 @@ export const setRequestReply = createServerFn({ method: "POST" })
     const { data: row, error } = await admin.from("requests").update(replyUpdate(data.reply)).eq("id", data.id).select("id").maybeSingle();
     if (error || !row) return { ok: false as const, reason: "La réponse n’a pas pu être enregistrée." };
     const { error: eventError } = await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: data.reply.trim() ? "réponse publiée" : "réponse retirée", detail: null });
-    if (data.reply.trim()) await notifyMember(admin, data.id, "réponse", (title) => `Votre conciergerie a répondu à votre demande « ${title} ».`);
+    if (data.reply.trim()) await notifyMember(admin, data.id, "réponse", (title, tr) => tr("Votre conciergerie a répondu à votre demande « {title} ».", { title }));
     if (eventError) return { ok: false as const, reason: "La réponse a été enregistrée, mais son historique n’a pas pu être enregistré. Rechargez la demande." };
     return { ok: true as const };
   });
@@ -845,25 +859,30 @@ export const saveMemberPreferences = createServerFn({ method: "POST" })
 
 // ---- Lot 4.3 : notifications au membre, dans l'application ----
 
-function statusNotice(title: string, status: string): string {
+type Tr = (fr: string, vars?: Record<string, string | number>) => string;
+
+function statusNotice(title: string, status: string, tr: Tr): string {
   switch (status) {
-    case "En cours": return `Votre demande « ${title} » est prise en charge.`;
-    case "Confirmée": return `Votre demande « ${title} » est confirmée.`;
-    case "Terminée": return `Votre demande « ${title} » est terminée.`;
-    case "Annulée": return `Votre demande « ${title} » a été annulée.`;
-    default: return `Votre demande « ${title} » est de nouveau en attente de prise en charge.`;
+    case "En cours": return tr("Votre demande « {title} » est prise en charge.", { title });
+    case "Confirmée": return tr("Votre demande « {title} » est confirmée.", { title });
+    case "Terminée": return tr("Votre demande « {title} » est terminée.", { title });
+    case "Annulée": return tr("Votre demande « {title} » a été annulée.", { title });
+    default: return tr("Votre demande « {title} » est de nouveau en attente de prise en charge.", { title });
   }
 }
 
-/** Crée une notification pour le membre, s'il a laissé « Mes demandes » activé. Ne bloque jamais l'action de l'équipe. */
-async function notifyMember(admin: any, requestId: string, kind: string, body: (title: string) => string) {
+/**
+ * Crée une notification pour le membre, s'il a laissé « Mes demandes » activé. Ne bloque jamais l'action de l'équipe.
+ * Lot 6.5 : le texte est rédigé dans la langue du membre au moment de l'envoi.
+ */
+async function notifyMember(admin: any, requestId: string, kind: string, body: (title: string, tr: Tr) => string) {
   try {
     const { data: request } = await admin.from("requests").select("user_id, title").eq("id", requestId).maybeSingle();
     if (!request) return;
-    const { data: profile } = await admin.from("profiles").select("notify_requests, notify_messages").eq("id", request.user_id).maybeSingle();
+    const { data: profile } = await admin.from("profiles").select("notify_requests, notify_messages, language").eq("id", request.user_id).maybeSingle();
     // Messages de l'équipe : réglage « Messages » ; statuts et réponses : réglage « Mes demandes ».
     if (!(kind === "message" ? profile?.notify_messages : profile?.notify_requests)) return;
-    await admin.from("member_notifications").insert({ user_id: request.user_id, request_id: requestId, kind, body: body(request.title) });
+    await admin.from("member_notifications").insert({ user_id: request.user_id, request_id: requestId, kind, body: body(request.title, (fr, vars) => translate(profile?.language === "en" ? "en" : "fr", fr, vars)) });
   } catch (err) {
     console.error("[notifyMember] notification non créée", err);
   }
@@ -900,7 +919,7 @@ export const sendTeamMessage = createServerFn({ method: "POST" })
     const { error } = await admin.from("request_messages").insert({ request_id: data.requestId, author_id: (context as Ctx).userId, author_role: "équipe", body: data.body });
     if (error) return { ok: false as const, reason: "Le message n’a pas pu être envoyé." };
     await admin.from("request_events").insert({ request_id: data.requestId, actor_id: (context as Ctx).userId, kind: "message envoyé", detail: null });
-    await notifyMember(admin, data.requestId, "message", (title) => `Votre conciergerie vous a écrit au sujet de « ${title} ».`);
+    await notifyMember(admin, data.requestId, "message", (title, tr) => tr("Votre conciergerie vous a écrit au sujet de « {title} ».", { title }));
     return { ok: true as const };
   });
 
@@ -947,7 +966,7 @@ export const uploadRequestFile = createServerFn({ method: "POST" })
       return { ok: false as const, reason: "Le fichier n’a pas pu être enregistré." };
     }
     await admin.from("request_events").insert({ request_id: data.requestId, actor_id: (context as Ctx).userId, kind: "pièce jointe ajoutée", detail: `${name}${data.visible ? " · visible par le membre" : " · interne"}` });
-    if (data.visible) await notifyMember(admin, data.requestId, "document", (title) => `Un document a été ajouté à votre demande « ${title} ».`);
+    if (data.visible) await notifyMember(admin, data.requestId, "document", (title, tr) => tr("Un document a été ajouté à votre demande « {title} ».", { title }));
     return { ok: true as const };
   });
 
@@ -962,7 +981,7 @@ export const setRequestFileVisibility = createServerFn({ method: "POST" })
     const { error } = await admin.from("request_files").update({ visible_to_member: data.visible }).eq("id", data.id);
     if (error) return { ok: false as const, reason: "La visibilité n’a pas pu être modifiée." };
     await admin.from("request_events").insert({ request_id: file.request_id, actor_id: (context as Ctx).userId, kind: data.visible ? "document rendu visible" : "document rendu interne", detail: file.name });
-    if (data.visible) await notifyMember(admin, file.request_id, "document", (title) => `Un document a été ajouté à votre demande « ${title} ».`);
+    if (data.visible) await notifyMember(admin, file.request_id, "document", (title, tr) => tr("Un document a été ajouté à votre demande « {title} ».", { title }));
     return { ok: true as const };
   });
 
@@ -1007,7 +1026,7 @@ export const decideRequestChange = createServerFn({ method: "POST" })
     if (error || !row) return { ok: false as const, reason: "Cette demande de modification a déjà été traitée." };
     const { changeKindLabel } = await import("./request-actions-rules");
     await admin.from("request_events").insert({ request_id: row.request_id, actor_id: (context as Ctx).userId, kind: data.decision === "acceptée" ? "modification acceptée" : "modification refusée", detail: changeKindLabel(row.kind) });
-    await notifyMember(admin, row.request_id, "statut", (title) => data.decision === "acceptée" ? `Votre demande de modification pour « ${title} » est acceptée.` : `Votre demande de modification pour « ${title} » n’a pas pu être retenue.`);
+    await notifyMember(admin, row.request_id, "statut", (title, tr) => data.decision === "acceptée" ? tr("Votre demande de modification pour « {title} » est acceptée.", { title }) : tr("Votre demande de modification pour « {title} » n’a pas pu être retenue.", { title }));
     return { ok: true as const };
   });
 
@@ -1066,7 +1085,7 @@ export const sendProposal = createServerFn({ method: "POST" })
       return { ok: false as const, reason: "La proposition n’a pas pu être envoyée." };
     }
     await admin.from("request_events").insert({ request_id: data.requestId, actor_id: (context as Ctx).userId, kind: "proposition envoyée", detail: `${data.options.length} option${data.options.length > 1 ? "s" : ""}` });
-    await notifyMember(admin, data.requestId, "proposition", (title) => `Votre conciergerie vous propose ${data.options.length > 1 ? `${data.options.length} options` : "une option"} pour « ${title} ».`);
+    await notifyMember(admin, data.requestId, "proposition", (title, tr) => data.options.length > 1 ? tr("Votre conciergerie vous propose {n} options pour « {title} ».", { n: data.options.length, title }) : tr("Votre conciergerie vous propose une option pour « {title} ».", { title }));
     return { ok: true as const };
   });
 
@@ -1149,9 +1168,9 @@ export const getMemberStatement = createServerFn({ method: "GET" })
     const { admin } = await assertTeam(context as Ctx);
     const { statementLines, STATEMENT_STATUSES } = await import("./member-rules");
     const [{ data: member }, { data: rows, error }] = await Promise.all([
-      admin.from("profiles").select("full_name, member_number").eq("id", data.id).maybeSingle(),
+      admin.from("profiles").select("full_name, member_number, language").eq("id", data.id).maybeSingle(),
       admin.from("requests").select("id, title, status, amount_cents, scheduled_date, created_at").eq("user_id", data.id).in("status", [...STATEMENT_STATUSES]).not("amount_cents", "is", null),
     ]);
     if (error || !member) throw new Error("Le relevé n’a pas pu être chargé.");
-    return { member_name: member.full_name as string, member_number: member.member_number as string, lines: statementLines(rows ?? [], data.month) };
+    return { member_name: member.full_name as string, member_number: member.member_number as string, language: (member.language === "en" ? "en" : "fr") as "fr" | "en", lines: statementLines(rows ?? [], data.month) };
   });
