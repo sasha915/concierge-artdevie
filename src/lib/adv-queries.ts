@@ -40,7 +40,7 @@ export const invoicesQuery = queryOptions({
   queryFn: async (): Promise<Invoice[]> => {
     const { data, error } = await supabase
       .from("invoices")
-      .select("id, number, kind, issued_on, amount_cents, status")
+      .select("id, number, kind, issued_on, amount_cents, status, request_id, service_cents, commission_cents, commission_rate")
       .order("issued_on", { ascending: false });
     if (error) throw error;
     return (data ?? []) as Invoice[];

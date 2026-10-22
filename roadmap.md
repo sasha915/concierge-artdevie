@@ -1,6 +1,7 @@
 # Art de Vie roadmap
 - [x] Équipe lot 4.1 : fonctions historique/réponses types, historique du détail, filtres personnels, gestion des modèles ; 9 tests passent, build automatique OK ; aucune demande modifiée ; lot 4.2 exclu
 - [ ] Équipe lot 4.1 : vérification des écrans en session équipe déverrouillée (bloquée : aucune session du demandeur disponible ; connexion nécessaire dans l’aperçu) ; résultat distinct du typage non exposé par le contrôle automatique
+- [x] Équipe lot 4.2 : montant de la prestation, commission selon la formule (10 % Essentiel, 0 % Signature), facture liée détaillée (prestation + commission), numérotation continue par la base ; écrit hors Lovable via GitHub ; vérification à l'écran restante
 - [x] Design system and shared shell
 - [x] Ten screens and static content
 - [x] Navigation and interactive filters/forms

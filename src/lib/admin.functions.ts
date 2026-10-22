@@ -200,7 +200,7 @@ export const listMemberPayments = createServerFn({ method: "GET" })
 // ---- Lot 1.1 : demandes (équipe) ----
 
 const requestStatus = z.enum(["Nouvelle", "En cours", "Confirmée", "Terminée", "Annulée"]);
-const requestCols = "id, user_id, category, status, title, description, scheduled_date, scheduled_time, guests, concierge, concierge_id, image_key, created_at, team_reply, team_reply_at";
+const requestCols = "id, user_id, category, status, title, description, scheduled_date, scheduled_time, guests, concierge, concierge_id, image_key, created_at, team_reply, team_reply_at, amount_cents";
 
 export const listAllRequests = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -682,4 +682,79 @@ export const uploadOfferImage = createServerFn({ method: "POST" })
     if (error) return { ok: false as const, reason: "L’envoi de la photo a échoué." };
     const { data: s } = await admin.storage.from("offer-images").createSignedUrl(path, 3600);
     return { ok: true as const, path, previewUrl: s?.signedUrl ?? null };
+  });
+
+// ---- Lot 4.2 : montant, commission, facture d'une demande ----
+
+type BillingInvoice = { id: string; number: string; status: string; issued_on: string; amount_cents: number };
+
+/** Montant, formule du membre, commission et facture liée. La facture n'est détaillée que pour un administrateur. */
+export const getRequestBilling = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin, role } = await assertTeam(context as Ctx);
+    const { invoiceBreakdown } = await import("./billing-rules");
+    const { data: request, error } = await admin.from("requests").select("id, user_id, amount_cents").eq("id", data.id).maybeSingle();
+    if (error) throw new Error("Le montant n’a pas pu être chargé.");
+    if (!request) return null;
+    const [{ data: member }, { data: invoice }] = await Promise.all([
+      admin.from("profiles").select("plan").eq("id", request.user_id).maybeSingle(),
+      admin.from("invoices").select("id, number, status, issued_on, amount_cents").eq("request_id", data.id).maybeSingle(),
+    ]);
+    const plan: string = member?.plan ?? "Signature";
+    return {
+      amount_cents: request.amount_cents as number | null,
+      plan,
+      breakdown: request.amount_cents === null ? null : invoiceBreakdown(request.amount_cents, plan),
+      invoiced: !!invoice,
+      invoice: role === "admin" ? ((invoice as BillingInvoice | null) ?? null) : null,
+    };
+  });
+
+export const setRequestAmount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), amountCents: z.number().int().min(0).max(100_000_000).nullable() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { data: invoice } = await admin.from("invoices").select("id").eq("request_id", data.id).maybeSingle();
+    if (invoice) return { ok: false as const, reason: "Une facture existe déjà pour cette demande : le montant ne peut plus être modifié." };
+    const { data: row, error } = await admin.from("requests").update({ amount_cents: data.amountCents }).eq("id", data.id).select("id").maybeSingle();
+    if (error || !row) return { ok: false as const, reason: "Le montant n’a pas pu être enregistré." };
+    const { formatAmount } = await import("@/data/art-de-vie");
+    await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: data.amountCents === null ? "montant retiré" : "montant renseigné", detail: data.amountCents === null ? null : formatAmount(data.amountCents) });
+    return { ok: true as const };
+  });
+
+/** Crée la facture de la prestation : prestation + commission selon la formule, numéro attribué par la base. */
+export const createRequestInvoice = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { invoiceBreakdown } = await import("./billing-rules");
+    const { data: request } = await admin.from("requests").select("id, user_id, status, amount_cents").eq("id", data.id).maybeSingle();
+    if (!request) return { ok: false as const, reason: "Demande introuvable." };
+    if (request.status === "Annulée") return { ok: false as const, reason: "Une demande annulée ne peut pas être facturée." };
+    if (!request.amount_cents) return { ok: false as const, reason: "Renseignez d’abord le montant de la prestation." };
+    const { data: existing } = await admin.from("invoices").select("id").eq("request_id", data.id).maybeSingle();
+    if (existing) return { ok: false as const, reason: "Une facture existe déjà pour cette demande." };
+    const { data: member } = await admin.from("profiles").select("plan").eq("id", request.user_id).maybeSingle();
+    const b = invoiceBreakdown(request.amount_cents, member?.plan ?? "Signature");
+    const { data: number, error: numberError } = await admin.rpc("next_invoice_number");
+    if (numberError || !number) return { ok: false as const, reason: "Le numéro de facture n’a pas pu être attribué." };
+    const { data: invoice, error } = await admin.from("invoices").insert({
+      user_id: request.user_id,
+      request_id: request.id,
+      number,
+      kind: "Prestations",
+      status: "En attente",
+      amount_cents: b.total_cents,
+      service_cents: b.service_cents,
+      commission_cents: b.commission_cents,
+      commission_rate: b.commission_rate,
+    }).select("id, number").single();
+    if (error || !invoice) return { ok: false as const, reason: error?.code === "23505" ? "Une facture existe déjà pour cette demande." : "La facture n’a pas pu être créée." };
+    await admin.from("request_events").insert({ request_id: request.id, actor_id: (context as Ctx).userId, kind: "facture créée", detail: invoice.number });
+    return { ok: true as const, number: invoice.number as string };
   });

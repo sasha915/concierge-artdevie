@@ -6,7 +6,7 @@ export function requestHistory(events: HistoryEvent[], createdAt: string): Array
   return rows.sort((a, b) => a.created_at.localeCompare(b.created_at)).map((e) => {
     const firstHandling = !handled && e.kind === "statut changé" && e.detail === "Nouvelle → En cours";
     if (firstHandling) handled = true;
-    const label = firstHandling ? "Prise en charge" : e.kind === "attribuée" ? `Attribuée · ${e.detail || "À attribuer"}` : e.kind === "statut changé" ? `Statut changé · ${e.detail ?? ""}` : e.kind.charAt(0).toUpperCase() + e.kind.slice(1);
+    const label = firstHandling ? "Prise en charge" : e.kind === "attribuée" ? `Attribuée · ${e.detail || "À attribuer"}` : e.kind === "statut changé" ? `Statut changé · ${e.detail ?? ""}` : e.kind.charAt(0).toUpperCase() + e.kind.slice(1) + (e.detail ? ` · ${e.detail}` : "");
     return { ...e, label };
   });
 }

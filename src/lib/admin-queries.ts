@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { listMembers, getMemberDetail, getMemberParrain, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames, listReferrals, listTeam, listOffersAdmin, listRequestEvents, listReplyTemplates, type TeamRole } from "@/lib/admin.functions";
+import { listMembers, getMemberDetail, getMemberParrain, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames, listReferrals, listTeam, listOffersAdmin, listRequestEvents, listReplyTemplates, getRequestBilling, type TeamRole } from "@/lib/admin.functions";
 import type { Invoice, RequestItem } from "@/data/art-de-vie";
 
 export type AdminMember = {
@@ -140,4 +140,9 @@ export const teamSelfQuery = queryOptions({
     if (error || !data.user) throw new Error("Le compte connecté n’a pas pu être chargé.");
     return data.user.id;
   },
+});
+
+export const requestBillingQuery = (id: string) => queryOptions({
+  queryKey: ["admin", "request", id, "billing"],
+  queryFn: () => getRequestBilling({ data: { id } }),
 });

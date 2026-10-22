@@ -17,38 +17,58 @@ export type Database = {
       invoices: {
         Row: {
           amount_cents: number
+          commission_cents: number | null
+          commission_rate: number | null
           created_at: string
           id: string
           issued_on: string
           kind: string
           mollie_payment_id: string | null
           number: string
+          request_id: string | null
+          service_cents: number | null
           status: string
           user_id: string
         }
         Insert: {
           amount_cents?: number
+          commission_cents?: number | null
+          commission_rate?: number | null
           created_at?: string
           id?: string
           issued_on?: string
           kind?: string
           mollie_payment_id?: string | null
           number: string
+          request_id?: string | null
+          service_cents?: number | null
           status?: string
           user_id: string
         }
         Update: {
           amount_cents?: number
+          commission_cents?: number | null
+          commission_rate?: number | null
           created_at?: string
           id?: string
           issued_on?: string
           kind?: string
           mollie_payment_id?: string | null
           number?: string
+          request_id?: string | null
+          service_cents?: number | null
           status?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "invoices_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       offers: {
         Row: {
@@ -287,6 +307,7 @@ export type Database = {
       }
       requests: {
         Row: {
+          amount_cents: number | null
           category: string
           concierge: string
           concierge_id: string | null
@@ -304,6 +325,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          amount_cents?: number | null
           category?: string
           concierge?: string
           concierge_id?: string | null
@@ -321,6 +343,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          amount_cents?: number | null
           category?: string
           concierge?: string
           concierge_id?: string | null
@@ -373,6 +396,7 @@ export type Database = {
         Returns: boolean
       }
       is_team: { Args: { _user_id: string }; Returns: boolean }
+      next_invoice_number: { Args: never; Returns: string }
     }
     Enums: {
       app_role: "admin" | "member" | "concierge"

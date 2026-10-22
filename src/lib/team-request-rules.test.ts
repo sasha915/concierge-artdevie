@@ -32,4 +32,8 @@ test("Mes demandes utilise concierge_id et se combine aux autres filtres", () =>
 test("À attribuer utilise exactement le nom du concierge", () => {
   expect(matchesRequestFilters({ ...row, concierge: "À attribuer" }, { ...filters, concierge: "", mine: false, unassigned: true })).toBe(true);
   expect(matchesRequestFilters(row, { ...filters, concierge: "", mine: false, unassigned: true })).toBe(false);
+});test("les événements de facturation affichent leur détail", () => {
+  const rows = requestHistory([{ ...event, kind: "reçue", detail: null }, { ...event, id: "3", kind: "facture créée", detail: "ADV-2026-0001", created_at: "2026-10-24T00:00:00Z" }], date);
+  expect(rows[1]?.label).toBe("Facture créée · ADV-2026-0001");
+  expect(rows[0]?.label).toBe("Reçue");
 });

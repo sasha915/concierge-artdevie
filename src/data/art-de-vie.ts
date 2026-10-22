@@ -43,6 +43,10 @@ export type Invoice = {
   issued_on: string;
   amount_cents: number;
   status: string;
+  request_id?: string | null;
+  service_cents?: number | null;
+  commission_cents?: number | null;
+  commission_rate?: number | null;
 };
 
 export type Profile = {
@@ -98,7 +102,7 @@ export function formatMonth(iso: string | null | undefined): string {
 }
 
 export function formatAmount(cents: number): string {
-  return `${(cents / 100).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} €`;
+  return `${(cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: cents % 100 === 0 ? 0 : 2, maximumFractionDigits: 2 })} €`;
 }
 
 export function initials(name: string): string {

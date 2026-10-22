@@ -51,12 +51,10 @@ export const Route = createFileRoute("/api/public/mollie-webhook")({
           });
           await supabaseAdmin.from("profiles").update({ mollie_subscription_id: sub.id }).eq("id", meta.user_id);
 
-          const { count } = await supabaseAdmin
-            .from("invoices")
-            .select("id", { count: "exact", head: true });
+          const { data: number } = await supabaseAdmin.rpc("next_invoice_number");
           await supabaseAdmin.from("invoices").insert({
             user_id: meta.user_id,
-            number: `ADV-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(4, "0")}`,
+            number: number ?? `ADV-${new Date().getFullYear()}-${payment.id}`,
             kind: "Abonnement",
             amount_cents: Math.round(parseFloat(payment.amount.value) * 100),
             status: "Payée",
@@ -77,10 +75,10 @@ export const Route = createFileRoute("/api/public/mollie-webhook")({
             userId = p?.id ?? null;
           }
           if (userId) {
-            const { count } = await supabaseAdmin.from("invoices").select("id", { count: "exact", head: true });
+            const { data: number } = await supabaseAdmin.rpc("next_invoice_number");
             await supabaseAdmin.from("invoices").insert({
               user_id: userId,
-              number: `ADV-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(4, "0")}`,
+              number: number ?? `ADV-${new Date().getFullYear()}-${payment.id}`,
               kind: "Abonnement",
               amount_cents: Math.round(parseFloat(payment.amount.value) * 100),
               status: "Payée",

@@ -7,10 +7,11 @@ import { AdminShell, TeamStatus } from "@/components/art-de-vie/admin-shell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatDate, initials, type RequestStatus } from "@/data/art-de-vie";
-import { requestDetailQuery, teamNamesQuery, requestEventsQuery, replyTemplatesQuery } from "@/lib/admin-queries";
+import { formatAmount, formatDate, formatShortDate, initials, type RequestStatus } from "@/data/art-de-vie";
+import { requestDetailQuery, teamNamesQuery, requestEventsQuery, replyTemplatesQuery, requestBillingQuery } from "@/lib/admin-queries";
+import { eurosInput, invoiceBreakdown, parseEuros, ratePercent } from "@/lib/billing-rules";
 import { insertReply, requestHistory } from "@/lib/team-request-rules";
-import { addRequestNote, listRequestNotes, setRequestConcierge, setRequestReply, updateRequestStatus } from "@/lib/admin.functions";
+import { addRequestNote, createRequestInvoice, listRequestNotes, setRequestAmount, setRequestConcierge, setRequestReply, updateRequestStatus } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/demandes/$requestId")({
   validateSearch: (search: Record<string, unknown>): { cree?: boolean } => (search["cree"] === true || search["cree"] === "true" ? { cree: true } : {}),
@@ -171,6 +172,8 @@ function Page() {
           </select>
         </section>
 
+        <BillingBlock requestId={r.id} cancelled={r.status === "Annulée"} isAdmin={teamRole === "admin"} busy={busy} run={run} />
+
         {m && <section className="team-glass rounded-[28px] p-6">
           <div className="flex items-start justify-between gap-3">
             <h2 className="eyebrow team-mention">( Membre )</h2>
@@ -202,4 +205,65 @@ function Page() {
 
 function Info({ label, value }: { label: string; value: string }) {
   return <div className="rounded-2xl border border-border p-4"><dt className="eyebrow team-mention text-[10px]">( {label} )</dt><dd className="mt-3 text-[20px] leading-tight">{value}</dd></div>;
+}
+
+function BillingBlock({ requestId, cancelled, isAdmin, busy, run }: { requestId: string; cancelled: boolean; isAdmin: boolean; busy: boolean; run: (action: () => Promise<{ ok: boolean; reason?: string }>, success: string) => Promise<void> }) {
+  const { data: billing, isLoading, isError } = useQuery(requestBillingQuery(requestId));
+  const saveAmount = useServerFn(setRequestAmount);
+  const createInvoice = useServerFn(createRequestInvoice);
+  const [value, setValue] = useState("");
+  const [invalid, setInvalid] = useState(false);
+  useEffect(() => { setValue(eurosInput(billing?.amount_cents)); setInvalid(false); }, [billing?.amount_cents]);
+
+  if (isLoading) return <Skeleton className="h-56 rounded-[28px] bg-primary/10" />;
+  if (isError || !billing) return <section className="team-panel rounded-[28px] p-6"><h2 className="eyebrow team-mention">( Montant et commission )</h2><p role="alert" className="mt-4 text-[13px] text-muted-foreground">Le montant n’a pas pu être chargé.</p></section>;
+
+  const typed = parseEuros(value);
+  const preview = typed !== null ? invoiceBreakdown(typed, billing.plan) : billing.breakdown;
+  const dirty = value.trim() !== eurosInput(billing.amount_cents);
+  const locked = billing.invoiced;
+
+  function save() {
+    const cents = value.trim() ? parseEuros(value) : null;
+    if (value.trim() && cents === null) { setInvalid(true); return; }
+    setInvalid(false);
+    run(() => saveAmount({ data: { id: requestId, amountCents: cents } }), cents === null ? "Montant retiré." : `Montant enregistré : ${formatAmount(cents)}.`);
+  }
+
+  function invoice() {
+    if (!billing?.breakdown) return;
+    if (!window.confirm(`Créer la facture de ${formatAmount(billing.breakdown.total_cents)} ? Elle apparaîtra aussitôt dans les factures du membre, à régler.`)) return;
+    run(() => createInvoice({ data: { id: requestId } }), "Facture créée. Elle apparaît dans les factures du membre.");
+  }
+
+  return <section className="team-panel rounded-[28px] p-6">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <h2 className="eyebrow team-mention">( Montant et commission )</h2>
+      <span className="rounded-full border border-dashed border-border px-3 py-1 text-[11px]">Interne</span>
+    </div>
+    <label htmlFor="request-amount" className="mt-4 block text-[13px] text-muted-foreground">Montant de la prestation (€)</label>
+    <div className="mt-2 flex min-w-0 gap-2">
+      <input id="request-amount" inputMode="decimal" autoComplete="off" value={value} disabled={busy || locked} onChange={(e) => { setValue(e.target.value); setInvalid(false); }} placeholder="Ex. 1 250,50" aria-invalid={invalid} aria-describedby={invalid ? "request-amount-error" : undefined}
+        className="h-12 min-w-0 flex-1 rounded-2xl border border-border bg-card px-4 text-[15px] text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60" />
+      <Button type="button" variant="outline" disabled={busy || locked || !dirty} onClick={save} className="h-12 shrink-0 rounded-full px-5">Enregistrer</Button>
+    </div>
+    {invalid && <p id="request-amount-error" role="alert" className="mt-2 text-[13px]">Montant invalide : indiquez des euros, avec deux décimales au plus.</p>}
+    <dl className="mt-5 divide-y divide-border border-y border-border text-[14px]">
+      <div className="flex justify-between gap-4 py-3"><dt className="text-muted-foreground">Prestation</dt><dd>{preview ? formatAmount(preview.service_cents) : "—"}</dd></div>
+      <div className="flex justify-between gap-4 py-3"><dt className="text-muted-foreground">Formule du membre</dt><dd>{billing.plan}</dd></div>
+      <div className="flex justify-between gap-4 py-3"><dt className="text-muted-foreground">Commission{preview ? ` (${ratePercent(preview.commission_rate)})` : ""}</dt><dd>{preview ? formatAmount(preview.commission_cents) : "—"}</dd></div>
+      <div className="flex justify-between gap-4 py-3"><dt className="font-medium">Total à facturer</dt><dd className="font-display text-[24px] leading-none">{preview ? formatAmount(preview.total_cents) : "—"}</dd></div>
+    </dl>
+    {dirty && typed !== null && <p className="mt-3 text-[12px] text-muted-foreground">Aperçu : enregistrez le montant pour le conserver.</p>}
+    {locked ? (
+      billing.invoice
+        ? <p className="mt-4 rounded-2xl border border-border px-4 py-3 text-[13px]">Facture {billing.invoice.number} · {formatShortDate(billing.invoice.issued_on)} · {billing.invoice.status}</p>
+        : <p className="mt-4 text-[13px] text-muted-foreground">Cette demande est facturée.</p>
+    ) : isAdmin ? (
+      <Button type="button" disabled={busy || cancelled || !billing.breakdown || dirty} onClick={invoice} className="mt-4 h-11 w-full rounded-full px-5">Créer la facture</Button>
+    ) : (
+      <p className="mt-4 text-[13px] text-muted-foreground">La facture est créée par un administrateur.</p>
+    )}
+    {!locked && isAdmin && cancelled && <p className="mt-2 text-[12px] text-muted-foreground">Une demande annulée ne peut pas être facturée.</p>}
+  </section>;
 }

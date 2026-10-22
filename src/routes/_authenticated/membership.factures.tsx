@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PillAction } from "@/components/art-de-vie/v3";
 import { formatAmount, formatShortDate } from "@/data/art-de-vie";
+import { ratePercent } from "@/lib/billing-rules";
 import { invoicesQuery, profileQuery } from "@/lib/adv-queries";
 import { activateAutoDebit, billingStatus, payInvoice } from "@/lib/mollie.functions";
 
@@ -167,6 +168,18 @@ function Page() {
                     <p className="mt-1 text-xs text-muted-foreground">
                       {formatShortDate(i.issued_on)} · {i.kind}
                     </p>
+                    {i.service_cents != null && (
+                      <dl className="mt-2 grid gap-0.5 text-xs text-muted-foreground">
+                        <div className="flex gap-2">
+                          <dt>Prestation</dt>
+                          <dd>{formatAmount(i.service_cents)}</dd>
+                        </div>
+                        <div className="flex gap-2">
+                          <dt>Commission{i.commission_rate ? ` (${ratePercent(i.commission_rate)})` : ""}</dt>
+                          <dd>{formatAmount(i.commission_cents ?? 0)}</dd>
+                        </div>
+                      </dl>
+                    )}
                   </div>
                   <div className="text-right">
                     <p className="font-display text-lg lg:text-[26px] text-primary">{formatAmount(i.amount_cents)}</p>
