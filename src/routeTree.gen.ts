@@ -20,6 +20,7 @@ import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminEquipeRouteImport } from './routes/_authenticated/admin.equipe'
 import { Route as AuthenticatedAdminOffresRouteImport } from './routes/_authenticated/admin.offres'
 import { Route as AuthenticatedAdminParrainagesRouteImport } from './routes/_authenticated/admin.parrainages'
+import { Route as AuthenticatedAdminReponsesTypesRouteImport } from './routes/_authenticated/admin.reponses-types'
 import { Route as AuthenticatedDemandesIndexRouteImport } from './routes/_authenticated/demandes.index'
 import { Route as AuthenticatedDemandesRequestIdRouteImport } from './routes/_authenticated/demandes.$requestId'
 import { Route as AuthenticatedDemandesNouvelleRouteImport } from './routes/_authenticated/demandes.nouvelle'
@@ -92,6 +93,12 @@ const AuthenticatedAdminParrainagesRoute =
   AuthenticatedAdminParrainagesRouteImport.update({
     id: '/parrainages',
     path: '/parrainages',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminReponsesTypesRoute =
+  AuthenticatedAdminReponsesTypesRouteImport.update({
+    id: '/reponses-types',
+    path: '/reponses-types',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 const AuthenticatedDemandesIndexRoute =
@@ -194,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/admin/equipe': typeof AuthenticatedAdminEquipeRoute
   '/admin/offres': typeof AuthenticatedAdminOffresRoute
   '/admin/parrainages': typeof AuthenticatedAdminParrainagesRoute
+  '/admin/reponses-types': typeof AuthenticatedAdminReponsesTypesRoute
   '/demandes/$requestId': typeof AuthenticatedDemandesRequestIdRoute
   '/demandes/nouvelle': typeof AuthenticatedDemandesNouvelleRoute
   '/membership/factures': typeof AuthenticatedMembershipFacturesRoute
@@ -220,6 +228,7 @@ export interface FileRoutesByTo {
   '/admin/equipe': typeof AuthenticatedAdminEquipeRoute
   '/admin/offres': typeof AuthenticatedAdminOffresRoute
   '/admin/parrainages': typeof AuthenticatedAdminParrainagesRoute
+  '/admin/reponses-types': typeof AuthenticatedAdminReponsesTypesRoute
   '/demandes/$requestId': typeof AuthenticatedDemandesRequestIdRoute
   '/demandes/nouvelle': typeof AuthenticatedDemandesNouvelleRoute
   '/membership/factures': typeof AuthenticatedMembershipFacturesRoute
@@ -249,6 +258,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/equipe': typeof AuthenticatedAdminEquipeRoute
   '/_authenticated/admin/offres': typeof AuthenticatedAdminOffresRoute
   '/_authenticated/admin/parrainages': typeof AuthenticatedAdminParrainagesRoute
+  '/_authenticated/admin/reponses-types': typeof AuthenticatedAdminReponsesTypesRoute
   '/_authenticated/demandes/$requestId': typeof AuthenticatedDemandesRequestIdRoute
   '/_authenticated/demandes/nouvelle': typeof AuthenticatedDemandesNouvelleRoute
   '/_authenticated/membership/factures': typeof AuthenticatedMembershipFacturesRoute
@@ -278,6 +288,7 @@ export interface FileRouteTypes {
     | '/admin/equipe'
     | '/admin/offres'
     | '/admin/parrainages'
+    | '/admin/reponses-types'
     | '/demandes/$requestId'
     | '/demandes/nouvelle'
     | '/membership/factures'
@@ -304,6 +315,7 @@ export interface FileRouteTypes {
     | '/admin/equipe'
     | '/admin/offres'
     | '/admin/parrainages'
+    | '/admin/reponses-types'
     | '/demandes/$requestId'
     | '/demandes/nouvelle'
     | '/membership/factures'
@@ -332,6 +344,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/equipe'
     | '/_authenticated/admin/offres'
     | '/_authenticated/admin/parrainages'
+    | '/_authenticated/admin/reponses-types'
     | '/_authenticated/demandes/$requestId'
     | '/_authenticated/demandes/nouvelle'
     | '/_authenticated/membership/factures'
@@ -435,6 +448,13 @@ declare module '@tanstack/react-router' {
       path: '/parrainages'
       fullPath: '/admin/parrainages'
       preLoaderRoute: typeof AuthenticatedAdminParrainagesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/reponses-types': {
+      id: '/_authenticated/admin/reponses-types'
+      path: '/reponses-types'
+      fullPath: '/admin/reponses-types'
+      preLoaderRoute: typeof AuthenticatedAdminReponsesTypesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/demandes/': {
@@ -549,6 +569,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminEquipeRoute: typeof AuthenticatedAdminEquipeRoute
   AuthenticatedAdminOffresRoute: typeof AuthenticatedAdminOffresRoute
   AuthenticatedAdminParrainagesRoute: typeof AuthenticatedAdminParrainagesRoute
+  AuthenticatedAdminReponsesTypesRoute: typeof AuthenticatedAdminReponsesTypesRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminDemandesRequestIdRoute: typeof AuthenticatedAdminDemandesRequestIdRoute
   AuthenticatedAdminDemandesNouvelleRoute: typeof AuthenticatedAdminDemandesNouvelleRoute
@@ -561,6 +582,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminEquipeRoute: AuthenticatedAdminEquipeRoute,
   AuthenticatedAdminOffresRoute: AuthenticatedAdminOffresRoute,
   AuthenticatedAdminParrainagesRoute: AuthenticatedAdminParrainagesRoute,
+  AuthenticatedAdminReponsesTypesRoute: AuthenticatedAdminReponsesTypesRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAdminDemandesRequestIdRoute:
     AuthenticatedAdminDemandesRequestIdRoute,
