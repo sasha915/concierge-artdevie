@@ -106,6 +106,7 @@ export type AdminReferral = {
   status: string;
   converted_member_id: string | null;
   created_at: string;
+  already_member?: boolean;
 };
 
 export const adminReferralsQuery = queryOptions({

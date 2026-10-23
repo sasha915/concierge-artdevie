@@ -1,3 +1,4 @@
+import { invoiceBreakdown } from "./billing-rules";
 import { todayParis } from "./billing-webhook-rules";
 /** Règles du lot 6.4 : questionnaire d'accueil et relevé mensuel. Pures et testées. */
 
@@ -37,19 +38,42 @@ export function cleanChoices(key: WelcomeKey, values: string[]): string[] {
 // ---- Relevé ----
 export const STATEMENT_STATUSES = ["Confirmée", "Terminée"] as const;
 
-export type StatementSource = { id: string; title: string; status: string; amount_cents: number | null; scheduled_date: string | null; created_at: string };
-export type StatementLine = { id: string; title: string; date: string; amount_cents: number };
+export type StatementSource = {
+  id: string;
+  title: string;
+  status: string;
+  amount_cents: number | null;
+  scheduled_date: string | null;
+  created_at: string;
+  /** Facture liée, quand elle existe : son montant (commission comprise) fait foi. */
+  invoice?: Array<{ amount_cents: number; status: string }> | { amount_cents: number; status: string } | null;
+};
+/** Ligne du relevé ; « estimated » : pas encore facturée, montant calculé avec la commission de la formule. */
+export type StatementLine = { id: string; title: string; date: string; amount_cents: number; estimated: boolean };
 
 /** Date retenue pour le relevé : celle de la prestation, sinon celle de la demande. */
 export function statementDate(r: StatementSource): string {
   return r.scheduled_date ?? todayParis(new Date(r.created_at));
 }
 
-/** Prestations Confirmées ou Terminées, dotées d'un montant, datées du mois (AAAA-MM). */
-export function statementLines(rows: StatementSource[], month: string): StatementLine[] {
+function invoiceOf(r: StatementSource): { amount_cents: number; status: string } | null {
+  const inv = Array.isArray(r.invoice) ? r.invoice[0] : r.invoice;
+  return inv ?? null;
+}
+
+/**
+ * Prestations Confirmées ou Terminées, dotées d'un montant, datées du mois (AAAA-MM).
+ * Montant : celui de la facture quand elle existe, sinon prestation + commission de la formule (estimation).
+ */
+export function statementLines(rows: StatementSource[], month: string, plan?: string | null): StatementLine[] {
   return rows
-    .filter((r) => (STATEMENT_STATUSES as readonly string[]).includes(r.status) && r.amount_cents !== null && statementDate(r).startsWith(month))
-    .map((r) => ({ id: r.id, title: r.title, date: statementDate(r), amount_cents: r.amount_cents as number }))
+    .filter((r) => (STATEMENT_STATUSES as readonly string[]).includes(r.status) && (r.amount_cents !== null || invoiceOf(r)) && statementDate(r).startsWith(month))
+    .map((r) => {
+      const inv = invoiceOf(r);
+      return inv
+        ? { id: r.id, title: r.title, date: statementDate(r), amount_cents: inv.amount_cents, estimated: false }
+        : { id: r.id, title: r.title, date: statementDate(r), amount_cents: invoiceBreakdown(r.amount_cents as number, plan).total_cents, estimated: true };
+    })
     .sort((a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title));
 }
 

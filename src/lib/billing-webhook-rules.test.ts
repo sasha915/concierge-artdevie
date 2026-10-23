@@ -35,3 +35,13 @@ describe("webhook Mollie", () => {
     expect(todayParis(new Date("2026-10-22T21:30:00Z"))).toBe("2026-10-22");
   });
 });
+
+import { conciergeRecipients } from "./notify-concierge.server";
+describe("destinataires WhatsApp", () => {
+  test("concierge d'abord, numéro commun en repli, sans doublon", () => {
+    expect(conciergeRecipients("+33 6 11 22 33 44", "+33 1 23 45 67 89")).toEqual(["33611223344", "33123456789"]);
+    expect(conciergeRecipients(null, "+33 1 23 45 67 89")).toEqual(["33123456789"]);
+    expect(conciergeRecipients("+33123456789", "+33 1 23 45 67 89")).toEqual(["33123456789"]);
+    expect(conciergeRecipients("", "")).toEqual([]);
+  });
+});

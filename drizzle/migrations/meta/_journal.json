@@ -225,6 +225,13 @@
       "when": 1792723501892,
       "tag": "0031_profile_trigger_fix",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792725485078,
+      "tag": "0032_payment_failures",
+      "breakpoints": true
     }
   ]
 }

@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { REQUEST_IMAGE } from "@/lib/request-images";
-import { exactLike } from "@/lib/delegate-rules";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { translate } from "@/lib/i18n";
 import { canInviteDelegate } from "@/lib/delegate-rules";
@@ -51,10 +50,8 @@ export const inviteDelegate = createServerFn({ method: "POST" })
     const { data: mine } = await admin.from("member_delegates").select("status").eq("member_id", ctx.userId);
     if (!canInviteDelegate(mine ?? [])) return { ok: false as const, reason: "Vous avez déjà trois proches autorisés. Retirez un accès pour en inviter un autre." };
 
-    const { data: accounts } = await admin.from("profiles").select("email").ilike("email", exactLike(email));
-    if ((accounts ?? []).some((p: { email: string | null }) => (p.email ?? "").toLowerCase() === email)) {
-      return { ok: false as const, reason: "Cette adresse correspond déjà à un compte Art de Vie." };
-    }
+    // Discrétion : aucune réponse ne révèle si l'adresse appartient déjà à un client.
+    // Une adresse de membre ou d'équipe est écartée par l'équipe à la confirmation (approveDelegate).
 
     const { error } = await admin.from("member_delegates").insert({
       member_id: ctx.userId,
@@ -63,7 +60,9 @@ export const inviteDelegate = createServerFn({ method: "POST" })
       relation: data.relation || null,
     });
     if (error) {
-      return { ok: false as const, reason: error.code === "23505" ? "Cette adresse a déjà un accès de proche, ou une invitation en attente." : "L’invitation n’a pas pu être enregistrée." };
+      // Adresse déjà invitée ailleurs : même réponse qu'une invitation enregistrée, rien n'est révélé.
+      if (error.code === "23505") return { ok: true as const };
+      return { ok: false as const, reason: "L’invitation n’a pas pu être enregistrée." };
     }
     return { ok: true as const };
   });

@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatDate, formatShortDate, initials, type RequestStatus } from "@/data/art-de-vie";
 import { requestDetailQuery, teamNamesQuery, requestEventsQuery, replyTemplatesQuery, requestBillingQuery, requestMessagesAdminQuery, requestFilesQuery, requestChangesQuery, requestReviewQuery, requestProposalsQuery } from "@/lib/admin-queries";
 import { eurosInput, invoiceBreakdown, parseEuros, ratePercent } from "@/lib/billing-rules";
-import { insertReply, requestHistory } from "@/lib/team-request-rules";
+import { canTransition, insertReply, requestHistory } from "@/lib/team-request-rules";
 import { decideRequestChange, getRequestFileUrl, resendProposal, sendProposal, setRequestFileVisibility, uploadRequestFile, withdrawProposal } from "@/lib/admin.functions";
 import { FILE_TYPES, fileProblem, fileSizeLabel } from "@/lib/request-actions-rules";
 import { addRequestNote, createRequestInvoice, listRequestNotes, setRequestAmount, sendTeamMessage, setRequestConcierge, updateRequestStatus } from "@/lib/admin.functions";
@@ -174,7 +174,8 @@ function Page() {
           <div role="group" aria-label="Statut de la demande" className="mt-4 flex flex-wrap gap-2">
             {STATUSES.map((s) => {
               const active = s === r.status;
-              return <button key={s} type="button" disabled={busy} aria-pressed={active} onClick={() => changeStatus(s)}
+              const allowed = canTransition(r.status, s);
+              return <button key={s} type="button" disabled={busy || !allowed} title={allowed ? undefined : `Passage impossible depuis « ${r.status} »`} aria-pressed={active} onClick={() => changeStatus(s)}
                 className={`h-11 rounded-full px-4 text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 ${active ? "bg-primary text-primary-foreground" : s === "Annulée" ? "border border-dashed border-border hover:bg-primary/10" : "border border-border hover:bg-primary/10"}`}>
                 {s === "Annulée" ? "Annuler la demande" : s}
               </button>;

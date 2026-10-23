@@ -79,7 +79,7 @@ export async function downloadStatement({ lang = "fr", month, memberName, member
     }
     y += 8;
     doc.text(title, left, y);
-    doc.text(day(line.date, lang), 128, y);
+    doc.text(day(line.date, lang) + (line.estimated ? ` ${tr("(estimation)")}` : ""), 128, y);
     doc.text(euros(line.amount_cents, lang), right, y, { align: "right" });
     y += (title.length - 1) * 5 + 4;
     doc.line(left, y, right, y);
@@ -99,6 +99,9 @@ export async function downloadStatement({ lang = "fr", month, memberName, member
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...MUTED);
+  if (lines.some((l) => l.estimated)) {
+    doc.text(tr("Commission comprise. Les prestations pas encore facturées sont estimées ; la facture fait foi."), left, Math.min(y + 14, 274));
+  }
   doc.text(tr("Ce relevé récapitule vos prestations du mois. Il ne vaut pas facture."), left, 282);
   doc.text(tr("Édité le {date}", { date: day(todayParis(), lang) }), right, 282, { align: "right" });
 

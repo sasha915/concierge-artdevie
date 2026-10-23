@@ -9,7 +9,7 @@ import { formatAmount, formatShortDate } from "@/data/art-de-vie";
 import { STALE_REQUEST_HOURS, RENEWAL_WINDOW_DAYS } from "@/lib/watch-rules";
 import { profileQuery } from "@/lib/adv-queries";
 import { pendingDelegatesQuery } from "@/lib/admin-queries";
-import { getDashboard, takeRequest } from "@/lib/admin.functions";
+import { getDashboard, resolvePaymentFailure, takeRequest } from "@/lib/admin.functions";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -167,9 +167,17 @@ function WatchGroup({ title, children, count }: { title: string; children: React
 function WatchBlock({ watch }: { watch: Watch }) {
   const failed = watch.failedInvoices ?? [];
   const referrals = watch.receivedReferrals ?? [];
+  const charges = watch.failedCharges ?? [];
+  const noWhatsapp = watch.signatureWithoutWhatsapp ?? [];
+  const queryClient = useQueryClient();
+  const resolve = useServerFn(resolvePaymentFailure);
+  async function markResolved(id: string) {
+    const r = await resolve({ data: { id } });
+    if (!r.ok) toast.error(r.reason); else await queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
+  }
   // Lot 5.4 : proches invités par les membres, à confirmer par l'équipe.
   const { data: delegates = [] } = useQuery(pendingDelegatesQuery);
-  const total = watch.staleRequests.length + watch.pendingChanges.length + watch.renewals.length + failed.length + referrals.length + delegates.length;
+  const total = watch.staleRequests.length + watch.pendingChanges.length + watch.renewals.length + failed.length + referrals.length + delegates.length + charges.length + noWhatsapp.length;
   return <section aria-labelledby="watch-title" className="team-panel mt-6 min-w-0 rounded-[28px] p-6">
     <h2 id="watch-title" className="eyebrow team-mention">À surveiller</h2>
     {total === 0 ? <p className="mt-4 text-[14px] text-muted-foreground">Rien à signaler pour le moment.</p>
@@ -185,6 +193,16 @@ function WatchBlock({ watch }: { watch: Watch }) {
         </WatchGroup>
         <WatchGroup title="Factures en échec de paiement" count={failed.length}>
           {failed.map((i) => <li key={i.id} className="border-b border-border last:border-0"><Link to="/admin/membres/$memberId" params={{ memberId: i.user_id }} className={watchLink}><WatchRow title={i.number} meta={`${i.member_name || "Membre"} · ${formatAmount(i.amount_cents)}`} signal={i.status} /></Link></li>)}
+        </WatchGroup>
+        <WatchGroup title="Prélèvements rejetés" count={charges.length}>
+          {charges.map((c) => <li key={c.id} className="flex items-center gap-3 border-b border-border last:border-0">
+            {c.user_id ? <Link to="/admin/membres/$memberId" params={{ memberId: c.user_id }} className={`${watchLink} min-w-0 flex-1`}><WatchRow title={c.member_name || "Membre"} meta={`${formatAmount(c.amount_cents)} · ${formatShortDate(c.created_at.slice(0, 10))}`} signal={c.status} /></Link>
+              : <div className={`${watchLink} min-w-0 flex-1`}><WatchRow title="Membre inconnu" meta={formatAmount(c.amount_cents)} signal={c.status} /></div>}
+            <button type="button" onClick={() => void markResolved(c.id)} className="shrink-0 rounded-full border border-border px-3 py-1 text-[12px] hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Relancé</button>
+          </li>)}
+        </WatchGroup>
+        <WatchGroup title="Fiches Signature sans WhatsApp du concierge" count={noWhatsapp.length}>
+          {noWhatsapp.map((m) => <li key={m.id} className="border-b border-border last:border-0"><Link to="/admin/membres/$memberId" params={{ memberId: m.id }} className={watchLink}><WatchRow title={m.full_name || "Membre"} meta="Demandes envoyées au numéro commun" signal="À compléter" /></Link></li>)}
         </WatchGroup>
         <WatchGroup title="Proches à confirmer" count={delegates.length}>
           {delegates.map((d) => <li key={d.id} className="border-b border-border last:border-0"><Link to="/admin/membres/$memberId" params={{ memberId: d.member_id }} className={watchLink}><WatchRow title={d.full_name} meta={d.member_name ? `Proche de ${d.member_name}` : "Proche"} signal={formatShortDate(d.invited_at.slice(0, 10))} /></Link></li>)}

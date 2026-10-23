@@ -160,6 +160,9 @@ export const answerProposal = createServerFn({ method: "POST" })
     if (!proposal) return { ok: false as const, reason: "Cette proposition est introuvable." };
     if (proposal.status !== "en attente") return { ok: false as const, reason: "Vous avez déjà répondu à cette proposition." };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { isOpenStatus } = await import("./team-request-rules");
+    const { data: parent } = await supabaseAdmin.from("requests").select("status").eq("id", proposal.request_id).maybeSingle();
+    if (!parent || !isOpenStatus(parent.status)) return { ok: false as const, reason: "Cette demande est close : la proposition n’est plus valable." };
     let option: { id: string; label: string; estimate_cents: number | null } | null = null;
     if (data.optionId) {
       const { data: o } = await supabaseAdmin.from("request_proposal_options").select("id, label, estimate_cents").eq("id", data.optionId).eq("proposal_id", proposal.id).maybeSingle();
@@ -211,12 +214,14 @@ export const createRecurringFromRequest = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: request } = await context.supabase
       .from("requests")
-      .select("id, user_id, category, title, description, guests, scheduled_date, scheduled_time, image_key, recurring_id")
+      .select("id, user_id, category, title, description, guests, scheduled_date, scheduled_time, image_key, recurring_id, status")
       .eq("id", data.requestId)
       .eq("user_id", context.userId)
       .maybeSingle();
     if (!request) return { ok: false as const, reason: "Cette demande est introuvable." };
     if (request.recurring_id) return { ok: false as const, reason: "Cette demande appartient déjà à une série." };
+    const { isOpenStatus } = await import("./team-request-rules");
+    if (!isOpenStatus(request.status)) return { ok: false as const, reason: "Une demande close ne peut pas servir de modèle à une série." };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { createRecurringRule } = await import("./recurring.server");
     return createRecurringRule(supabaseAdmin, request, data.recurrence, context.userId);

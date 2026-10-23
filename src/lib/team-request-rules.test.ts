@@ -1,5 +1,5 @@
 // @ts-ignore — runner intégré de bun, sans dépendance supplémentaire
-import { expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { insertReply, matchesRequestFilters, requestHistory } from "./team-request-rules";
 const date = "2026-10-22T09:49:00Z";
 const event = { id: "1", kind: "statut changé", detail: "Nouvelle → En cours", created_at: date, author_name: "Équipe", actor_id: null };
@@ -36,4 +36,22 @@ test("À attribuer utilise exactement le nom du concierge", () => {
   const rows = requestHistory([{ ...event, kind: "reçue", detail: null }, { ...event, id: "3", kind: "facture créée", detail: "ADV-2026-0001", created_at: "2026-10-24T00:00:00Z" }], date);
   expect(rows[1]?.label).toBe("Facture créée · ADV-2026-0001");
   expect(rows[0]?.label).toBe("Reçue");
+});
+
+import { canInvoice, canTransition, isOpenStatus } from "./team-request-rules";
+describe("passages de statut", () => {
+  test("seuls les passages cohérents sont permis", () => {
+    expect(canTransition("Nouvelle", "En cours")).toBe(true);
+    expect(canTransition("Confirmée", "Terminée")).toBe(true);
+    expect(canTransition("Terminée", "Nouvelle")).toBe(false);
+    expect(canTransition("Annulée", "Confirmée")).toBe(false);
+    expect(canTransition("Nouvelle", "Terminée")).toBe(false);
+    expect(canTransition("Annulée", "Nouvelle")).toBe(true);
+  });
+  test("facturation et demandes ouvertes", () => {
+    expect(canInvoice("Nouvelle")).toBe(false);
+    expect(canInvoice("Confirmée")).toBe(true);
+    expect(isOpenStatus("Annulée")).toBe(false);
+    expect(isOpenStatus("En cours")).toBe(true);
+  });
 });

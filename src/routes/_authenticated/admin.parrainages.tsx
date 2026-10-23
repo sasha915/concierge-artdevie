@@ -69,7 +69,7 @@ function Page() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="break-words text-[20px] leading-tight">{r.full_name}</p>
-                  <p className="mt-1 break-all text-[13px] text-muted-foreground">{r.email}</p>
+                  <p className="mt-1 break-all text-[13px] text-muted-foreground">{r.email}{r.already_member ? " · déjà membre" : ""}</p>
                 </div>
                 <span className="shrink-0 rounded-full border border-border px-3 py-1 text-[11px] font-medium">{statusLabel(r.status)}</span>
               </div>

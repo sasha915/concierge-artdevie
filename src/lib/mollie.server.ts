@@ -31,6 +31,7 @@ export async function mollie<T>(path: string, init?: RequestInit): Promise<T> {
     const body = await res.text().catch(() => "");
     throw new Error(`Mollie ${res.status} ${path}: ${body.slice(0, 300)}`);
   }
+  if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 

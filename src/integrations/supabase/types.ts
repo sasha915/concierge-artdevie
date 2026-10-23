@@ -14,6 +14,12 @@ export type Database = {
   }
   public: {
     Tables: {
+      payment_failures: {
+        Row: { amount_cents: number; created_at: string; id: string; mollie_payment_id: string; resolved_at: string | null; status: string; user_id: string | null }
+        Insert: { amount_cents: number; created_at?: string; id?: string; mollie_payment_id: string; resolved_at?: string | null; status: string; user_id?: string | null }
+        Update: { amount_cents?: number; created_at?: string; id?: string; mollie_payment_id?: string; resolved_at?: string | null; status?: string; user_id?: string | null }
+        Relationships: []
+      }
       admin_gate_attempts: {
         Row: { created_at: string; id: number; succeeded: boolean; user_id: string }
         Insert: { created_at?: string; id?: never; succeeded: boolean; user_id: string }

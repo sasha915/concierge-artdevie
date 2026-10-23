@@ -592,4 +592,9 @@ export const EN: Record<string, string> = {
   "Bon retour parmi nous": "Welcome back",
   "Quel plaisir de vous retrouver": "Lovely to see you again",
   "Votre paiement est en cours de traitement ; la facture se met à jour dès sa confirmation.": "Your payment is being processed; the invoice will update as soon as it is confirmed.",
+  "(estimation)": "(estimate)",
+  "Commission comprise. Les prestations pas encore facturées sont estimées ; la facture fait foi.": "Commission included. Services not yet invoiced are estimates; the invoice prevails.",
+  "estimation, pas encore facturée": "estimate, not yet invoiced",
+  "Une demande close ne peut pas servir de modèle à une série.": "A closed request cannot be used as the basis for a series.",
+  "Cette demande est close : la proposition n’est plus valable.": "This request is closed: the proposal is no longer valid.",
 };

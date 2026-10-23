@@ -126,6 +126,21 @@ export const Route = createFileRoute("/api/public/mollie-webhook")({
           return done();
         }
 
+        // 3 bis) Échéance d'abonnement rejetée : gardée pour l'équipe (« À surveiller »), sans facture.
+        if (payment.subscriptionId && ["failed", "expired", "canceled"].includes(payment.status) && payment.customerId) {
+          let userId = meta.user_id ?? null;
+          if (!userId) {
+            const { data: p } = await admin.from("profiles").select("id").eq("mollie_customer_id", payment.customerId).maybeSingle();
+            userId = p?.id ?? null;
+          }
+          const { error } = await admin.from("payment_failures").upsert(
+            { user_id: userId, mollie_payment_id: payment.id, amount_cents: paidCents, status },
+            { onConflict: "mollie_payment_id", ignoreDuplicates: true },
+          );
+          if (error) return retry("échec de prélèvement non enregistré", error);
+          return done();
+        }
+
         // 3) Échéance d'abonnement prélevée : une facture par paiement.
         if (payment.subscriptionId && payment.status === "paid" && payment.customerId) {
           let userId = meta.user_id ?? null;

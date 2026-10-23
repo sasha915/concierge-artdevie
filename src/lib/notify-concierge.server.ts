@@ -45,12 +45,14 @@ export async function notifyConcierge(req: ConciergeRequest, message?: string): 
   const token = process.env["WHATSAPP_API_TOKEN"];
   const phoneNumberId = process.env["WHATSAPP_PHONE_NUMBER_ID"];
   const isSignature = profile.plan === "Signature";
-  const recipientRaw = isSignature ? profile.concierge_whatsapp : essentielNumber;
-
-  if (!recipientRaw) {
-    console.warn(`notification WhatsApp non envoyée : ${isSignature ? "profiles.concierge_whatsapp" : "secret ESSENTIEL_CONCIERGE_WHATSAPP"} manquant`);
+  // Signature : le concierge en charge d'abord, le numéro commun en repli (numéro absent, faux ou envoi refusé).
+  // Essentiel : le numéro commun.
+  const recipients = conciergeRecipients(isSignature ? profile.concierge_whatsapp : null, essentielNumber ?? null);
+  if (recipients.length === 0) {
+    console.warn("notification WhatsApp non envoyée : aucun numéro (concierge ni ESSENTIEL_CONCIERGE_WHATSAPP)");
     return { skipped: "missing_recipient" };
   }
+  if (isSignature && !profile.concierge_whatsapp) console.warn("[notify-concierge] membre Signature sans numéro de concierge : envoi au numéro commun", req.user_id);
   if (!token) {
     console.warn("notification WhatsApp non envoyée : secret WHATSAPP_API_TOKEN manquant");
     return { skipped: "missing_WHATSAPP_API_TOKEN" };
@@ -60,7 +62,6 @@ export async function notifyConcierge(req: ConciergeRequest, message?: string): 
     return { skipped: "missing_WHATSAPP_PHONE_NUMBER_ID" };
   }
 
-  const recipient = recipientRaw.replace(/[^0-9]/g, "");
   const firstName = (profile.full_name || "Un membre").trim().split(/\s+/)[0];
   const lines = message
     ? [`Nouveau message de ${firstName} — Art de Vie`, `Demande : ${req.title}`, `Message : ${message.trim()}`]
@@ -80,10 +81,10 @@ export async function notifyConcierge(req: ConciergeRequest, message?: string): 
   const params = message
     ? [firstName, req.title, message]
     : [firstName, req.title, req.category, `${formatDate(req.scheduled_date)}${req.scheduled_time ? ` à ${req.scheduled_time}` : ""}`];
-  const payload = templateName
+  const payloadFor = (to: string) => templateName
     ? {
         messaging_product: "whatsapp",
-        to: recipient,
+        to,
         type: "template",
         template: {
           name: templateName,
@@ -91,21 +92,29 @@ export async function notifyConcierge(req: ConciergeRequest, message?: string): 
           components: [{ type: "body", parameters: params.map((p) => ({ type: "text", text: templateParam(p) })) }],
         },
       }
-    : { messaging_product: "whatsapp", to: recipient, type: "text", text: { preview_url: false, body: lines.join("\n") } };
+    : { messaging_product: "whatsapp", to, type: "text", text: { preview_url: false, body: lines.join("\n") } };
 
-  try {
-    const res = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}/messages`, {
-      method: "POST",
-      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
+  let last: NotifyResult = { skipped: "missing_recipient" };
+  for (const to of recipients) {
+    try {
+      const res = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}/messages`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+        body: JSON.stringify(payloadFor(to)),
+      });
+      if (res.ok) return { sent: true };
       console.error("[notify-concierge] echec API WhatsApp", res.status, await res.text().catch(() => ""));
-      return { skipped: "whatsapp_api_error", status: res.status };
+      last = { skipped: "whatsapp_api_error", status: res.status };
+    } catch (err) {
+      console.error("[notify-concierge] appel WhatsApp impossible", err);
+      last = { skipped: "whatsapp_fetch_failed" };
     }
-  } catch (err) {
-    console.error("[notify-concierge] appel WhatsApp impossible", err);
-    return { skipped: "whatsapp_fetch_failed" };
   }
-  return { sent: true };
+  return last;
+}
+
+/** Destinataires dans l'ordre d'essai, sans doublon : concierge (s'il existe), puis numéro commun. */
+export function conciergeRecipients(concierge: string | null | undefined, common: string | null | undefined): string[] {
+  const clean = (n: string | null | undefined) => (n ?? "").replace(/[^0-9]/g, "");
+  return [...new Set([clean(concierge), clean(common)].filter((n) => n.length >= 8))];
 }

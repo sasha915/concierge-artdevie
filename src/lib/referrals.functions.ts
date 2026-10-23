@@ -30,14 +30,13 @@ export const sendReferralInvite = createServerFn({ method: "POST" })
     if (email === (me.email ?? "").toLowerCase()) return { ok: false as const, reason: "Indiquez l’adresse de la personne que vous recommandez." };
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [{ data: open }, { data: existing }, { data: already }] = await Promise.all([
+    const [{ data: open }, { data: already }] = await Promise.all([
       supabaseAdmin.from("referrals").select("id").eq("inviter_id", userId).neq("status", "Converti"),
-      supabaseAdmin.from("profiles").select("id").eq("email", email).limit(1),
       supabaseAdmin.from("referrals").select("id").eq("inviter_id", userId).eq("email", email).limit(1),
     ]);
     if ((open ?? []).length >= MAX_OPEN_REFERRALS) return { ok: false as const, reason: "Vous avez déjà plusieurs recommandations en cours. Notre équipe y répond avant d’en recevoir de nouvelles." };
-    if ((existing ?? []).length > 0) return { ok: false as const, reason: "Cette personne est déjà membre Art de Vie." };
     if ((already ?? []).length > 0) return { ok: false as const, reason: "Vous avez déjà recommandé cette personne." };
+    // Discrétion : la réponse est la même que la personne soit déjà cliente ou non ; l'équipe le voit, pas le membre.
 
     // Écrit avec la session du membre : la règle de la base (is_member) s'applique.
     const { error } = await supabase.from("referrals").insert({

@@ -23,6 +23,15 @@ describe("relevé", () => {
     expect(statementTotal(statementLines(rows, "2026-10"))).toBe(17050);
     expect(statementLines(rows, "2026-09")).toEqual([]);
   });
+  test("facture retenue quand elle existe, commission ajoutée sinon (estimation)", () => {
+    const withInvoice = [
+      { ...base, id: "g", status: "Terminée", amount_cents: 10000, scheduled_date: "2026-10-10", invoice: [{ amount_cents: 11000, status: "Payée" }] },
+      { ...base, id: "h", status: "Confirmée", amount_cents: 10000, scheduled_date: "2026-10-11", invoice: [] },
+    ];
+    const lines = statementLines(withInvoice, "2026-10", "Essentiel");
+    expect(lines.map((l) => [l.id, l.amount_cents, l.estimated])).toEqual([["g", 11000, false], ["h", 11000, true]]);
+    expect(statementLines(withInvoice, "2026-10", "Signature")[1]?.amount_cents).toBe(10000);
+  });
   test("mois voisins et libellé", () => {
     expect(shiftMonth("2026-01", -1)).toBe("2025-12");
     expect(shiftMonth("2026-12", 1)).toBe("2027-01");

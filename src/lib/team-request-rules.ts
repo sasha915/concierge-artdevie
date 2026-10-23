@@ -20,3 +20,30 @@ export function matchesRequestFilters(r: { title: string; member_name: string; c
   const needle = f.search.trim().toLocaleLowerCase("fr");
   return (!needle || `${r.title} ${r.member_name}`.toLocaleLowerCase("fr").includes(needle)) && (!f.category || r.category === f.category) && (!f.concierge || r.concierge === f.concierge) && (!f.mine || (f.userId !== null && r.concierge_id === f.userId)) && (!f.unassigned || r.concierge === "À attribuer");
 }
+// ---- Passages de statut autorisés (seconde analyse du 23 octobre) ----
+
+/**
+ * Chaque statut n'ouvre que des passages cohérents ; une demande annulée ne peut que revenir en « Nouvelle »
+ * (réouverture), une demande terminée qu'en « Confirmée » (correction d'une clôture trop rapide).
+ */
+export const STATUS_TRANSITIONS: Record<string, readonly string[]> = {
+  Nouvelle: ["En cours", "Confirmée", "Annulée"],
+  "En cours": ["Nouvelle", "Confirmée", "Annulée"],
+  Confirmée: ["En cours", "Terminée", "Annulée"],
+  Terminée: ["Confirmée"],
+  Annulée: ["Nouvelle"],
+};
+
+export function canTransition(from: string, to: string): boolean {
+  return from === to || (STATUS_TRANSITIONS[from] ?? []).includes(to);
+}
+
+/** Une demande ne se facture qu'une fois confirmée ou terminée. */
+export function canInvoice(status: string): boolean {
+  return status === "Confirmée" || status === "Terminée";
+}
+
+/** Statuts d'une demande encore ouverte aux propositions, modifications et récurrences. */
+export function isOpenStatus(status: string): boolean {
+  return status === "Nouvelle" || status === "En cours" || status === "Confirmée";
+}

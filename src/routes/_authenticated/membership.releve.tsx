@@ -1,3 +1,4 @@
+import { todayParis } from "@/lib/billing-webhook-rules";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -28,13 +29,13 @@ export const Route = createFileRoute("/_authenticated/membership/releve")({
 });
 
 function Page() {
-  const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [month, setMonth] = useState(() => todayParis().slice(0, 7));
   const [busy, setBusy] = useState(false);
   const { data: rows = [], isLoading } = useQuery(statementSourceQuery);
   const { data: profile } = useQuery(profileQuery);
-  const lines = statementLines(rows, month);
+  const lines = statementLines(rows, month, profile?.plan);
   const total = statementTotal(lines);
-  const current = new Date().toISOString().slice(0, 7);
+  const current = todayParis().slice(0, 7);
   const months = Array.from({ length: 12 }, (_, i) => shiftMonth(current, -i));
 
   async function download() {
@@ -64,6 +65,7 @@ function Page() {
           <p className="eyebrow mt-8 text-muted-foreground" aria-live="polite">{monthLabel(month, getLang())}</p>
           <strong className="mt-3 block font-display text-[48px] font-normal italic leading-none lg:text-[88px]">{formatAmount(total)}</strong>
           <p className="mt-3 text-[14px] text-muted-foreground">{t("Total du mois")} · {lines.length > 1 ? t("{n} prestations ce mois-ci", { n: lines.length }) : t("{n} prestation ce mois-ci", { n: lines.length })}</p>
+          {lines.some((l) => l.estimated) && <p className="mt-2 text-[12px] leading-5 text-muted-foreground">{t("Commission comprise. Les prestations pas encore facturées sont estimées ; la facture fait foi.")}</p>}
         </section>
 
         {isLoading ? (
@@ -78,7 +80,7 @@ function Page() {
               <li key={l.id} className="flex items-center gap-4 border-b border-primary/25 py-5 last:border-0">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{l.title}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{formatShortDate(l.date)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{formatShortDate(l.date)}{l.estimated ? ` · ${t("estimation, pas encore facturée")}` : ""}</p>
                 </div>
                 <p className="font-display text-lg text-primary lg:text-[26px]">{formatAmount(l.amount_cents)}</p>
               </li>

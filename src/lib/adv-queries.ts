@@ -176,11 +176,10 @@ export const statementSourceQuery = queryOptions({
   queryFn: async () => {
     const { data, error } = await supabase
       .from("requests")
-      .select("id, title, status, amount_cents, scheduled_date, created_at")
-      .in("status", ["Confirmée", "Terminée"])
-      .not("amount_cents", "is", null);
+      .select("id, title, status, amount_cents, scheduled_date, created_at, invoice:invoices(amount_cents, status)")
+      .in("status", ["Confirmée", "Terminée"]);
     if (error) throw error;
-    return (data ?? []) as Array<{ id: string; title: string; status: string; amount_cents: number | null; scheduled_date: string | null; created_at: string }>;
+    return (data ?? []) as unknown as import("./member-rules").StatementSource[];
   },
 });
 

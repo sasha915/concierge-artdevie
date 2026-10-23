@@ -52,11 +52,11 @@ function Page() {
   const [form, setForm] = useState({ fullName: "", email: "", role: "concierge" as TeamRole });
 
   async function apply(userId: string, role: TeamRole | null, name: string) {
-    if (role === null && !window.confirm(`Retirer ${name} de l’équipe ? Le compte redeviendra un compte membre ordinaire.`)) return;
+    if (role === null && !window.confirm(`Retirer ${name} de l’équipe ? Son compte sera désactivé ; il pourra être réactivé depuis sa fiche.`)) return;
     setBusy(userId); setNotice(null);
     try {
       const r = await changeRole({ data: { userId, role } });
-      setNotice(r.ok ? { ok: true, text: role ? `${name} est désormais ${ROLE_LABEL[role].toLowerCase()}.` : `${name} ne fait plus partie de l’équipe.` } : { ok: false, text: r.reason });
+      setNotice(r.ok ? { ok: true, text: role ? `${name} est désormais ${ROLE_LABEL[role].toLowerCase()}.` : `${name} ne fait plus partie de l’équipe ; son compte est désactivé.` } : { ok: false, text: r.reason });
       if (r.ok) await qc.invalidateQueries({ queryKey: ["admin"] });
     } catch { setNotice({ ok: false, text: "L’opération a échoué." }); }
     finally { setBusy(null); }

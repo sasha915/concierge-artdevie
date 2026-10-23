@@ -71,6 +71,21 @@ function originOf(): string {
   return trustedOrigin(getRequest().headers.get("origin"));
 }
 
+/** Abonnement Mollie réel d'un membre (la réservation « en_cours: » n'en est pas un). */
+async function memberSubscription(admin: any, memberId: string): Promise<{ customerId: string; subscriptionId: string } | null> {
+  const { data: p } = await admin.from("profiles").select("mollie_customer_id, mollie_subscription_id").eq("id", memberId).maybeSingle();
+  const sub = p?.mollie_subscription_id as string | null | undefined;
+  if (!p?.mollie_customer_id || !sub || sub.startsWith("en_cours:")) return null;
+  return { customerId: p.mollie_customer_id as string, subscriptionId: sub };
+}
+
+/** Formule Signature : le numéro WhatsApp du concierge en charge est obligatoire (sinon ses demandes partiraient au numéro commun). */
+function signatureNeedsWhatsapp(v: { plan: string; conciergeWhatsapp?: string | undefined }, ctx: z.RefinementCtx) {
+  if (v.plan === "Signature" && (v.conciergeWhatsapp ?? "").replace(/[^0-9]/g, "").length < 8) {
+    ctx.addIssue({ code: "custom", path: ["conciergeWhatsapp"], message: "Le numéro WhatsApp du concierge est obligatoire pour la formule Signature." });
+  }
+}
+
 const memberFields = {
   fullName: z.string().trim().min(2).max(80),
   phone: z.string().trim().max(40).optional().or(z.literal("")),
@@ -112,7 +127,7 @@ export const getMemberDetail = createServerFn({ method: "GET" })
 
 export const createMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ email: z.string().trim().email().max(160), ...memberFields }).parse(input))
+  .inputValidator((input: unknown) => z.object({ email: z.string().trim().email().max(160), ...memberFields }).superRefine(signatureNeedsWhatsapp).parse(input))
   .handler(async ({ data, context }) => {
     const admin = await assertAdmin(context as Ctx);
     const email = data.email.toLowerCase();
@@ -146,9 +161,29 @@ export const createMember = createServerFn({ method: "POST" })
 
 export const updateMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), ...memberFields }).parse(input))
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), ...memberFields }).superRefine(signatureNeedsWhatsapp).parse(input))
   .handler(async ({ data, context }) => {
     const admin = await assertAdmin(context as Ctx);
+    // Changement de formule : le prélèvement automatique suit le nouveau tarif dès sa prochaine échéance.
+    const { data: before } = await admin.from("profiles").select("plan").eq("id", data.id).maybeSingle();
+    if (before && before.plan !== data.plan) {
+      const sub = await memberSubscription(admin, data.id);
+      if (sub) {
+        const { data: plan } = await admin.from("membership_plans").select("name, price_cents, period").eq("name", data.plan).maybeSingle();
+        if (!plan) return { ok: false as const, reason: "Le tarif de cette formule est introuvable." };
+        try {
+          const { mollie } = await import("./mollie.server");
+          const { subscriptionInterval } = await import("./billing-webhook-rules");
+          await mollie(`/customers/${sub.customerId}/subscriptions/${sub.subscriptionId}`, {
+            method: "PATCH",
+            body: JSON.stringify({ amount: { currency: "EUR", value: (plan.price_cents / 100).toFixed(2) }, interval: subscriptionInterval(plan.period), description: `Art de Vie — Formule ${plan.name}` }),
+          });
+        } catch (err) {
+          console.error("[updateMember] abonnement Mollie non ajusté", err);
+          return { ok: false as const, reason: "Le prélèvement automatique n’a pas pu suivre le changement de formule ; rien n’a été modifié." };
+        }
+      }
+    }
     const { error } = await admin.from("profiles").update({
       full_name: data.fullName,
       phone: data.phone || null,
@@ -181,6 +216,22 @@ export const setMemberDisabled = createServerFn({ method: "POST" })
     const admin = await assertAdmin(context as Ctx);
     if (data.id === (context as Ctx).userId) {
       return { ok: false as const, reason: "Vous ne pouvez pas désactiver votre propre compte." };
+    }
+    // Désactivation : le prélèvement automatique est arrêté chez Mollie avant tout le reste.
+    if (data.disabled) {
+      const sub = await memberSubscription(admin, data.id);
+      if (sub) {
+        try {
+          const { mollie } = await import("./mollie.server");
+          await mollie(`/customers/${sub.customerId}/subscriptions/${sub.subscriptionId}`, { method: "DELETE" });
+        } catch (err) {
+          if (!String(err).includes("Mollie 404") && !String(err).includes("Mollie 422")) {
+            console.error("[setMemberDisabled] abonnement Mollie non arrêté", err);
+            return { ok: false as const, reason: "Le prélèvement automatique n’a pas pu être arrêté ; le compte n’a pas été désactivé." };
+          }
+        }
+        await admin.from("profiles").update({ mollie_subscription_id: null }).eq("id", data.id);
+      }
     }
     const { error } = await admin.auth.admin.updateUserById(data.id, { ban_duration: data.disabled ? "876000h" : "none" });
     if (error) return { ok: false as const, reason: "L’opération a échoué." };
@@ -312,6 +363,12 @@ export const updateRequestStatus = createServerFn({ method: "POST" })
     const { data: before, error: readError } = await admin.from("requests").select("status").eq("id", data.id).maybeSingle();
     if (readError || !before) return { ok: false as const, reason: "La demande est introuvable." };
     if (before.status === data.status) return { ok: true as const };
+    const { canTransition } = await import("./team-request-rules");
+    if (!canTransition(before.status, data.status)) return { ok: false as const, reason: `Une demande « ${before.status} » ne peut pas passer en « ${data.status} ».` };
+    if (data.status === "Annulée") {
+      const { data: invoice } = await admin.from("invoices").select("id").eq("request_id", data.id).maybeSingle();
+      if (invoice) return { ok: false as const, reason: "Cette demande est facturée : régularisez d’abord la facture avant de l’annuler." };
+    }
     const { data: row, error } = await admin.from("requests").update({ status: data.status }).eq("id", data.id).eq("status", before.status).select("id").maybeSingle();
     if (error || !row) return { ok: false as const, reason: "Le statut n’a pas pu être modifié. Rechargez la demande." };
     const { error: eventError } = await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: "statut changé", detail: `${before.status} → ${data.status}` });
@@ -384,7 +441,7 @@ export const getDashboard = createServerFn({ method: "GET" })
       fetchAll<{ id: string; user_id: string; title: string; category: string; status: string; concierge: string; scheduled_date: string | null; scheduled_time: string | null; created_at: string }>((from, to) =>
         admin.from("requests").select(cols).in("status", ["Nouvelle", "En cours", "Confirmée"]).order("created_at", { ascending: true }).order("id").range(from, to)),
       admin.from("requests").select(cols).order("created_at", { ascending: false }).limit(1),
-      fetchAll<{ id: string; full_name: string; disabled_at: string | null; valid_until: string | null }>((from, to) => admin.from("profiles").select("id, full_name, disabled_at, valid_until").order("id").range(from, to)),
+      fetchAll<{ id: string; full_name: string; disabled_at: string | null; valid_until: string | null; plan: string | null; concierge_whatsapp: string | null }>((from, to) => admin.from("profiles").select("id, full_name, disabled_at, valid_until, plan, concierge_whatsapp").order("id").range(from, to)),
     ]);
     const names = new Map(profiles.map((p) => [p.id, p.full_name]));
     const withName = (r: (typeof rows)[number]) => ({ ...r, member_name: names.get(r.user_id) ?? "" });
@@ -577,7 +634,11 @@ export const listReferrals = createServerFn({ method: "GET" })
     const inviterIds = [...new Set(rows.map((r) => r.inviter_id))];
     const { data: inviters } = inviterIds.length ? await admin.from("profiles").select("id, full_name").in("id", inviterIds) : { data: [] };
     const names = new Map((inviters ?? []).map((p: { id: string; full_name: string }) => [p.id, p.full_name]));
-    return rows.map((r) => ({ ...r, inviter_name: names.get(r.inviter_id) ?? "" }));
+    // Le membre qui recommande ne sait pas si la personne est déjà cliente ; l'équipe, si.
+    const emails = [...new Set(rows.map((r) => r.email.toLowerCase()))];
+    const { data: known } = emails.length ? await admin.from("profiles").select("email").in("email", emails) : { data: [] };
+    const existing = new Set((known ?? []).map((p: { email: string | null }) => (p.email ?? "").toLowerCase()));
+    return rows.map((r) => ({ ...r, inviter_name: names.get(r.inviter_id) ?? "", already_member: existing.has(r.email.toLowerCase()) }));
   });
 
 export const setReferralStatus = createServerFn({ method: "POST" })
@@ -645,6 +706,12 @@ export const setTeamRole = createServerFn({ method: "POST" })
     if (remove.length) {
       const { error } = await admin.from("user_roles").delete().eq("user_id", data.userId).in("role", remove);
       if (error) return { ok: false as const, reason: /administrateur/.test(error.message) ? "Il doit toujours rester au moins un administrateur." : "Le rôle n’a pas pu être modifié." };
+    }
+    if (data.role === null) {
+      // Un ancien membre de l'équipe ne devient pas membre : son compte est désactivé (réactivable depuis sa fiche).
+      const { error: banError } = await admin.auth.admin.updateUserById(data.userId, { ban_duration: "876000h" });
+      const { error: profileError } = await admin.from("profiles").update({ disabled_at: new Date().toISOString() }).eq("id", data.userId);
+      if (banError || profileError) return { ok: false as const, reason: "Le rôle est retiré, mais le compte n’a pas pu être désactivé. Désactivez-le depuis sa fiche." };
     }
     return { ok: true as const };
   });
@@ -813,7 +880,8 @@ export const createRequestInvoice = createServerFn({ method: "POST" })
     const { invoiceBreakdown } = await import("./billing-rules");
     const { data: request } = await admin.from("requests").select("id, user_id, status, amount_cents").eq("id", data.id).maybeSingle();
     if (!request) return { ok: false as const, reason: "Demande introuvable." };
-    if (request.status === "Annulée") return { ok: false as const, reason: "Une demande annulée ne peut pas être facturée." };
+    const { canInvoice } = await import("./team-request-rules");
+    if (!canInvoice(request.status)) return { ok: false as const, reason: "Une demande se facture une fois confirmée ou terminée." };
     if (!request.amount_cents) return { ok: false as const, reason: "Renseignez d’abord le montant de la prestation." };
     const { data: existing } = await admin.from("invoices").select("id").eq("request_id", data.id).maybeSingle();
     if (existing) return { ok: false as const, reason: "Une facture existe déjà pour cette demande." };
@@ -840,7 +908,11 @@ export const createRequestInvoice = createServerFn({ method: "POST" })
 
 // ---- Lot 4.3 : « À surveiller », préférences du membre ----
 
-async function dashboardWatch(admin: any, role: TeamRole, rows: Array<{ id: string; title: string; status: string; created_at: string; member_name: string; user_id: string }>, teamIdList: string[], names: Map<string, string>, members: Array<{ id: string; full_name: string; valid_until: string | null; disabled_at: string | null }>) {
+async function dashboardWatch(admin: any, role: TeamRole, rows: Array<{ id: string; title: string; status: string; created_at: string; member_name: string; user_id: string }>, teamIdList: string[], names: Map<string, string>, members: Array<{ id: string; full_name: string; valid_until: string | null; disabled_at: string | null; plan?: string | null; concierge_whatsapp?: string | null }>) {
+  // Fiches Signature sans numéro de concierge : leurs demandes partent au numéro commun.
+  const signatureWithoutWhatsapp = members
+    .filter((m) => !m.disabled_at && !teamIdList.includes(m.id) && m.plan === "Signature" && (m.concierge_whatsapp ?? "").replace(/[^0-9]/g, "").length < 8)
+    .map((m) => ({ id: m.id, full_name: m.full_name }));
   const { isStaleRequest, isRenewalDue, waitingLabel, FAILED_INVOICE_STATUSES } = await import("./watch-rules");
   const staleRequests = rows.filter((r) => isStaleRequest(r)).map((r) => ({ id: r.id, title: r.title, member_name: r.member_name, waiting: waitingLabel(r.created_at) }));
   const { data: changes } = await admin.from("request_changes").select("id, request_id, kind, created_at").eq("status", "en attente").order("created_at");
@@ -857,15 +929,18 @@ async function dashboardWatch(admin: any, role: TeamRole, rows: Array<{ id: stri
     .filter((m) => !m.disabled_at && !teamIdList.includes(m.id) && isRenewalDue(m.valid_until))
     .sort((a, b) => (a.valid_until ?? "").localeCompare(b.valid_until ?? ""))
     .map((m) => ({ id: m.id, full_name: m.full_name, valid_until: m.valid_until as string }));
-  if (role !== "admin") return { staleRequests, renewals, pendingChanges, failedInvoices: null, receivedReferrals: null };
-  const [{ data: invoices }, { data: referrals }] = await Promise.all([
+  if (role !== "admin") return { staleRequests, renewals, pendingChanges, signatureWithoutWhatsapp, failedInvoices: null, receivedReferrals: null, failedCharges: null };
+  const [{ data: invoices }, { data: referrals }, { data: failures }] = await Promise.all([
     admin.from("invoices").select("id, number, user_id, amount_cents, status, issued_on").in("status", [...FAILED_INVOICE_STATUSES]).order("issued_on", { ascending: false }),
     admin.from("referrals").select("id, full_name, inviter_id, created_at").eq("status", "Invitation envoyée").order("created_at", { ascending: true }),
+    admin.from("payment_failures").select("id, user_id, amount_cents, status, created_at").is("resolved_at", null).order("created_at", { ascending: false }).limit(50),
   ]);
   return {
     staleRequests,
     renewals,
     pendingChanges,
+    signatureWithoutWhatsapp,
+    failedCharges: ((failures ?? []) as Array<{ id: string; user_id: string | null; amount_cents: number; status: string; created_at: string }>).map((f) => ({ ...f, member_name: f.user_id ? names.get(f.user_id) ?? "" : "" })),
     failedInvoices: ((invoices ?? []) as Array<{ id: string; number: string; user_id: string; amount_cents: number; status: string }>).map((i) => ({ ...i, member_name: names.get(i.user_id) ?? "" })),
     receivedReferrals: ((referrals ?? []) as Array<{ id: string; full_name: string; inviter_id: string; created_at: string }>).map((r) => ({ id: r.id, full_name: r.full_name, inviter_name: names.get(r.inviter_id) ?? "", created_at: r.created_at })),
   };
@@ -1082,6 +1157,14 @@ export const decideRequestChange = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), decision: z.enum(["acceptée", "refusée"]) }).parse(input))
   .handler(async ({ data, context }) => {
     const { admin } = await assertTeam(context as Ctx);
+    if (data.decision === "acceptée") {
+      // Une annulation acceptée annule la demande : impossible tant qu'une facture existe.
+      const { data: pendingChange } = await admin.from("request_changes").select("request_id, kind").eq("id", data.id).maybeSingle();
+      if (pendingChange?.kind === "annulation") {
+        const { data: invoice } = await admin.from("invoices").select("id").eq("request_id", pendingChange.request_id).maybeSingle();
+        if (invoice) return { ok: false as const, reason: "Cette demande est facturée : régularisez d’abord la facture avant d’accepter l’annulation." };
+      }
+    }
     const { data: row, error } = await admin.from("request_changes").update({ status: data.decision, decided_by: (context as Ctx).userId, decided_at: new Date().toISOString() }).eq("id", data.id).eq("status", "en attente").select("request_id, kind").maybeSingle();
     if (error || !row) return { ok: false as const, reason: "Cette demande de modification a déjà été traitée." };
     const { changeKindLabel } = await import("./request-actions-rules");
@@ -1149,6 +1232,10 @@ export const sendProposal = createServerFn({ method: "POST" })
   }).parse(input))
   .handler(async ({ data, context }) => {
     const { admin } = await assertTeam(context as Ctx);
+    const { isOpenStatus } = await import("./team-request-rules");
+    const { data: parent } = await admin.from("requests").select("status").eq("id", data.requestId).maybeSingle();
+    if (!parent) return { ok: false as const, reason: "La demande est introuvable." };
+    if (!isOpenStatus(parent.status)) return { ok: false as const, reason: "Une demande close ne reçoit plus de proposition." };
     const { data: proposal, error } = await admin.from("request_proposals").insert({ request_id: data.requestId, created_by: (context as Ctx).userId }).select("id").single();
     if (error || !proposal) return { ok: false as const, reason: error?.code === "23505" ? "Une proposition attend déjà la réponse du membre." : "La proposition n’a pas pu être envoyée." };
     const { error: optionsError } = await admin.from("request_proposal_options").insert(data.options.map((o, i) => ({ proposal_id: proposal.id, label: o.label, detail: o.detail, estimate_cents: o.estimateCents, sort_order: i })));
@@ -1241,11 +1328,11 @@ export const getMemberStatement = createServerFn({ method: "GET" })
     const { admin } = await assertTeam(context as Ctx);
     const { statementLines, STATEMENT_STATUSES } = await import("./member-rules");
     const [{ data: member }, { data: rows, error }] = await Promise.all([
-      admin.from("profiles").select("full_name, member_number, language").eq("id", data.id).maybeSingle(),
-      admin.from("requests").select("id, title, status, amount_cents, scheduled_date, created_at").eq("user_id", data.id).in("status", [...STATEMENT_STATUSES]).not("amount_cents", "is", null),
+      admin.from("profiles").select("full_name, member_number, language, plan").eq("id", data.id).maybeSingle(),
+      admin.from("requests").select("id, title, status, amount_cents, scheduled_date, created_at, invoice:invoices(amount_cents, status)").eq("user_id", data.id).in("status", [...STATEMENT_STATUSES]),
     ]);
     if (error || !member) throw new Error("Le relevé n’a pas pu être chargé.");
-    return { member_name: member.full_name as string, member_number: member.member_number as string, language: (member.language === "en" ? "en" : "fr") as "fr" | "en", lines: statementLines(rows ?? [], data.month) };
+    return { member_name: member.full_name as string, member_number: member.member_number as string, language: (member.language === "en" ? "en" : "fr") as "fr" | "en", lines: statementLines(rows ?? [], data.month, member.plan) };
   });
 
 // ---- Écarts avec la maquette V4 équipe (22 octobre) ----
@@ -1398,4 +1485,16 @@ export const revokeDelegateTeam = createServerFn({ method: "POST" })
     if (!row) return { ok: false as const, reason: "Ce proche est introuvable." };
     const { revokeDelegation } = await import("./delegates.server");
     return revokeDelegation(admin, row, (context as Ctx).userId);
+  });
+
+// ---- Seconde analyse : prélèvements rejetés ----
+/** L'équipe a relancé le membre : le prélèvement rejeté quitte « À surveiller ». */
+export const resolvePaymentFailure = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { error } = await admin.from("payment_failures").update({ resolved_at: new Date().toISOString() }).eq("id", data.id).is("resolved_at", null);
+    if (error) return { ok: false as const, reason: "Le suivi n’a pas pu être enregistré." };
+    return { ok: true as const };
   });
