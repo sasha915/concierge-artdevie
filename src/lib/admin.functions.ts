@@ -101,6 +101,8 @@ export const createMember = createServerFn({ method: "POST" })
       email_confirm: true,
       password: crypto.randomUUID() + crypto.randomUUID(),
       user_metadata: { full_name: data.fullName, phone: data.phone || null },
+      // Seuls les comptes ouverts par l'équipe reçoivent un profil (trigger handle_new_member).
+      app_metadata: { account_kind: "membre" },
     });
     if (error || !created.user) {
       const already = /already|exist|registered/i.test(error?.message ?? "");
@@ -622,6 +624,7 @@ export const inviteColleague = createServerFn({ method: "POST" })
       email_confirm: true,
       password: crypto.randomUUID() + crypto.randomUUID(),
       user_metadata: { full_name: data.fullName },
+      app_metadata: { account_kind: "equipe" },
     });
     if (error || !created.user) {
       const already = /already|exist|registered/i.test(error?.message ?? "");
@@ -1273,6 +1276,7 @@ export const approveDelegate = createServerFn({ method: "POST" })
       email_confirm: true,
       password: crypto.randomUUID() + crypto.randomUUID(),
       user_metadata: { full_name: row.full_name, account_kind: "proche" },
+      app_metadata: { account_kind: "proche" },
     });
     if (created?.user) {
       delegateId = created.user.id;

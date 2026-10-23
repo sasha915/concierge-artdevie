@@ -14,7 +14,7 @@ import { formatShortDate } from "@/data/art-de-vie";
 import { PillAction } from "@/components/art-de-vie/v3";
 import { t } from "@/lib/i18n";
 
-export const Route = createFileRoute("/_authenticated/membership/parrainer")({ head: () => ({ meta: [{ title: t("Parrainer un membre — Art de Vie") }, { name: "description", content: t("Invitez un proche à rejoindre la conciergerie Art de Vie.") }, { property: "og:title", content: t("Parrainer un membre — Art de Vie") }, { property: "og:description", content: t("Invitez un proche à rejoindre la conciergerie Art de Vie.") }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
+export const Route = createFileRoute("/_authenticated/membership/parrainer")({ head: () => ({ meta: [{ title: t("Parrainer un membre — Art de Vie") }, { name: "description", content: t("Recommandez une personne de votre entourage à la conciergerie Art de Vie.") }, { property: "og:title", content: t("Parrainer un membre — Art de Vie") }, { property: "og:description", content: t("Recommandez une personne de votre entourage à la conciergerie Art de Vie.") }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
 
 function Page() {
   const queryClient = useQueryClient();
@@ -37,28 +37,28 @@ function Page() {
       setFullName(""); setEmail(""); setMessage("");
       await queryClient.invalidateQueries({ queryKey: ["referrals"] });
     } catch {
-      setError(t("L’invitation n’a pas pu être envoyée. Réessayez dans un instant."));
+      setError(t("Votre recommandation n’a pas pu être transmise. Réessayez dans un instant."));
     } finally {
       setBusy(false);
     }
   }
 
   return <AppShell nav={false}><div className="mx-auto max-w-3xl lg:max-w-none"><SubHeader title="Parrainer un membre" close backTo="/membership"/>
-    <p className="mb-6 max-w-[560px] lg:ml-4 lg:max-w-[760px] lg:text-[18px] lg:leading-7 text-[14px] leading-6 text-muted-foreground">{t("Votre invité reçoit un email personnel contenant un lien privé. Ce lien crée automatiquement son compte membre — il n’a plus qu’à choisir son mot de passe.")}</p>
+    <p className="mb-6 max-w-[560px] lg:ml-4 lg:max-w-[760px] lg:text-[18px] lg:leading-7 text-[14px] leading-6 text-muted-foreground">{t("Vous nous recommandez une personne de votre entourage. Notre équipe prend contact avec elle, avec discrétion ; vous suivez ici la suite donnée.")}</p>
 
     <form className="rounded-[28px] bg-card p-5 sm:p-8 lg:mx-4 lg:p-10" onSubmit={submit}><div className="grid gap-5">
-      <Field label={t("Nom de votre invité")}><Input value={fullName} onChange={(e) => setFullName(e.target.value)} required maxLength={80} placeholder={t("Ex. Élise Marchand")}/></Field>
-      <Field label={t("Adresse email")}><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required maxLength={160} placeholder={t("elise@exemple.com")}/></Field>
-      <Field label={t("Mot personnel (facultatif)")}><Textarea rows={4} maxLength={500} value={message} onChange={(e) => setMessage(e.target.value)} placeholder={t("Quelques mots que votre concierge transmettra…")}/></Field>
+      <Field label={t("Nom de la personne")}><Input value={fullName} onChange={(e) => setFullName(e.target.value)} required maxLength={80}/></Field>
+      <Field label={t("Adresse email")}><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required maxLength={160}/></Field>
+      <Field label={t("Mot personnel (facultatif)")}><Textarea rows={4} maxLength={500} value={message} onChange={(e) => setMessage(e.target.value)} placeholder={t("Quelques mots à l’intention de notre équipe…")}/></Field>
       {error && <p className="rounded-2xl bg-panel p-4 text-xs leading-5 text-primary">{error}</p>}
-      {sent && <p className="rounded-2xl bg-panel p-4 text-xs leading-5 text-primary">{t("L’invitation a bien été envoyée à {name}.", { name: sent })}</p>}
-      <PillAction type="submit" className="w-full sm:max-w-sm" disabled={busy}>{busy ? t("Envoi en cours") : t("Envoyer l’invitation")}</PillAction>
+      {sent && <p className="rounded-2xl bg-panel p-4 text-xs leading-5 text-primary">{t("Votre recommandation de {name} nous est transmise.", { name: sent })}</p>}
+      <PillAction type="submit" className="w-full sm:max-w-sm" disabled={busy}>{busy ? t("Envoi en cours") : t("Transmettre la recommandation")}</PillAction>
     </div></form>
 
     <section className="mt-5 lg:mx-4 lg:mt-16">
-      <h2 className="eyebrow text-muted-foreground">{t("Vos invitations")}</h2>
+      <h2 className="eyebrow text-muted-foreground">{t("Vos recommandations")}</h2>
       {referrals.length === 0 ? (
-        <p className="mt-3 rounded-card bg-panel p-5 text-[13px] text-muted-foreground">{t("Vous n’avez pas encore parrainé de membre.")}</p>
+        <p className="mt-3 rounded-card bg-panel p-5 text-[13px] text-muted-foreground">{t("Vous n’avez pas encore recommandé de personne.")}</p>
       ) : (
         <div className="mt-3 overflow-hidden rounded-card bg-panel px-5">
           {referrals.map((r) => (
@@ -67,7 +67,7 @@ function Page() {
                 <p className="v3-card-title truncate text-[19px] text-primary">{r.full_name}</p>
                 <p className="mt-1 truncate text-[12px] text-muted-foreground">{r.email} · {formatShortDate(r.created_at.slice(0, 10))}</p>
               </div>
-              <span className="shrink-0 rounded-full bg-panel px-[13px] py-[5px] text-[12px] font-medium text-primary">{r.status === "Converti" ? t("Devenu membre") : t(r.status)}</span>
+              <span className="shrink-0 rounded-full bg-panel px-[13px] py-[5px] text-[12px] font-medium text-primary">{r.status === "Converti" ? t("Devenu membre") : r.status === "Contacté" ? t("Contacté par notre équipe") : t("Transmise")}</span>
             </div>
           ))}
         </div>

@@ -543,4 +543,21 @@ export const EN: Record<string, string> = {
   "Ce proche est introuvable.": "This contact cannot be found.",
   "Cet accès n’est plus ouvert.": "This access is no longer open.",
   "Votre accès n’est plus actif.": "Your access is no longer active.",
+
+  // ---- Parrainage : recommandation transmise à l’équipe ----
+  "Recommandez une personne de votre entourage à la conciergerie Art de Vie.": "Recommend someone close to you to the Art de Vie concierge.",
+  "Votre recommandation n’a pas pu être transmise. Réessayez dans un instant.": "Your recommendation could not be sent. Please try again in a moment.",
+  "Vous nous recommandez une personne de votre entourage. Notre équipe prend contact avec elle, avec discrétion ; vous suivez ici la suite donnée.": "You recommend someone close to you. Our team contacts them discreetly; you can follow the outcome here.",
+  "Nom de la personne": "Name of the person",
+  "Quelques mots à l’intention de notre équipe…": "A few words for our team…",
+  "Votre recommandation de {name} nous est transmise.": "Your recommendation of {name} has been sent to us.",
+  "Transmettre la recommandation": "Send the recommendation",
+  "Vos recommandations": "Your recommendations",
+  "Vous n’avez pas encore recommandé de personne.": "You have not recommended anyone yet.",
+  "Contacté par notre équipe": "Contacted by our team",
+  "Transmise": "Sent",
+  "Indiquez l’adresse de la personne que vous recommandez.": "Enter the address of the person you are recommending.",
+  "Vous avez déjà plusieurs recommandations en cours. Notre équipe y répond avant d’en recevoir de nouvelles.": "You already have several recommendations in progress. Our team will respond to them before receiving new ones.",
+  "Cette personne est déjà membre Art de Vie.": "This person is already an Art de Vie member.",
+  "Vous avez déjà recommandé cette personne.": "You have already recommended this person.",
 };
