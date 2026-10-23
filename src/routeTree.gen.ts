@@ -34,6 +34,7 @@ import { Route as AuthenticatedMembershipInformationsRouteImport } from './route
 import { Route as AuthenticatedMembershipLangueRouteImport } from './routes/_authenticated/membership.langue'
 import { Route as AuthenticatedMembershipParrainerRouteImport } from './routes/_authenticated/membership.parrainer'
 import { Route as AuthenticatedMembershipPreferencesRouteImport } from './routes/_authenticated/membership.preferences'
+import { Route as AuthenticatedMembershipProchesRouteImport } from './routes/_authenticated/membership.proches'
 import { Route as AuthenticatedMembershipReleveRouteImport } from './routes/_authenticated/membership.releve'
 import { Route as ApiPublicMollieWebhookRouteImport } from './routes/api/public/mollie-webhook'
 import { Route as ApiPublicNotifyConciergeRouteImport } from './routes/api/public/notify-concierge'
@@ -186,6 +187,12 @@ const AuthenticatedMembershipPreferencesRoute =
     path: '/membership/preferences',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMembershipProchesRoute =
+  AuthenticatedMembershipProchesRouteImport.update({
+    id: '/membership/proches',
+    path: '/membership/proches',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMembershipReleveRoute =
   AuthenticatedMembershipReleveRouteImport.update({
     id: '/membership/releve',
@@ -268,6 +275,7 @@ export interface FileRoutesByFullPath {
   '/membership/langue': typeof AuthenticatedMembershipLangueRoute
   '/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
   '/membership/preferences': typeof AuthenticatedMembershipPreferencesRoute
+  '/membership/proches': typeof AuthenticatedMembershipProchesRoute
   '/membership/releve': typeof AuthenticatedMembershipReleveRoute
   '/api/public/mollie-webhook': typeof ApiPublicMollieWebhookRoute
   '/api/public/notify-concierge': typeof ApiPublicNotifyConciergeRoute
@@ -303,6 +311,7 @@ export interface FileRoutesByTo {
   '/membership/langue': typeof AuthenticatedMembershipLangueRoute
   '/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
   '/membership/preferences': typeof AuthenticatedMembershipPreferencesRoute
+  '/membership/proches': typeof AuthenticatedMembershipProchesRoute
   '/membership/releve': typeof AuthenticatedMembershipReleveRoute
   '/api/public/mollie-webhook': typeof ApiPublicMollieWebhookRoute
   '/api/public/notify-concierge': typeof ApiPublicNotifyConciergeRoute
@@ -341,6 +350,7 @@ export interface FileRoutesById {
   '/_authenticated/membership/langue': typeof AuthenticatedMembershipLangueRoute
   '/_authenticated/membership/parrainer': typeof AuthenticatedMembershipParrainerRoute
   '/_authenticated/membership/preferences': typeof AuthenticatedMembershipPreferencesRoute
+  '/_authenticated/membership/proches': typeof AuthenticatedMembershipProchesRoute
   '/_authenticated/membership/releve': typeof AuthenticatedMembershipReleveRoute
   '/api/public/mollie-webhook': typeof ApiPublicMollieWebhookRoute
   '/api/public/notify-concierge': typeof ApiPublicNotifyConciergeRoute
@@ -379,6 +389,7 @@ export interface FileRouteTypes {
     | '/membership/langue'
     | '/membership/parrainer'
     | '/membership/preferences'
+    | '/membership/proches'
     | '/membership/releve'
     | '/api/public/mollie-webhook'
     | '/api/public/notify-concierge'
@@ -414,6 +425,7 @@ export interface FileRouteTypes {
     | '/membership/langue'
     | '/membership/parrainer'
     | '/membership/preferences'
+    | '/membership/proches'
     | '/membership/releve'
     | '/api/public/mollie-webhook'
     | '/api/public/notify-concierge'
@@ -451,6 +463,7 @@ export interface FileRouteTypes {
     | '/_authenticated/membership/langue'
     | '/_authenticated/membership/parrainer'
     | '/_authenticated/membership/preferences'
+    | '/_authenticated/membership/proches'
     | '/_authenticated/membership/releve'
     | '/api/public/mollie-webhook'
     | '/api/public/notify-concierge'
@@ -651,6 +664,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMembershipPreferencesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/membership/proches': {
+      id: '/_authenticated/membership/proches'
+      path: '/membership/proches'
+      fullPath: '/membership/proches'
+      preLoaderRoute: typeof AuthenticatedMembershipProchesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/membership/releve': {
       id: '/_authenticated/membership/releve'
       path: '/membership/releve'
@@ -773,6 +793,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMembershipLangueRoute: typeof AuthenticatedMembershipLangueRoute
   AuthenticatedMembershipParrainerRoute: typeof AuthenticatedMembershipParrainerRoute
   AuthenticatedMembershipPreferencesRoute: typeof AuthenticatedMembershipPreferencesRoute
+  AuthenticatedMembershipProchesRoute: typeof AuthenticatedMembershipProchesRoute
   AuthenticatedMembershipReleveRoute: typeof AuthenticatedMembershipReleveRoute
   AuthenticatedDemandesIndexRoute: typeof AuthenticatedDemandesIndexRoute
   AuthenticatedMembershipIndexRoute: typeof AuthenticatedMembershipIndexRoute
@@ -798,6 +819,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMembershipParrainerRoute: AuthenticatedMembershipParrainerRoute,
   AuthenticatedMembershipPreferencesRoute:
     AuthenticatedMembershipPreferencesRoute,
+  AuthenticatedMembershipProchesRoute: AuthenticatedMembershipProchesRoute,
   AuthenticatedMembershipReleveRoute: AuthenticatedMembershipReleveRoute,
   AuthenticatedDemandesIndexRoute: AuthenticatedDemandesIndexRoute,
   AuthenticatedMembershipIndexRoute: AuthenticatedMembershipIndexRoute,

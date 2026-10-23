@@ -22,6 +22,8 @@ import { offersQuery, profileQuery, requestsQuery } from "@/lib/adv-queries";
 import { WELCOME_LATER_KEY } from "@/components/art-de-vie/welcome";
 import vendome from "@/assets/v3/place-vendome.jpg.asset.json";
 import { locale, t, tPair } from "@/lib/i18n";
+import { useDelegation } from "@/components/art-de-vie/use-delegation";
+import { DelegateHome } from "@/components/art-de-vie/delegate";
 
 export const Route = createFileRoute("/_authenticated/")({
   beforeLoad: async () => {
@@ -140,7 +142,14 @@ function Row({ to, params, image, category, title, meta, badge }: { to: "/demand
   );
 }
 
+/** Lot 5.4 : un proche autorisé a son propre accueil. */
 function Home() {
+  const { delegation } = useDelegation();
+  if (delegation) return <DelegateHome delegation={delegation} />;
+  return <MemberHome />;
+}
+
+function MemberHome() {
   const heroTitle = tPair("Votre conciergerie, à votre", "rythme.");
   const offersTitle = tPair("Offres en", "vedette.");
   const latestTitle = tPair("Vos dernières", "demandes.");

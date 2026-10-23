@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { listMembers, getMemberDetail, getMemberParrain, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames, listReferrals, listTeam, listOffersAdmin, listRequestEvents, listReplyTemplates, getRequestBilling, getMemberPreferences, listRequestMessages, listRequestFiles, listRequestChanges, getRequestReview, listMemberReviews, listRequestProposals, getAgenda, getMemberStatement, type TeamRole } from "@/lib/admin.functions";
+import { listMembers, getMemberDetail, getMemberParrain, listMemberPayments, listAllRequests, getRequestDetail, listTeamNames, listReferrals, listTeam, listOffersAdmin, listRequestEvents, listReplyTemplates, getRequestBilling, getMemberPreferences, listRequestMessages, listRequestFiles, listRequestChanges, getRequestReview, listMemberReviews, listRequestProposals, getAgenda, getMemberStatement, listMemberDelegates, listPendingDelegates, type TeamRole } from "@/lib/admin.functions";
 import type { Invoice, RequestItem } from "@/data/art-de-vie";
 
 export type AdminMember = {
@@ -192,4 +192,15 @@ export const agendaQuery = (from: string, to: string) => queryOptions({
 export const memberStatementQuery = (id: string, month: string) => queryOptions({
   queryKey: ["admin", "member", id, "statement", month],
   queryFn: () => getMemberStatement({ data: { id, month } }),
+});
+
+// ---- Lot 5.4 : proches autorisés ----
+export const memberDelegatesQuery = (memberId: string) => queryOptions({
+  queryKey: ["admin", "member", memberId, "delegates"],
+  queryFn: () => listMemberDelegates({ data: { memberId } }),
+});
+
+export const pendingDelegatesQuery = queryOptions({
+  queryKey: ["admin", "delegates", "pending"],
+  queryFn: () => listPendingDelegates(),
 });

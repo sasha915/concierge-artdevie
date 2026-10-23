@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatShortDate } from "@/data/art-de-vie";
 import { STALE_REQUEST_HOURS, RENEWAL_WINDOW_DAYS } from "@/lib/watch-rules";
 import { profileQuery } from "@/lib/adv-queries";
+import { pendingDelegatesQuery } from "@/lib/admin-queries";
 import { getDashboard, takeRequest } from "@/lib/admin.functions";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -162,7 +163,9 @@ function WatchGroup({ title, children, count }: { title: string; children: React
 function WatchBlock({ watch }: { watch: Watch }) {
   const failed = watch.failedInvoices ?? [];
   const referrals = watch.receivedReferrals ?? [];
-  const total = watch.staleRequests.length + watch.pendingChanges.length + watch.renewals.length + failed.length + referrals.length;
+  // Lot 5.4 : proches invités par les membres, à confirmer par l'équipe.
+  const { data: delegates = [] } = useQuery(pendingDelegatesQuery);
+  const total = watch.staleRequests.length + watch.pendingChanges.length + watch.renewals.length + failed.length + referrals.length + delegates.length;
   return <section aria-labelledby="watch-title" className="team-panel mt-6 min-w-0 rounded-[28px] p-6">
     <h2 id="watch-title" className="eyebrow team-mention">À surveiller</h2>
     {total === 0 ? <p className="mt-4 text-[14px] text-muted-foreground">Rien à signaler pour le moment.</p>
@@ -178,6 +181,9 @@ function WatchBlock({ watch }: { watch: Watch }) {
         </WatchGroup>
         <WatchGroup title="Factures en échec de paiement" count={failed.length}>
           {failed.map((i) => <li key={i.id} className="border-b border-border last:border-0"><Link to="/admin/membres/$memberId" params={{ memberId: i.user_id }} className={watchLink}><WatchRow title={i.number} meta={`${i.member_name || "Membre"} · ${formatAmount(i.amount_cents)}`} signal={i.status} /></Link></li>)}
+        </WatchGroup>
+        <WatchGroup title="Proches à confirmer" count={delegates.length}>
+          {delegates.map((d) => <li key={d.id} className="border-b border-border last:border-0"><Link to="/admin/membres/$memberId" params={{ memberId: d.member_id }} className={watchLink}><WatchRow title={d.full_name} meta={d.member_name ? `Proche de ${d.member_name}` : "Proche"} signal={formatShortDate(d.invited_at.slice(0, 10))} /></Link></li>)}
         </WatchGroup>
         <WatchGroup title="Parrainages reçus" count={referrals.length}>
           {referrals.map((r) => <li key={r.id} className="border-b border-border last:border-0"><Link to="/admin/parrainages" className={watchLink}><WatchRow title={r.full_name} meta={r.inviter_name ? `Recommandé par ${r.inviter_name}` : "Parrainage"} signal="Reçu" /></Link></li>)}

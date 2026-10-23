@@ -23,6 +23,9 @@ export type RequestItem = {
   image_key: string;
   team_reply?: string | null;
   team_reply_at?: string | null;
+  /** Lot 5.4 : proche qui a fait la demande au nom du membre. */
+  delegate?: { full_name: string } | null;
+  delegate_name?: string | null;
 };
 
 export type Offer = {

@@ -32,3 +32,4 @@
 - [ ] Équipe lot 1.2 : vérification authentifiée des trois pages (bloquée : aucune session autorisée disponible) et résultat distinct du typage complet (non fourni par les contrôles automatiques)
 - [x] Équipe lot 3.1 : rôles administrateur / concierge, /admin/equipe, concierge_id, garde-fou dernier administrateur
 - [x] Corrections hors programme : adresse Connexion, titre Connexion uniforme, handle_new_member sans concierge fictif, filtres pilules /admin/demandes ; secret webhook en vault bloqué (accès secrets refusé à l'agent)
+- [x] Lot 5.4 : proches autorisés (3 au plus par membre, invités par le membre, confirmés par un administrateur) ; le proche fait des demandes au nom du membre et ne suit que celles-ci, sans montant, facture ni proposition ; retrait immédiat ; écrans du proche à vérifier avec un vrai compte

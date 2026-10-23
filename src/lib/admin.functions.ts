@@ -214,7 +214,7 @@ export const listMemberPayments = createServerFn({ method: "GET" })
 // ---- Lot 1.1 : demandes (équipe) ----
 
 const requestStatus = z.enum(["Nouvelle", "En cours", "Confirmée", "Terminée", "Annulée"]);
-const requestCols = "id, user_id, category, status, title, description, scheduled_date, scheduled_time, guests, concierge, concierge_id, image_key, created_at, team_reply, team_reply_at, amount_cents";
+const requestCols = "id, user_id, category, status, title, description, scheduled_date, scheduled_time, guests, concierge, concierge_id, image_key, created_at, team_reply, team_reply_at, amount_cents, delegate_record";
 
 export const listAllRequests = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -245,7 +245,13 @@ export const getRequestDetail = createServerFn({ method: "GET" })
       .select("id, full_name, email, phone, plan, role_label, member_number, member_since, valid_until, disabled_at, concierge_referent")
       .eq("id", request.user_id)
       .maybeSingle();
-    return { request, member: member ?? null };
+    // Lot 5.4 : demande faite par un proche du membre.
+    let delegate_name: string | null = null;
+    if (request.delegate_record) {
+      const { data: d } = await admin.from("member_delegates").select("full_name").eq("id", request.delegate_record).maybeSingle();
+      delegate_name = d?.full_name ?? null;
+    }
+    return { request: { ...request, delegate_name }, member: member ?? null };
   });
 
 // parrain d'un membre (lot 2.2)
@@ -429,7 +435,9 @@ export const listRequestEvents = createServerFn({ method: "GET" })
     const { data: authors, error: authorsError } = ids.length ? await admin.from("profiles").select("id, full_name").in("id", ids) : { data: [], error: null };
     if (authorsError) throw new Error("Les auteurs de l’historique n’ont pas pu être chargés.");
     const names = new Map((authors ?? []).map((p) => [p.id, p.full_name.trim()]));
-    return (events ?? []).map((e) => ({ ...e, author_name: e.actor_id === request.user_id ? "Le membre" : (e.actor_id ? names.get(e.actor_id) : null) || "Équipe" }));
+    const { delegateNames } = await import("./delegates.server");
+    const { byAuthor } = await delegateNames(admin, { authorIds: ids.filter((id) => !names.has(id)) });
+    return (events ?? []).map((e) => ({ ...e, author_name: e.actor_id === request.user_id ? "Le membre" : (e.actor_id && byAuthor.has(e.actor_id) ? `${byAuthor.get(e.actor_id)} (proche)` : null) || (e.actor_id ? names.get(e.actor_id) : null) || "Équipe" }));
   });
 
 const replyTemplateFields = { label: z.string().trim().min(1).max(100), body: z.string().max(4000), sortOrder: z.number().int().min(0).max(100000) };
@@ -903,10 +911,12 @@ export const listRequestMessages = createServerFn({ method: "GET" })
     const ids = [...new Set((rows ?? []).flatMap((m) => (m.author_id ? [m.author_id] : [])))];
     const { data: authors } = ids.length ? await admin.from("profiles").select("id, full_name").in("id", ids) : { data: [] };
     const names = new Map((authors ?? []).map((p: { id: string; full_name: string }) => [p.id, p.full_name.trim()]));
+    const { delegateNames } = await import("./delegates.server");
+    const { byAuthor } = await delegateNames(admin, { authorIds: ids.filter((id) => !names.has(id)) });
     return (rows ?? []).map((m) => ({
       id: m.id,
       author_role: m.author_role as "membre" | "équipe",
-      author_name: (m.author_id ? names.get(m.author_id) : null) || (m.author_role === "membre" ? "Le membre" : "Équipe"),
+      author_name: (m.author_id ? names.get(m.author_id) ?? (byAuthor.has(m.author_id) ? `${byAuthor.get(m.author_id)} (proche)` : null) : null) || (m.author_role === "membre" ? "Le membre" : "Équipe"),
       body: m.body,
       created_at: m.created_at,
     }));
@@ -1211,4 +1221,113 @@ export const resendProposal = createServerFn({ method: "POST" })
     await admin.from("request_events").insert({ request_id: proposal.request_id, actor_id: (context as Ctx).userId, kind: "proposition renvoyée", detail: null });
     await notifyMember(admin, proposal.request_id, "proposition", (title, tr) => n > 1 ? tr("Votre conciergerie vous propose {n} options pour « {title} ».", { n, title }) : tr("Votre conciergerie vous propose une option pour « {title} ».", { title }));
     return { ok: true as const };
+  });
+
+// ---- Lot 5.4 : proches autorisés ----
+
+export type TeamDelegate = { id: string; full_name: string; email: string; relation: string | null; status: string; invited_at: string; decided_at: string | null; revoked_at: string | null };
+
+export const listMemberDelegates = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ memberId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }): Promise<TeamDelegate[]> => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { data: rows, error } = await admin
+      .from("member_delegates")
+      .select("id, full_name, email, relation, status, invited_at, decided_at, revoked_at")
+      .eq("member_id", data.memberId)
+      .order("invited_at", { ascending: false });
+    if (error) throw new Error("Les proches n’ont pas pu être chargés.");
+    return (rows ?? []) as TeamDelegate[];
+  });
+
+/** Proches en attente de confirmation, pour le tableau de bord. */
+export const listPendingDelegates = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { data: rows } = await admin.from("member_delegates").select("id, member_id, full_name, invited_at").eq("status", "en_attente").order("invited_at");
+    const ids = [...new Set((rows ?? []).map((r: { member_id: string }) => r.member_id))];
+    const { data: members } = ids.length ? await admin.from("profiles").select("id, full_name").in("id", ids) : { data: [] };
+    const names = new Map((members ?? []).map((p: { id: string; full_name: string }) => [p.id, p.full_name]));
+    return (rows ?? []).map((r: { id: string; member_id: string; full_name: string; invited_at: string }) => ({ ...r, member_name: names.get(r.member_id) ?? "" }));
+  });
+
+/**
+ * Confirmation d'un proche (administrateurs) : l'identité a été vérifiée par l'équipe.
+ * Crée un compte de proche (sans profil membre) et lui envoie le lien pour choisir son mot de passe.
+ */
+export const approveDelegate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { data: row } = await admin.from("member_delegates").select("id, member_id, full_name, email, status").eq("id", data.id).maybeSingle();
+    if (!row || row.status !== "en_attente") return { ok: false as const, reason: "Cette invitation n’est plus en attente." };
+    const { data: member } = await admin.from("profiles").select("disabled_at").eq("id", row.member_id).maybeSingle();
+    if (!member || member.disabled_at) return { ok: false as const, reason: "Le compte du membre n’est pas actif." };
+
+    let delegateId: string | null = null;
+    const { data: created, error } = await admin.auth.admin.createUser({
+      email: row.email,
+      email_confirm: true,
+      password: crypto.randomUUID() + crypto.randomUUID(),
+      user_metadata: { full_name: row.full_name, account_kind: "proche" },
+    });
+    if (created?.user) {
+      delegateId = created.user.id;
+    } else if (/already|exist|registered/i.test(error?.message ?? "")) {
+      // Adresse déjà connue : seul un ancien compte de proche peut être réutilisé, jamais un compte membre ou d'équipe.
+      const { data: previous } = await admin.from("member_delegates").select("delegate_id").ilike("email", row.email).not("delegate_id", "is", null).limit(1);
+      const candidate = previous?.[0]?.delegate_id as string | undefined;
+      if (candidate) {
+        const [{ data: profile }, ids] = await Promise.all([admin.from("profiles").select("id").eq("id", candidate).maybeSingle(), teamIds(admin)]);
+        if (!profile && !ids.includes(candidate)) {
+          const { error: unbanError } = await admin.auth.admin.updateUserById(candidate, { ban_duration: "none" });
+          if (!unbanError) delegateId = candidate;
+        }
+      }
+      if (!delegateId) return { ok: false as const, reason: "Cette adresse correspond déjà à un compte Art de Vie : elle ne peut pas servir de proche." };
+    } else {
+      return { ok: false as const, reason: "Le compte du proche n’a pas pu être créé." };
+    }
+
+    const { data: updated, error: updateError } = await admin
+      .from("member_delegates")
+      .update({ status: "actif", delegate_id: delegateId, decided_at: new Date().toISOString(), decided_by: (context as Ctx).userId })
+      .eq("id", row.id)
+      .eq("status", "en_attente")
+      .select("id")
+      .maybeSingle();
+    if (updateError || !updated) return { ok: false as const, reason: "L’accès n’a pas pu être activé." };
+    const origin = originOf();
+    const { error: mailError } = await admin.auth.resetPasswordForEmail(row.email, origin ? { redirectTo: `${origin}/reset-password` } : {});
+    return { ok: true as const, mailed: !mailError };
+  });
+
+export const refuseDelegate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { data: row, error } = await admin
+      .from("member_delegates")
+      .update({ status: "refuse", decided_at: new Date().toISOString(), decided_by: (context as Ctx).userId })
+      .eq("id", data.id)
+      .eq("status", "en_attente")
+      .select("id")
+      .maybeSingle();
+    if (error || !row) return { ok: false as const, reason: "Cette invitation n’est plus en attente." };
+    return { ok: true as const };
+  });
+
+export const revokeDelegateTeam = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { data: row } = await admin.from("member_delegates").select("id, status, delegate_id").eq("id", data.id).maybeSingle();
+    if (!row) return { ok: false as const, reason: "Ce proche est introuvable." };
+    const { revokeDelegation } = await import("./delegates.server");
+    return revokeDelegation(admin, row, (context as Ctx).userId);
   });

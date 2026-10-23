@@ -7,11 +7,11 @@ export const requestsQuery = queryOptions({
   queryFn: async (): Promise<RequestItem[]> => {
     const { data, error } = await supabase
       .from("requests")
-      .select("id, category, status, title, description, scheduled_date, scheduled_time, guests, concierge, image_key, team_reply, team_reply_at")
+      .select("id, category, status, title, description, scheduled_date, scheduled_time, guests, concierge, image_key, team_reply, team_reply_at, delegate:member_delegates(full_name)")
       .order("scheduled_date", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: true });
     if (error) throw error;
-    return (data ?? []) as RequestItem[];
+    return (data ?? []) as unknown as RequestItem[];
   },
 });
 
@@ -84,7 +84,7 @@ export const unreadRequestNotificationsQuery = queryOptions({
   staleTime: 30_000,
 });
 
-export type MemberMessage = { id: string; author_role: "membre" | "équipe"; body: string; created_at: string };
+export type MemberMessage = { id: string; author_id: string | null; author_role: "membre" | "équipe"; body: string; created_at: string };
 
 /** Échanges d'une demande du membre (RLS : ses seules demandes). */
 export const requestMessagesQuery = (requestId: string) => queryOptions({
@@ -92,7 +92,7 @@ export const requestMessagesQuery = (requestId: string) => queryOptions({
   queryFn: async (): Promise<MemberMessage[]> => {
     const { data, error } = await supabase
       .from("request_messages")
-      .select("id, author_role, body, created_at")
+      .select("id, author_id, author_role, body, created_at")
       .eq("request_id", requestId)
       .order("created_at", { ascending: true });
     if (error) throw error;
@@ -193,4 +193,38 @@ export const planQuery = (name: string | null | undefined) => queryOptions({
     if (error) throw error;
     return data as { name: string; price_cents: number; period: "an" | "mois"; min_commitment_months: number | null } | null;
   },
+});
+
+// ---- Lot 5.4 : proches autorisés ----
+
+export type MyDelegate = { id: string; full_name: string; email: string; relation: string | null; status: string; invited_at: string; delegate_id: string | null };
+/** Proches du membre (RLS : ses seuls proches). */
+export const myDelegatesQuery = queryOptions({
+  queryKey: ["delegates"],
+  queryFn: async (): Promise<MyDelegate[]> => {
+    const { data, error } = await supabase
+      .from("member_delegates")
+      .select("id, full_name, email, relation, status, invited_at, delegate_id")
+      .order("invited_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as MyDelegate[];
+  },
+});
+
+/** Délégation du compte connecté, s'il est le proche d'un membre ; vérifiée côté serveur. */
+export const delegationQuery = queryOptions({
+  queryKey: ["delegation"],
+  queryFn: () => import("./delegates.functions").then(({ getMyDelegation }) => getMyDelegation()),
+  staleTime: 5 * 60_000,
+});
+
+export const delegateRequestsQuery = queryOptions({
+  queryKey: ["delegate-requests"],
+  queryFn: () => import("./delegates.functions").then(({ listDelegateRequests }) => listDelegateRequests()),
+});
+
+export const delegateRequestQuery = (requestId: string) => queryOptions({
+  queryKey: ["delegate-requests", requestId],
+  queryFn: () => import("./delegates.functions").then(({ getDelegateRequest }) => getDelegateRequest({ data: { requestId } })),
+  refetchInterval: 30_000,
 });

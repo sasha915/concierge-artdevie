@@ -17,8 +17,10 @@ import { Button } from "@/components/ui/button";
 import { PillAction, StatusTimeline, Title } from "@/components/art-de-vie/v3";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, imageFor, formatTime } from "@/data/art-de-vie";
-import { requestChangesMemberQuery, requestFilesMemberQuery, requestProposalMemberQuery, requestMessagesQuery, requestReviewMemberQuery, requestsQuery, unreadRequestNotificationsQuery } from "@/lib/adv-queries";
+import { myDelegatesQuery, profileQuery, requestChangesMemberQuery, requestFilesMemberQuery, requestProposalMemberQuery, requestMessagesQuery, requestReviewMemberQuery, requestsQuery, unreadRequestNotificationsQuery } from "@/lib/adv-queries";
 import { getLang, locale, t, tPair } from "@/lib/i18n";
+import { useDelegation } from "@/components/art-de-vie/use-delegation";
+import { DelegateRequestDetail } from "@/components/art-de-vie/delegate";
 
 export const Route = createFileRoute("/_authenticated/demandes/$requestId")({
   head: () => ({
@@ -36,6 +38,12 @@ export const Route = createFileRoute("/_authenticated/demandes/$requestId")({
 
 function Page() {
   const { requestId } = Route.useParams();
+  const { delegation } = useDelegation();
+  if (delegation) return <DelegateRequestDetail requestId={requestId} delegation={delegation} />;
+  return <MemberPage requestId={requestId} />;
+}
+
+function MemberPage({ requestId }: { requestId: string }) {
   const { data: requests = [], isLoading } = useQuery(requestsQuery);
   const item = requests.find((r) => r.id === requestId);
   const queryClient = useQueryClient();
@@ -120,6 +128,7 @@ function Page() {
               <Detail label={item.category === "Tables" ? t("Couverts") : t("Personnes")} value={String(item.guests)} />
             )}
             <Detail label={t("Concierge")} value={item.concierge} />
+            {item.delegate?.full_name && <Detail label={t("Demandée par")} value={item.delegate.full_name} />}
           </dl>
         </section>
         <RequestActions item={item} />
@@ -153,6 +162,8 @@ function stamp(iso: string) {
 function Exchanges({ requestId, description, cancelled }: { requestId: string; description: string; cancelled: boolean }) {
   const queryClient = useQueryClient();
   const { data: messages = [], isLoading } = useQuery(requestMessagesQuery(requestId));
+  const { data: profile } = useQuery(profileQuery);
+  const { data: delegates = [] } = useQuery(myDelegatesQuery);
   const send = useServerFn(sendMemberMessage);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -189,11 +200,14 @@ function Exchanges({ requestId, description, cancelled }: { requestId: string; d
           </li>
         )}
         {messages.map((m) => {
-          const mine = m.author_role === "membre";
+          // Lot 5.4 : un message côté membre écrit par l'un de ses proches porte le nom du proche.
+          const fromClient = m.author_role === "membre";
+          const mine = fromClient && (!m.author_id || m.author_id === profile?.id);
+          const delegateName = fromClient && !mine ? delegates.find((d) => d.delegate_id === m.author_id)?.full_name ?? t("Votre proche") : null;
           return (
-            <li key={m.id} className={mine ? "ml-auto max-w-[88%] text-right lg:max-w-[78%]" : "mr-auto max-w-[88%] lg:max-w-[78%]"}>
-              <p className={`whitespace-pre-line break-words rounded-[18px] p-4 text-left text-[14px] leading-6 lg:text-[16px] lg:leading-7 ${mine ? "rounded-br-[4px] bg-primary text-primary-foreground" : "rounded-bl-[4px] border border-foreground/24 bg-foreground/14"}`}>{m.body}</p>
-              <p className="mt-1 px-1 text-[11px] text-muted-foreground">{mine ? t("Vous") : t("Votre conciergerie")} · {stamp(m.created_at)}</p>
+            <li key={m.id} className={fromClient ? "ml-auto max-w-[88%] text-right lg:max-w-[78%]" : "mr-auto max-w-[88%] lg:max-w-[78%]"}>
+              <p className={`whitespace-pre-line break-words rounded-[18px] p-4 text-left text-[14px] leading-6 lg:text-[16px] lg:leading-7 ${fromClient ? "rounded-br-[4px] bg-primary text-primary-foreground" : "rounded-bl-[4px] border border-foreground/24 bg-foreground/14"}`}>{m.body}</p>
+              <p className="mt-1 px-1 text-[11px] text-muted-foreground">{mine ? t("Vous") : delegateName ?? t("Votre conciergerie")} · {stamp(m.created_at)}</p>
             </li>
           );
         })}

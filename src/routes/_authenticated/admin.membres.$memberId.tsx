@@ -10,9 +10,10 @@ import { Input } from "@/components/ui/input";
 import { EmptyState, StatusBadge } from "@/components/art-de-vie/cards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatShortDate, formatMonth, imageFor, initials } from "@/data/art-de-vie";
-import { memberDetailQuery, memberParrainQuery, memberPaymentsQuery, memberPreferencesQuery, memberReviewsQuery } from "@/lib/admin-queries";
-import { getMemberStatement, saveMemberPreferences, setMemberLanguage, sendMemberInvite, setMemberDisabled, updateMember, type MemberAnswers as Answers } from "@/lib/admin.functions";
+import { memberDelegatesQuery, memberDetailQuery, memberParrainQuery, memberPaymentsQuery, memberPreferencesQuery, memberReviewsQuery } from "@/lib/admin-queries";
+import { approveDelegate, refuseDelegate, revokeDelegateTeam, getMemberStatement, saveMemberPreferences, setMemberLanguage, sendMemberInvite, setMemberDisabled, updateMember, type MemberAnswers as Answers } from "@/lib/admin.functions";
 import { monthLabel, shiftMonth, WELCOME_STEPS } from "@/lib/member-rules";
+import { delegateStatusLabel } from "@/lib/delegate-rules";
 import { Textarea } from "@/components/ui/textarea";
 import { Field, PlanSelect } from "./admin.membres.index";
 
@@ -128,6 +129,7 @@ function Page() {
 
       <PreferencesBlock memberId={profile.id} />
       <ReviewsBlock memberId={profile.id} />
+      <DelegatesBlock memberId={profile.id} isAdmin={isAdmin} />
 
       <div className="mt-6 grid min-w-0 gap-5">
         <section className="team-panel min-w-0 rounded-card p-5">
@@ -267,6 +269,55 @@ function ReviewsBlock({ memberId }: { memberId: string }) {
             <p className="mt-1 text-[12px] text-muted-foreground">{formatShortDate(r.created_at.slice(0, 10))}</p>
           </Link>
         </li>)}</ul>}
+  </section>;
+}
+
+/**
+ * Lot 5.4 : proches autorisés du membre. Avant de confirmer, l'équipe vérifie l'identité du proche
+ * auprès du membre ; la confirmation (administrateurs) crée son accès et lui envoie le lien de mot de passe.
+ */
+function DelegatesBlock({ memberId, isAdmin }: { memberId: string; isAdmin: boolean }) {
+  const queryClient = useQueryClient();
+  const { data: delegates = [], isLoading } = useQuery(memberDelegatesQuery(memberId));
+  const approve = useServerFn(approveDelegate);
+  const refuse = useServerFn(refuseDelegate);
+  const revoke = useServerFn(revokeDelegateTeam);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  async function run(id: string, action: "approve" | "refuse" | "revoke") {
+    setBusy(id);
+    try {
+      const res = action === "approve" ? await approve({ data: { id } }) : action === "refuse" ? await refuse({ data: { id } }) : await revoke({ data: { id } });
+      if (!res.ok) { toast.error(res.reason); return; }
+      toast.success(action === "approve"
+        ? ("mailed" in res && res.mailed === false ? "Accès ouvert ; l'email n'a pas pu partir, renvoyez-le depuis la connexion." : "Accès ouvert : le proche reçoit un email pour choisir son mot de passe.")
+        : action === "refuse" ? "Invitation non retenue." : "Accès retiré.");
+      await queryClient.invalidateQueries({ queryKey: ["admin", "member", memberId, "delegates"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "delegates", "pending"] });
+    } catch {
+      toast.error("L'opération a échoué.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return <section aria-labelledby="delegates-title" className="team-panel mt-5 min-w-0 rounded-card p-5">
+    <h2 id="delegates-title" className="eyebrow text-primary-light">Proches autorisés</h2>
+    <p className="mt-2 text-[13px] text-muted-foreground">Avant de confirmer, vérifiez auprès du membre l'identité de son proche. Un proche fait des demandes au nom du membre et ne voit que celles-ci.</p>
+    {isLoading ? null : delegates.length === 0 ? <p className="mt-3 text-[13px] text-muted-foreground">Aucun proche invité.</p>
+      : <ul className="mt-3 divide-y divide-border">{delegates.map((d) => <li key={d.id} className="flex flex-wrap items-center gap-3 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px]">{d.full_name}{d.relation ? <span className="text-muted-foreground"> · {d.relation}</span> : null}</p>
+            <p className="mt-0.5 truncate text-[12px] text-muted-foreground">{d.email} · invité le {formatShortDate(d.invited_at.slice(0, 10))}</p>
+          </div>
+          <span className="rounded-full border border-primary/25 px-3 py-1 text-[11px] font-medium">{delegateStatusLabel(d.status)}</span>
+          {d.status === "en_attente" && <div className="flex gap-2">
+            {isAdmin && <Button type="button" size="sm" disabled={busy === d.id} onClick={() => void run(d.id, "approve")}>Confirmer l'accès</Button>}
+            <Button type="button" size="sm" variant="outline" disabled={busy === d.id} onClick={() => void run(d.id, "refuse")}>Ne pas retenir</Button>
+          </div>}
+          {d.status === "actif" && <Button type="button" size="sm" variant="outline" disabled={busy === d.id} onClick={() => void run(d.id, "revoke")}>Retirer l'accès</Button>}
+        </li>)}</ul>}
+    {!isAdmin && delegates.some((d) => d.status === "en_attente") && <p className="mt-3 text-[12px] text-muted-foreground">La confirmation est réservée aux administrateurs.</p>}
   </section>;
 }
 

@@ -22,6 +22,8 @@ import entree from "@/assets/v3/entree-de-nuit.jpg.asset.json";
 import vendome from "@/assets/v3/place-vendome.jpg.asset.json";
 import village from "@/assets/v3/village-cotier.jpg.asset.json";
 import { locale, t, tPair } from "@/lib/i18n";
+import { useDelegation } from "@/components/art-de-vie/use-delegation";
+import { createDelegateRequest } from "@/lib/delegates.functions";
 
 const cats = [
   { name: "Tables", note: "Restaurants et tables privées", image: entree.url, imageKey: "entree-de-nuit" },
@@ -54,6 +56,9 @@ export const Route = createFileRoute("/_authenticated/demandes/nouvelle")({
 function Page() {
   const navigate = useNavigate();
   const createRecurring = useServerFn(createRecurringFromRequest);
+  // Lot 5.4 : un proche autorisé envoie sa demande par le serveur, sans récurrence.
+  const { delegation } = useDelegation();
+  const createAsDelegate = useServerFn(createDelegateRequest);
   const { offer, renew } = Route.useSearch();
   const queryClient = useQueryClient();
   const { data: previous = [] } = useQuery(requestsQuery);
@@ -90,6 +95,26 @@ function Page() {
   async function submit() {
     setBusy(true);
     setError(null);
+    if (delegation) {
+      try {
+        const res = await createAsDelegate({ data: {
+          category: category as "Tables" | "Séjours" | "Transferts" | "Soins" | "Sur mesure",
+          title: title || `${t("Demande")} ${t(category).toLowerCase()}`,
+          description,
+          scheduledDate: date,
+          scheduledTime: time,
+          guests: guests ? Number(guests) : null,
+        } });
+        if (!res.ok) { setError(t(res.reason)); return; }
+        await queryClient.invalidateQueries({ queryKey: ["delegate-requests"] });
+        setCreatedId(res.id);
+      } catch {
+        setError(t("L’envoi a échoué. Réessayez dans un instant."));
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) {
       setBusy(false);
@@ -294,7 +319,7 @@ function Page() {
                     placeholder={t("Vos envies, contraintes ou attentions particulières…")}
                   />
                 </Field>
-                <Field label={t("Récurrence")} desktopFull>
+                {!delegation && <Field label={t("Récurrence")} desktopFull>
                   <select
                     value={rhythm}
                     onChange={(e) => setRhythm(e.target.value as "aucune" | Rhythm)}
@@ -333,7 +358,7 @@ function Page() {
                       <p className="text-[12px] leading-5 text-muted-foreground">{t("Chaque échéance crée une demande sept jours avant sa date, que vous suivez comme les autres.")}</p>
                     </div>
                   )}
-                </Field>
+                </Field>}
               </div>
               {stepError && <p role="alert" className="mt-4 rounded-[18px] bg-panel p-4 text-xs leading-5 text-primary">{stepError}</p>}
               <div className="mt-6 grid grid-cols-[auto_minmax(0,1fr)] gap-2 lg:flex lg:justify-between">

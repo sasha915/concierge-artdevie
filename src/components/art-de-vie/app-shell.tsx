@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { LogOut, Plus } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import logoBeige from "@/assets/logo-beige.svg";
@@ -10,6 +10,7 @@ import { profileQuery, unreadRequestNotificationsQuery } from "@/lib/adv-queries
 import { BookmarkIcon, HomeIcon, InboxIcon, UserIcon } from "./icons";
 import { PillAction, Title } from "./v3";
 import { t, tPair } from "@/lib/i18n";
+import { useDelegation, useSignOut } from "./use-delegation";
 
 export function Logo({ inverse = false, className = "h-8 w-auto" }: { inverse?: boolean; className?: string }) {
   return <img src={inverse ? logoBeige : logoViolet} alt={t("Art de Vie")} className={className} />;
@@ -25,12 +26,15 @@ const nav = [
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { data: unread = [] } = useQuery(unreadRequestNotificationsQuery);
+  // Lot 5.4 : un proche autorisé n'a que l'accueil et ses demandes.
+  const { delegation } = useDelegation();
+  const items = delegation ? nav.filter((n) => n.to === "/" || n.to === "/demandes") : nav;
   return (
     <nav
       aria-label={t("Navigation principale")}
-      className="fixed bottom-[max(16px,env(safe-area-inset-bottom))] left-1/2 z-50 grid h-16 w-[calc(100%-32px)] max-w-[500px] -translate-x-1/2 grid-cols-5 items-center justify-items-center rounded-full border border-foreground/22 bg-primary-deep/86 px-2 text-foreground shadow-nav backdrop-blur-[18px] lg:hidden"
+      className={`fixed bottom-[max(16px,env(safe-area-inset-bottom))] left-1/2 z-50 grid h-16 w-[calc(100%-32px)] max-w-[500px] -translate-x-1/2 ${delegation ? "grid-cols-3" : "grid-cols-5"} items-center justify-items-center rounded-full border border-foreground/22 bg-primary-deep/86 px-2 text-foreground shadow-nav backdrop-blur-[18px] lg:hidden`}
     >
-      {nav.map(({ to, label, Icon }, index) => {
+      {items.map(({ to, label, Icon }, index) => {
         const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
         return (
           <Link
@@ -38,14 +42,14 @@ export function BottomNav() {
             to={to}
             aria-label={to === "/demandes" && unread.length > 0 ? t("{label}, nouveautés", { label: t(label) }) : t(label)}
             aria-current={active ? "page" : undefined}
-            className={`relative flex size-12 items-center justify-center rounded-full transition-colors active:scale-95 ${index > 1 ? (index === 2 ? "col-start-4" : "col-start-5") : ""} ${active ? "bg-foreground/16" : "hover:bg-foreground/10"}`}
+            className={`relative flex size-12 items-center justify-center rounded-full transition-colors active:scale-95 ${delegation ? (index === 1 ? "col-start-3" : "") : index > 1 ? (index === 2 ? "col-start-4" : "col-start-5") : ""} ${active ? "bg-foreground/16" : "hover:bg-foreground/10"}`}
           >
             <Icon filled={active} aria-hidden="true" />
             {to === "/demandes" && unread.length > 0 && <span aria-hidden="true" className="absolute right-2.5 top-2.5 size-2 rounded-full bg-foreground" />}
           </Link>
         );
       })}
-      <Button asChild variant="light" size="icon" className="col-start-3 row-start-1 size-12" title={t("Nouvelle demande")}>
+      <Button asChild variant="light" size="icon" className={`${delegation ? "col-start-2" : "col-start-3"} row-start-1 size-12`} title={t("Nouvelle demande")}>
         <Link to="/demandes/nouvelle" search={{ offer: undefined }} aria-label={t("Nouvelle demande")}>
           <Plus className="size-6" />
         </Link>
@@ -78,13 +82,21 @@ export function TopBar({ title, action }: { title?: string; action?: ReactNode }
   const { data: profile } = useQuery(profileQuery);
   const { data: unread = [] } = useQuery(unreadRequestNotificationsQuery);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { delegation } = useDelegation();
+  const signOut = useSignOut();
+  const items = delegation ? nav.filter((n) => n.to === "/" || n.to === "/demandes") : nav;
+  const account = delegation ? (
+    <Button type="button" variant="light" size="icon" className="size-11" onClick={() => void signOut()} aria-label={t("Se déconnecter")} title={t("Se déconnecter")}>
+      <LogOut className="size-4" />
+    </Button>
+  ) : null;
   return (
     <>
       <header className="dark-glass grid h-[60px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-full py-2 pl-4 pr-2 lg:hidden">
         <div className="min-w-0">
           {title ? <span className="text-sm">{title}</span> : <Logo inverse className="h-[23px] w-auto max-w-full" />}
         </div>
-        {action ?? (
+        {action ?? account ?? (
           <Button asChild variant="light" size="icon" className="size-11 font-medium">
             <Link to="/membership" aria-label={t("Votre Membership")}>
               {initials(profile?.full_name ?? "")}
@@ -97,7 +109,7 @@ export function TopBar({ title, action }: { title?: string; action?: ReactNode }
         className="hidden lg:dark-glass lg:mx-auto lg:flex lg:min-h-[60px] lg:w-fit lg:max-w-full lg:flex-wrap lg:items-center lg:justify-center lg:gap-2 lg:rounded-full lg:px-4 lg:py-2 lg:text-foreground"
       >
         <Logo inverse className="lg:mr-3 lg:h-[24px] lg:w-auto" />
-        {nav.map(({ to, label }) => {
+        {items.map(({ to, label }) => {
           const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
           return (
             <Button
@@ -123,16 +135,22 @@ export function TopBar({ title, action }: { title?: string; action?: ReactNode }
             {t("Nouvelle demande")}
           </Link>
         </Button>
-        <Button
-          asChild
-          variant="outline"
-          size="icon"
-          className="lg:size-11 lg:border-foreground/22 lg:bg-transparent lg:text-foreground lg:hover:bg-foreground/10"
-        >
-          <Link to="/membership" aria-label={t("Votre Membership")}>
-            {initials(profile?.full_name ?? "")}
-          </Link>
-        </Button>
+        {delegation ? (
+          <Button type="button" variant="outline" size="icon" onClick={() => void signOut()} aria-label={t("Se déconnecter")} title={t("Se déconnecter")} className="lg:size-11 lg:border-foreground/22 lg:bg-transparent lg:text-foreground lg:hover:bg-foreground/10">
+            <LogOut className="size-4" />
+          </Button>
+        ) : (
+          <Button
+            asChild
+            variant="outline"
+            size="icon"
+            className="lg:size-11 lg:border-foreground/22 lg:bg-transparent lg:text-foreground lg:hover:bg-foreground/10"
+          >
+            <Link to="/membership" aria-label={t("Votre Membership")}>
+              {initials(profile?.full_name ?? "")}
+            </Link>
+          </Button>
+        )}
       </nav>
     </>
   );

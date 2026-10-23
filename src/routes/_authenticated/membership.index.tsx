@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpRight, CircleUserRound, FileText, Gift, History, Languages, LogOut, ReceiptText, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowUpRight, CircleUserRound, UsersRound, FileText, Gift, History, Languages, LogOut, ReceiptText, ShieldCheck, Sparkles } from "lucide-react";
 import { AppShell, TopBar } from "@/components/art-de-vie/app-shell";
 import { Photo } from "@/components/art-de-vie/cards";
 import { MemberCard } from "@/components/art-de-vie/member-card";
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/membership/")({
   component: Page,
 });
 
-type TileTo = "/membership/informations" | "/membership/factures" | "/membership/historique" | "/membership/parrainer" | "/membership/preferences" | "/membership/releve" | "/membership/langue";
+type TileTo = "/membership/informations" | "/membership/factures" | "/membership/historique" | "/membership/parrainer" | "/membership/preferences" | "/membership/releve" | "/membership/langue" | "/membership/proches";
 
 /** Tuile de compte V4 : icône cerclée, flèche beige, libellé en bas ; panneau, verre ou photo. */
 function AccountTile({ to, icon, label, tone = "panel", photo }: { to: TileTo; icon: React.ReactNode; label: string; tone?: "panel" | "glass"; photo?: string | undefined }) {
@@ -102,6 +102,8 @@ function Page() {
       <AccountTile to="/membership/preferences" label={t("Mes préférences")} icon={<Sparkles className="size-[18px]" />} />
       <AccountTile to="/membership/releve" label={t("Mon relevé")} icon={<ReceiptText className="size-[18px]" />} tone="glass" />
       <AccountTile to="/membership/langue" label={t("Langue de l’application")} icon={<Languages className="size-[18px]" />} tone="glass" />
+      {/* Lot 5.4 */}
+      <AccountTile to="/membership/proches" label={t("Proches autorisés")} icon={<UsersRound className="size-[18px]" />} />
     </div>
   );
 

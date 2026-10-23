@@ -107,6 +107,7 @@ function Page() {
         <section className="team-panel rounded-[28px] p-6">
           <div className="flex flex-wrap items-center gap-2"><span className="eyebrow rounded-full border border-border px-3 py-1 text-[10px]">{r.category}</span><TeamStatus status={r.status} /></div>
           <h1 className="mt-4 break-words text-[clamp(32px,4vw,52px)] leading-[1.02]">{r.title}</h1>
+          {r.delegate_name && <p className="mt-3 inline-flex rounded-full border border-border px-3 py-1 text-[12px]">Demandée par {r.delegate_name}, proche du membre</p>}
           <p className="eyebrow team-mention mt-6">Précisions du membre</p>
           <p className="mt-3 whitespace-pre-line rounded-[18px] bg-foreground p-4 text-[15px] leading-6 text-background">{r.description || "Aucune précision complémentaire n’a été indiquée."}</p>
           <dl className="mt-6 grid gap-3 sm:grid-cols-3">
@@ -119,7 +120,7 @@ function Page() {
         <section aria-labelledby="exchanges-title" className="team-panel rounded-[28px] p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 id="exchanges-title" className="eyebrow team-mention">Échanges avec le membre</h2>
-            <span className="rounded-full border border-border px-3 py-1 text-[11px]">Visible par le membre</span>
+            <span className="rounded-full border border-border px-3 py-1 text-[11px]">{r.delegate_name ? "Visible par le membre et son proche" : "Visible par le membre"}</span>
           </div>
           {messagesLoading ? <Skeleton className="mt-4 h-24 bg-primary/10" />
             : messagesError ? <p role="alert" className="mt-4 text-[13px] text-muted-foreground">Les échanges n’ont pas pu être chargés.</p>

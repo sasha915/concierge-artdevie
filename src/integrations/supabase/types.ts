@@ -139,6 +139,59 @@ export type Database = {
         }
         Relationships: []
       }
+      member_delegates: {
+        Row: {
+          decided_at: string | null
+          decided_by: string | null
+          delegate_id: string | null
+          email: string
+          full_name: string
+          id: string
+          invited_at: string
+          member_id: string
+          relation: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          status: string
+        }
+        Insert: {
+          decided_at?: string | null
+          decided_by?: string | null
+          delegate_id?: string | null
+          email: string
+          full_name: string
+          id?: string
+          invited_at?: string
+          member_id: string
+          relation?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+        }
+        Update: {
+          decided_at?: string | null
+          decided_by?: string | null
+          delegate_id?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          invited_at?: string
+          member_id?: string
+          relation?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_delegates_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_preferences: {
         Row: {
           tables_choix: string[]
@@ -738,6 +791,7 @@ export type Database = {
           id: string
           image_key: string
           recurring_id: string | null
+          delegate_record: string | null
           scheduled_date: string | null
           scheduled_time: string | null
           status: Database["public"]["Enums"]["request_status"]
@@ -757,6 +811,7 @@ export type Database = {
           id?: string
           image_key?: string
           recurring_id?: string | null
+          delegate_record?: string | null
           scheduled_date?: string | null
           scheduled_time?: string | null
           status?: Database["public"]["Enums"]["request_status"]
@@ -776,6 +831,7 @@ export type Database = {
           id?: string
           image_key?: string
           recurring_id?: string | null
+          delegate_record?: string | null
           scheduled_date?: string | null
           scheduled_time?: string | null
           status?: Database["public"]["Enums"]["request_status"]
@@ -785,6 +841,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "requests_delegate_record_fkey"
+            columns: ["delegate_record"]
+            isOneToOne: false
+            referencedRelation: "member_delegates"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "requests_recurring_id_fkey"
             columns: ["recurring_id"]
@@ -828,6 +891,7 @@ export type Database = {
         Returns: boolean
       }
       generate_recurring_requests: { Args: { _today?: string }; Returns: number }
+      is_member: { Args: { _user_id: string }; Returns: boolean }
       is_team: { Args: { _user_id: string }; Returns: boolean }
       mark_request_notifications_read: { Args: { _request_id: string }; Returns: undefined }
       next_invoice_number: { Args: never; Returns: string }

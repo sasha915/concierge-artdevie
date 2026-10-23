@@ -6,12 +6,20 @@ import { EmptyState, Filters, RequestCard } from "@/components/art-de-vie/cards"
 import { Skeleton } from "@/components/ui/skeleton";
 import { recurringRequestsQuery, requestsQuery } from "@/lib/adv-queries";
 import { t } from "@/lib/i18n";
+import { useDelegation } from "@/components/art-de-vie/use-delegation";
+import { DelegateRequestsList } from "@/components/art-de-vie/delegate";
 
 const filters = ["Toutes", "Nouvelle", "En cours", "Confirmée", "Terminée", "Annulée"];
 
 export const Route = createFileRoute("/_authenticated/demandes/")({ head: () => ({ meta: [{ title: t("Mes demandes — Art de Vie") }, { name: "description", content: t("Suivez toutes vos demandes de conciergerie.") }, { property: "og:title", content: t("Mes demandes — Art de Vie") }, { property: "og:description", content: t("Suivez toutes vos demandes de conciergerie.") }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
 
 function Page() {
+  const { delegation } = useDelegation();
+  if (delegation) return <DelegateRequestsList />;
+  return <MemberPage />;
+}
+
+function MemberPage() {
   const [active, setActive] = useState("Toutes");
   const { data: requests = [], isLoading } = useQuery(requestsQuery);
   const { data: recurring = [] } = useQuery(recurringRequestsQuery);
