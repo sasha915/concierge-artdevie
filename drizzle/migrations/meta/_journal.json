@@ -218,6 +218,13 @@
       "when": 1792722535757,
       "tag": "0030_security_payments_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792723501892,
+      "tag": "0031_profile_trigger_fix",
+      "breakpoints": true
     }
   ]
 }

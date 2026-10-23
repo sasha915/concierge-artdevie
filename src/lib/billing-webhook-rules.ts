@@ -9,9 +9,10 @@ export type InvoiceState = { status: string; mollie_payment_id: string | null; a
  * - un paiement « payé » d'un montant différent n'est pas retenu.
  */
 export function invoiceUpdateFor(invoice: InvoiceState, paymentId: string, newStatus: string, paidCents: number): { apply: boolean; reason?: string } {
-  if (invoice.mollie_payment_id && invoice.mollie_payment_id !== paymentId) return { apply: false, reason: "paiement remplacé par un lien plus récent" };
   if (invoice.status === "Payée") return { apply: false, reason: "facture déjà payée" };
   if (newStatus === "Payée" && paidCents !== invoice.amount_cents) return { apply: false, reason: "montant différent de la facture" };
+  // Un paiement encaissé l'emporte toujours, même s'il venait d'un lien plus ancien ; un échec d'ancien lien est ignoré.
+  if (newStatus !== "Payée" && invoice.mollie_payment_id && invoice.mollie_payment_id !== paymentId) return { apply: false, reason: "paiement remplacé par un lien plus récent" };
   if (newStatus === invoice.status) return { apply: false, reason: "statut inchangé" };
   return { apply: true };
 }

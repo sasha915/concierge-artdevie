@@ -4,9 +4,10 @@ import { invoiceUpdateFor, subscriptionInterval, subscriptionStartDate, toCents,
 describe("webhook Mollie", () => {
   const invoice = { status: "En attente", mollie_payment_id: "tr_2", amount_cents: 149000 };
 
-  test("un ancien lien de paiement ne touche pas la facture", () => {
+  test("un ancien lien expiré ne touche pas la facture, mais un ancien lien payé est retenu", () => {
     expect(invoiceUpdateFor(invoice, "tr_1", "Expirée", 149000).apply).toBe(false);
     expect(invoiceUpdateFor(invoice, "tr_2", "Payée", 149000).apply).toBe(true);
+    expect(invoiceUpdateFor(invoice, "tr_1", "Payée", 149000).apply).toBe(true);
   });
 
   test("une facture payée ne redescend jamais", () => {

@@ -38,6 +38,10 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
   const badge = "inline-flex min-w-5 items-center justify-center rounded-full bg-primary-foreground px-1.5 text-[11px] font-semibold text-primary";
 
   async function signOut() {
+    // Le verrou d'équipe et les données en mémoire ne survivent pas à la déconnexion.
+    try { await lock({}); } catch { /* verrou déjà fermé */ }
+    await queryClient.cancelQueries();
+    queryClient.clear();
     await supabase.auth.signOut();
     navigate({ to: "/connexion", replace: true });
   }

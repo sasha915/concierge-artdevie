@@ -25,7 +25,7 @@ export async function mollie<T>(path: string, init?: RequestInit): Promise<T> {
   if (!key) throw new Error("MOLLIE_API_KEY manquant");
   const res = await fetch(`${API}${path}`, {
     ...init,
-    headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+    headers: { ...(init?.headers as Record<string, string> | undefined), authorization: `Bearer ${key}`, "content-type": "application/json" },
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");

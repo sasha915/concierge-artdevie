@@ -63,8 +63,11 @@ function Page() {
       toast.error(t(
         res.reason === "mollie_not_configured"
           ? "Le paiement en ligne n’est pas encore activé."
-          : "Impossible de préparer ce paiement.",
+          : res.reason === "payment_processing"
+            ? "Votre paiement est en cours de traitement ; la facture se met à jour dès sa confirmation."
+            : "Impossible de préparer ce paiement.",
       ));
+      if (res.reason === "payment_processing") await queryClient.invalidateQueries({ queryKey: ["invoices"] });
     } catch {
       toast.error(t("Impossible de préparer ce paiement."));
     } finally {

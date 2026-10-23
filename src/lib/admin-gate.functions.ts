@@ -4,10 +4,12 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { adminPasswordMatches, adminSessionConfig, GATE_MAX_ATTEMPTS, GATE_WINDOW_MINUTES, isAdminUnlocked, type AdminGateSession } from "./admin-gate.server";
 
-/** Reads only the signed cookie — safe to call from a route beforeLoad (no bearer token needed). */
-export const adminGateStatus = createServerFn({ method: "GET" }).handler(async () => {
-  return { unlocked: await isAdminUnlocked(), configured: Boolean(process.env["ADMIN_PASSWORD"]) };
-});
+/** Verrou ouvert pour ce compte (le jeton est joint par la middleware globale ; la route équipe est rendue côté client). */
+export const adminGateStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    return { unlocked: await isAdminUnlocked(context.userId), configured: Boolean(process.env["ADMIN_PASSWORD"]) };
+  });
 
 /**
  * Ouverture de l'espace équipe : compte connecté et membre de l'équipe, mot de passe commun,

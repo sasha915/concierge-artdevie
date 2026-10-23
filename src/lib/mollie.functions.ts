@@ -20,14 +20,18 @@ async function ensureCustomer(admin: any, userId: string, profile: { full_name?:
   return (current?.mollie_customer_id as string | null) ?? customer.id;
 }
 
-/** Lien de paiement encore ouvert, à réutiliser plutôt que d'en créer un second. */
-async function openCheckout(paymentId: string | null | undefined): Promise<string | null> {
-  if (!paymentId) return null;
+/**
+ * Paiement précédent : lien encore ouvert à réutiliser, ou paiement en cours de traitement
+ * (carte, virement) pendant lequel aucun second paiement ne doit être créé.
+ */
+async function previousPayment(paymentId: string | null | undefined): Promise<{ checkout: string | null; processing: boolean }> {
+  if (!paymentId) return { checkout: null, processing: false };
   try {
     const p = await mollie<MolliePayment>(`/payments/${paymentId}`);
-    return p.status === "open" ? p._links?.checkout?.href ?? null : null;
+    if (p.status === "open") return { checkout: p._links?.checkout?.href ?? null, processing: false };
+    return { checkout: null, processing: p.status === "pending" || p.status === "authorized" || p.status === "paid" };
   } catch {
-    return null;
+    return { checkout: null, processing: false };
   }
 }
 
@@ -81,8 +85,9 @@ export const payInvoice = createServerFn({ method: "POST" })
     if (!invoice) return { ok: false as const, reason: "invoice_not_found" };
     if (invoice.status === "Payée") return { ok: false as const, reason: "already_paid" };
     // Double clic ou retour sur la page : le lien déjà ouvert est repris.
-    const reuse = await openCheckout(invoice.mollie_payment_id);
-    if (reuse) return { ok: true as const, checkoutUrl: reuse };
+    const previous = await previousPayment(invoice.mollie_payment_id);
+    if (previous.checkout) return { ok: true as const, checkoutUrl: previous.checkout };
+    if (previous.processing) return { ok: false as const, reason: "payment_processing" };
 
     const { data: profile } = await supabaseAdmin
       .from("profiles")

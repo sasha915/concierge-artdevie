@@ -33,7 +33,8 @@ function Authenticated() {
     if (lang === "fr" || lang === "en") setLang(lang);
   }, [lang]);
 
-  if (isSuccess && profile === null) {
+  // L'interface équipe a sa propre garde (rôle + verrou) : la règle des proches ne s'y applique pas.
+  if (!team && isSuccess && profile === null) {
     if (pending) return null;
     if (!delegation) return <InactiveAccess />;
     if (!isDelegatePathAllowed(pathname)) return <Navigate to="/" replace />;

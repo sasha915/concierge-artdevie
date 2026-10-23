@@ -591,4 +591,5 @@ export const EN: Record<string, string> = {
   "Votre choix n’a pas pu être enregistré. Réessayez dans un instant.": "Your choice could not be saved. Please try again in a moment.",
   "Bon retour parmi nous": "Welcome back",
   "Quel plaisir de vous retrouver": "Lovely to see you again",
+  "Votre paiement est en cours de traitement ; la facture se met à jour dès sa confirmation.": "Your payment is being processed; the invoice will update as soon as it is confirmed.",
 };

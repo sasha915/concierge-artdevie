@@ -23,8 +23,8 @@ async function createInvoice(admin: any, args: { userId: string; amountCents: nu
     _amount_cents: args.amountCents,
     _mollie_payment_id: args.paymentId,
   });
-  // 23505 : la facture de ce paiement existe déjà (rappel de Mollie).
-  if (error && error.code !== "23505") return error;
+  // Seul un doublon sur le paiement Mollie signifie « facture déjà créée » (rappel) ; toute autre erreur est relancée.
+  if (error && !(error.code === "23505" && String(error.message ?? "").includes("invoices_mollie_payment_id_key"))) return error;
   return null;
 }
 
@@ -91,10 +91,21 @@ export const Route = createFileRoute("/api/public/mollie-webhook")({
             .maybeSingle();
           if (claimError) return retry("réservation de l'abonnement impossible", claimError);
 
-          if (claimed) {
+          // Rappel après un essai interrompu : la réservation de ce même paiement est reprise.
+          let resume = false;
+          if (!claimed) {
+            const { data: current } = await admin.from("profiles").select("mollie_subscription_id").eq("id", meta.user_id).maybeSingle();
+            resume = current?.mollie_subscription_id === claim;
+          }
+
+          if (claimed || resume) {
             try {
-              const sub = await mollie<{ id: string }>(`/customers/${payment.customerId}/subscriptions`, {
+              // Un abonnement déjà créé chez Mollie pour ce membre est retenu au lieu d'en créer un second.
+              const existing = await mollie<{ _embedded?: { subscriptions?: Array<{ id: string; status: string; metadata?: { user_id?: string } }> } }>(`/customers/${payment.customerId}/subscriptions?limit=50`);
+              const found = (existing._embedded?.subscriptions ?? []).find((s) => s.metadata?.user_id === meta.user_id && (s.status === "active" || s.status === "pending"));
+              const sub = found ?? await mollie<{ id: string }>(`/customers/${payment.customerId}/subscriptions`, {
                 method: "POST",
+                headers: { "Idempotency-Key": `adv-sub-${payment.id}` },
                 body: JSON.stringify({
                   amount: { currency: "EUR", value: (plan.price_cents / 100).toFixed(2) },
                   interval: subscriptionInterval(plan.period),

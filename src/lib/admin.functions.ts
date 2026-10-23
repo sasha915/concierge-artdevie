@@ -86,7 +86,7 @@ export const listMembers = createServerFn({ method: "GET" })
     const { admin, role } = await assertTeam(context as Ctx);
     const [profiles, counts] = await Promise.all([
       fetchAll<Record<string, unknown>>((from, to) => admin.from("profiles").select("id, full_name, email, phone, plan, role_label, member_number, member_since, valid_until, disabled_at, concierge_referent, concierge_whatsapp").order("member_since", { ascending: false }).order("id").range(from, to)),
-      fetchAll<{ user_id: string; requests_count: number; invoices_count: number }>((from, to) => admin.rpc("team_member_counts").range(from, to)),
+      fetchAll<{ user_id: string; requests_count: number; invoices_count: number }>((from, to) => admin.rpc("team_member_counts").order("user_id").range(from, to)),
     ]);
     const byMember = new Map(counts.map((c) => [c.user_id, c]));
     const team = await teamIds(admin);
@@ -831,7 +831,9 @@ export const createRequestInvoice = createServerFn({ method: "POST" })
       _commission_rate: b.commission_rate,
     });
     const invoice = (rows as Array<{ id: string; number: string }> | null)?.[0];
-    if (error || !invoice) return { ok: false as const, reason: error?.code === "23505" ? "Une facture existe déjà pour cette demande." : "La facture n’a pas pu être créée." };
+    const duplicate = error?.code === "23505" && String(error.message ?? "").includes("invoices_request_id_key");
+    if (error) console.error("[createRequestInvoice] facture non créée", error.message);
+    if (error || !invoice) return { ok: false as const, reason: duplicate ? "Une facture existe déjà pour cette demande." : "La facture n’a pas pu être créée." };
     await logEvent(admin, { request_id: request.id, actor_id: (context as Ctx).userId, kind: "facture créée", detail: invoice.number });
     return { ok: true as const, number: invoice.number as string };
   });
