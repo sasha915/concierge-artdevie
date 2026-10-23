@@ -219,8 +219,11 @@ export function OfferCard({ offer, compact = false }: { offer: Offer; compact?: 
   );
 }
 
+const OFFER_TO_REQUEST: Record<string, string> = { Restaurant: "Tables", "Bien-être": "Soins", Voyage: "Séjours", Culture: "Sur mesure" };
+
 export function EditorialOfferCard({ offer, variant }: { offer: Offer; variant: "hero" | "tile" | "feature" }) {
-  const search = { offer: offer.title };
+  // La demande reprend l'offre et la catégorie de prestation correspondante.
+  const search = { offer: offer.title, category: OFFER_TO_REQUEST[offer.category] ?? "Sur mesure", partner: `${offer.partner} · ${offer.place}` };
   if (variant === "feature")
     return (
       <Link
@@ -336,6 +339,18 @@ export function Filters({
           {t(value)}
         </Button>
       ))}
+    </div>
+  );
+}
+
+/** Échec de chargement : message explicite et nouvel essai, plutôt qu'une liste vide trompeuse. */
+export function ErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div role="alert" className="rounded-card bg-card p-8 text-center text-sm text-muted-foreground">
+      <p>{t("Le chargement n’a pas abouti. Vérifiez votre connexion.")}</p>
+      <button type="button" onClick={onRetry} className="mt-4 inline-flex h-11 items-center rounded-full border border-foreground/24 px-5 text-[14px] font-medium text-foreground transition-colors hover:bg-foreground/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        {t("Réessayer")}
+      </button>
     </div>
   );
 }

@@ -43,9 +43,9 @@ export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: t("Accueil — Art de Vie") },
-      { name: "description", content: t("Votre conciergerie privée, demandes et privilèges.") },
+      { name: "description", content: t("Notre conciergerie privée : vos demandes et nos offres.") },
       { property: "og:title", content: t("Accueil — Art de Vie") },
-      { property: "og:description", content: t("Votre conciergerie privée, demandes et privilèges.") },
+      { property: "og:description", content: t("Notre conciergerie privée : vos demandes et nos offres.") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -150,7 +150,7 @@ function Home() {
 }
 
 function MemberHome() {
-  const heroTitle = tPair("Votre conciergerie, à votre", "rythme.");
+  const heroTitle = tPair("Notre conciergerie, à votre", "rythme.");
   const offersTitle = tPair("Offres en", "vedette.");
   const latestTitle = tPair("Vos dernières", "demandes.");
   const { data: requests = [], isPending: requestsPending } = useQuery(requestsQuery);
@@ -196,7 +196,7 @@ function MemberHome() {
               {heroTitle[0]}{" "}
             </Title>
             <p className="mt-6 hidden max-w-[520px] text-[18px] leading-7 text-foreground/90 lg:block">
-              {t("Suivez vos demandes et vos privilèges, ou contactez votre concierge en un geste.")}
+              {t("Suivez vos demandes, découvrez nos offres, ou écrivez à votre concierge.")}
             </p>
             <div className="mt-[22px] lg:mt-7 lg:flex lg:flex-wrap lg:gap-3">
               <PillAction asChild light className="w-full lg:w-auto">
@@ -304,9 +304,6 @@ function MemberHome() {
           </div>
         </section>
       </div>
-      <Link to="/demandes/nouvelle" search={{ offer: undefined }} aria-label={t("Nouvelle demande")} className="sr-only">
-        <Plus />
-      </Link>
     </AppShell>
   );
 }

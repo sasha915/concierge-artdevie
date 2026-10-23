@@ -119,12 +119,12 @@ function Page() {
     {isAdmin && open && <form className="mt-[22px] rounded-card bg-card p-5 sm:p-7" onSubmit={submitCreate}>
       <h2 className="font-display text-[22px] font-medium text-primary">Créer un membre</h2>
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
-        <Field label="Nom complet"><Input value={form.fullName} onChange={(e) => set("fullName", e.target.value)} required maxLength={80} placeholder="Ex. Élise Marchand" /></Field>
-        <Field label="Adresse email"><Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} required maxLength={160} placeholder="elise@exemple.com" /></Field>
-        <Field label="Téléphone"><Input value={form.phone} onChange={(e) => set("phone", e.target.value)} maxLength={40} placeholder="+33 6 12 34 56 78" /></Field>
+        <Field label="Nom complet"><Input value={form.fullName} onChange={(e) => set("fullName", e.target.value)} required maxLength={80} /></Field>
+        <Field label="Adresse email"><Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} required maxLength={160} /></Field>
+        <Field label="Téléphone"><Input value={form.phone} onChange={(e) => set("phone", e.target.value)} maxLength={40} /></Field>
         <Field label="Formule"><PlanSelect value={form.plan} onChange={(v) => set("plan", v)} /></Field>
-        <Field label="Concierge référent"><Input value={form.conciergeReferent} onChange={(e) => set("conciergeReferent", e.target.value)} maxLength={60} placeholder="Clara M." /></Field>
-        <Field label="WhatsApp du concierge"><Input value={form.conciergeWhatsapp} onChange={(e) => set("conciergeWhatsapp", e.target.value)} maxLength={30} placeholder="+33612345678" /></Field>
+        <Field label="Concierge référent"><Input value={form.conciergeReferent} onChange={(e) => set("conciergeReferent", e.target.value)} maxLength={60} /></Field>
+        <Field label="WhatsApp du concierge"><Input value={form.conciergeWhatsapp} onChange={(e) => set("conciergeWhatsapp", e.target.value)} maxLength={30} /></Field>
       </div>
       <Button type="submit" variant="primary" size="lg" className="mt-5 w-full lg:w-auto" disabled={busy}>{busy ? "Création…" : "Créer le membre"}</Button>
     </form>}

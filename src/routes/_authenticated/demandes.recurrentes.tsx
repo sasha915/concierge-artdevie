@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { AppShell } from "@/components/art-de-vie/app-shell";
 import { SubHeader } from "@/components/art-de-vie/page-header";
 import { EmptyState } from "@/components/art-de-vie/cards";
@@ -10,7 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, formatTime } from "@/data/art-de-vie";
 import { recurringRequestsQuery } from "@/lib/adv-queries";
-import { setRecurringPaused } from "@/lib/messages.functions";
+import { endRecurring, setRecurringPaused } from "@/lib/messages.functions";
+import { todayParis } from "@/lib/billing-webhook-rules";
 import { nextOccurrence, rhythmEyebrow, rhythmLabel, type RecurringRule } from "@/lib/planning-rules";
 import { PillAction } from "@/components/art-de-vie/v3";
 
@@ -41,8 +43,25 @@ function Page() {
   const queryClient = useQueryClient();
   const { data: rules = [], isLoading } = useQuery(recurringRequestsQuery);
   const pause = useServerFn(setRecurringPaused);
+  const end = useServerFn(endRecurring);
   const [busy, setBusy] = useState<string | null>(null);
-  const today = new Date().toISOString().slice(0, 10);
+  const [ending, setEnding] = useState<string | null>(null);
+  const today = todayParis();
+
+  async function stop(id: string) {
+    setBusy(id);
+    try {
+      const res = await end({ data: { id } });
+      if (!res.ok) toast.error(t(res.reason));
+      else toast.success(t("La série s’arrête : plus aucune échéance ne sera créée."));
+      setEnding(null);
+      await queryClient.invalidateQueries({ queryKey: ["recurring"] });
+    } catch {
+      toast.error(t("Le changement n’a pas pu être enregistré."));
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function toggle(id: string, paused: boolean) {
     setBusy(id);
@@ -86,13 +105,22 @@ function Page() {
                     <div className="flex justify-between gap-4"><dt className="text-muted-foreground">{t("Prochaine échéance")}</dt><dd>{r.paused ? t("Suspendue") : next ? formatDate(next) : t("Série terminée")}</dd></div>
                     {r.end_date && <div className="flex justify-between gap-4"><dt className="text-muted-foreground">{t("Jusqu’au")}</dt><dd>{formatDate(r.end_date)}</dd></div>}
                   </dl>
+                  {next && (ending === r.id ? (
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <p className="text-[13px] text-muted-foreground">{t("Mettre fin à cette série ? Les demandes déjà créées restent suivies.")}</p>
+                      <Button type="button" size="sm" disabled={busy === r.id} onClick={() => void stop(r.id)}>{t("Confirmer")}</Button>
+                      <Button type="button" size="sm" variant="outline" onClick={() => setEnding(null)}>{t("Annuler")}</Button>
+                    </div>
+                  ) : (
+                    <Button type="button" variant="link" className="mt-3 h-auto px-0 text-[13px]" onClick={() => setEnding(r.id)}>{t("Mettre fin à la série")}</Button>
+                  ))}
                 </li>
               );
             })}
           </ul>
         )}
         <p className="mt-6 max-w-[560px] text-[14px] leading-6 text-muted-foreground lg:ml-4 lg:max-w-[760px]">
-          {t("Chaque échéance crée une demande que vous suivez comme les autres. Vous pouvez la suspendre à tout moment.")}
+          {t("Chaque échéance crée une demande que vous suivez comme les autres. Vous pouvez suspendre une série ou y mettre fin à tout moment ; pour en changer le rythme ou l’horaire, écrivez à notre conciergerie.")}
         </p>
         <div className="mt-5 lg:mx-4">
           <PillAction asChild className="w-full sm:w-auto">

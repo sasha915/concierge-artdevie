@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ArrowUp, ChevronLeft, Download, FileText, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell, Logo, NewRequestButton, TopBar } from "@/components/art-de-vie/app-shell";
-import { EmptyState, Photo, RequestCard, StatusBadge } from "@/components/art-de-vie/cards";
+import { EmptyState, ErrorState, Photo, RequestCard, StatusBadge } from "@/components/art-de-vie/cards";
 import { PillAction, StatusTimeline, Title } from "@/components/art-de-vie/v3";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,7 +27,7 @@ export function InactiveAccess() {
         <Logo inverse className="h-[22px] w-auto" />
         <Title italic={tPair("Accès", "inactif.")[1]} className="mt-10 text-[44px] lg:text-[64px]">{tPair("Accès", "inactif.")[0]} </Title>
         <p className="mt-5 text-[15px] leading-6 text-muted-foreground lg:text-[18px] lg:leading-7">
-          {t("Votre accès à l’espace Art de Vie n’est plus actif. Pour toute question, adressez-vous au membre qui vous l’avait ouvert.")}
+          {t("Ce compte n’a pas, ou plus, d’accès actif à l’espace Art de Vie. Pour toute question, adressez-vous à notre conciergerie ou au membre qui vous l’avait ouvert.")}
         </p>
         <PillAction type="button" className="mt-8" onClick={() => void signOut()}>{t("Se déconnecter")}</PillAction>
       </div>
@@ -121,7 +121,7 @@ function stamp(iso: string) {
 /** Suivi d'une demande du proche : statut, échanges, documents ; jamais de proposition ni de montant. */
 export function DelegateRequestDetail({ requestId, delegation }: { requestId: string; delegation: DelegationInfo }) {
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery(delegateRequestQuery(requestId));
+  const { data, isLoading, isError, refetch } = useQuery(delegateRequestQuery(requestId));
   const send = useServerFn(sendDelegateMessage);
   const fileUrl = useServerFn(getDelegateFileUrl);
   const [text, setText] = useState("");
@@ -132,7 +132,7 @@ export function DelegateRequestDetail({ requestId, delegation }: { requestId: st
     return (
       <AppShell nav={false}>
         <div className="mx-auto max-w-2xl pt-10">
-          {isLoading ? <Skeleton className="h-[452px] rounded-[28px] bg-panel" /> : <EmptyState>{t("Cette demande est introuvable.")}</EmptyState>}
+          {isLoading ? <Skeleton className="h-[452px] rounded-[28px] bg-panel" /> : isError ? <ErrorState onRetry={() => void refetch()} /> : <EmptyState>{t("Cette demande est introuvable.")}</EmptyState>}
         </div>
       </AppShell>
     );
@@ -263,7 +263,7 @@ export function DelegateRequestDetail({ requestId, delegation }: { requestId: st
               <Detail label={t("Date")} value={formatDate(item.scheduled_date)} />
               <Detail label={t("Heure")} value={item.scheduled_time ? formatTime(item.scheduled_time) : t("À définir")} />
               {item.guests ? <Detail label={item.category === "Tables" ? t("Couverts") : t("Personnes")} value={String(item.guests)} /> : null}
-              <Detail label={t("Concierge")} value={item.concierge} />
+              <Detail label={t("Concierge")} value={item.concierge === "À attribuer" ? t("À attribuer") : item.concierge} />
             </dl>
           </section>
           <div className="mt-6 lg:mt-3"><NewRequestButton className="w-full" /></div>

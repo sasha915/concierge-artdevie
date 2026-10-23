@@ -97,6 +97,10 @@ function Page() {
 
       <WatchBlock watch={data.watch} />
 
+      {data.mollieMode !== undefined && <p role="status" className="team-panel mt-4 rounded-[28px] px-6 py-4 text-[14px]">
+        Paiements Mollie : {data.mollieMode === "live" ? "mode réel, les paiements sont encaissés." : data.mollieMode === "test" ? "mode test, aucun paiement n’est encaissé. À passer en mode réel avant l’ouverture aux membres." : "non configurés."}
+      </p>}
+
       <Link to="/admin/demandes/nouvelle" className="team-glass mt-6 flex items-center justify-between gap-4 rounded-[28px] p-6 transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <span className="min-w-0"><span className="eyebrow team-mention block">Demande pour un membre</span><span className="mt-2 block text-[24px] leading-tight">Créer une demande au nom d’un membre</span></span>
         <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"><ArrowUpRight className="size-4" /></span>

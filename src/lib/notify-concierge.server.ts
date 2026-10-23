@@ -14,6 +14,12 @@ export type ConciergeRequest = {
 
 export type NotifyResult = { sent: true } | { skipped: string; status?: number };
 
+/** Paramètre de modèle WhatsApp : ni retour à la ligne, ni tabulation, ni plus de quatre espaces, 1 000 caractères au plus. */
+export function templateParam(value: string | null | undefined): string {
+  const flat = (value ?? "").replace(/[\r\n\t]+/g, " · ").replace(/ {4,}/g, "   ").trim();
+  return (flat || "—").slice(0, 1000);
+}
+
 function formatDate(value: string | null | undefined): string {
   if (!value) return "date à définir";
   return new Date(`${value}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
@@ -67,11 +73,31 @@ export async function notifyConcierge(req: ConciergeRequest, message?: string): 
         ...(req.description?.trim() ? [`Précisions : ${req.description.trim()}`] : []),
       ];
 
+  // WhatsApp n'accepte un message libre envoyé par l'entreprise que dans les 24 h suivant un message du destinataire.
+  // Hors de cette fenêtre, il faut un modèle validé par Meta : WHATSAPP_TEMPLATE_REQUEST (membre, prestation,
+  // catégorie, date) et WHATSAPP_TEMPLATE_MESSAGE (membre, demande, message), langue WHATSAPP_TEMPLATE_LANG (fr par défaut).
+  const templateName = message ? process.env["WHATSAPP_TEMPLATE_MESSAGE"] : process.env["WHATSAPP_TEMPLATE_REQUEST"];
+  const params = message
+    ? [firstName, req.title, message]
+    : [firstName, req.title, req.category, `${formatDate(req.scheduled_date)}${req.scheduled_time ? ` à ${req.scheduled_time}` : ""}`];
+  const payload = templateName
+    ? {
+        messaging_product: "whatsapp",
+        to: recipient,
+        type: "template",
+        template: {
+          name: templateName,
+          language: { code: process.env["WHATSAPP_TEMPLATE_LANG"] || "fr" },
+          components: [{ type: "body", parameters: params.map((p) => ({ type: "text", text: templateParam(p) })) }],
+        },
+      }
+    : { messaging_product: "whatsapp", to: recipient, type: "text", text: { preview_url: false, body: lines.join("\n") } };
+
   try {
     const res = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}/messages`, {
       method: "POST",
       headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-      body: JSON.stringify({ messaging_product: "whatsapp", to: recipient, type: "text", text: { preview_url: false, body: lines.join("\n") } }),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
       console.error("[notify-concierge] echec API WhatsApp", res.status, await res.text().catch(() => ""));

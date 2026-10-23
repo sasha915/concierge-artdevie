@@ -1,3 +1,4 @@
+import { todayParis } from "./billing-webhook-rules";
 /** Règles du lot 6.4 : questionnaire d'accueil et relevé mensuel. Pures et testées. */
 
 // ---- Questionnaire « Faisons connaissance. » (aucune question de santé) ----
@@ -41,7 +42,7 @@ export type StatementLine = { id: string; title: string; date: string; amount_ce
 
 /** Date retenue pour le relevé : celle de la prestation, sinon celle de la demande. */
 export function statementDate(r: StatementSource): string {
-  return r.scheduled_date ?? r.created_at.slice(0, 10);
+  return r.scheduled_date ?? todayParis(new Date(r.created_at));
 }
 
 /** Prestations Confirmées ou Terminées, dotées d'un montant, datées du mois (AAAA-MM). */

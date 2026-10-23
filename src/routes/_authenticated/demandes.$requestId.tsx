@@ -2,17 +2,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowUp, CalendarPlus, Download, FileText, PencilLine, RotateCcw } from "lucide-react";
+import { ArrowUp, CalendarPlus, Download, FileText, PencilLine, RotateCcw, X } from "lucide-react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
-import { getMemberFileUrl, sendMemberMessage, submitReview } from "@/lib/messages.functions";
+import { cancelMyRequest, getMemberFileUrl, sendMemberMessage, submitReview } from "@/lib/messages.functions";
 import { DEFAULT_REVIEW_TITLE, REVIEW_TITLES, proposalBanner } from "@/lib/planning-rules";
 import { buildIcs, canAddToCalendar, canRenew, canRequestChange, canReview, changeKindLabel, FILE_TYPES, fileSizeLabel, REVIEW_RATINGS, type ReviewRating } from "@/lib/request-actions-rules";
 import type { RequestItem } from "@/data/art-de-vie";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft } from "lucide-react";
 import { AppShell, TopBar } from "@/components/art-de-vie/app-shell";
-import { EmptyState, Photo, StatusBadge } from "@/components/art-de-vie/cards";
+import { EmptyState, ErrorState, Photo, StatusBadge } from "@/components/art-de-vie/cards";
 import { Button } from "@/components/ui/button";
 import { PillAction, StatusTimeline, Title } from "@/components/art-de-vie/v3";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -44,7 +44,7 @@ function Page() {
 }
 
 function MemberPage({ requestId }: { requestId: string }) {
-  const { data: requests = [], isLoading } = useQuery(requestsQuery);
+  const { data: requests = [], isLoading, isError, refetch } = useQuery(requestsQuery);
   const item = requests.find((r) => r.id === requestId);
   const queryClient = useQueryClient();
   const { data: unread = [] } = useQuery(unreadRequestNotificationsQuery);
@@ -62,6 +62,8 @@ function MemberPage({ requestId }: { requestId: string }) {
         <div className="mx-auto max-w-2xl pt-10">
           {isLoading ? (
             <Skeleton className="h-[452px] rounded-[28px] bg-panel" />
+          ) : isError ? (
+            <ErrorState onRetry={() => void refetch()} />
           ) : (
             <EmptyState>{t("Cette demande est introuvable.")}</EmptyState>
           )}
@@ -127,7 +129,7 @@ function MemberPage({ requestId }: { requestId: string }) {
             {item.guests && (
               <Detail label={item.category === "Tables" ? t("Couverts") : t("Personnes")} value={String(item.guests)} />
             )}
-            <Detail label={t("Concierge")} value={item.concierge} />
+            <Detail label={t("Concierge")} value={item.concierge === "À attribuer" ? t("À attribuer") : item.concierge} />
             {item.delegate?.full_name && <Detail label={t("Demandée par")} value={item.delegate.full_name} />}
           </dl>
         </section>
@@ -207,14 +209,14 @@ function Exchanges({ requestId, description, cancelled }: { requestId: string; d
           return (
             <li key={m.id} className={fromClient ? "ml-auto max-w-[88%] text-right lg:max-w-[78%]" : "mr-auto max-w-[88%] lg:max-w-[78%]"}>
               <p className={`whitespace-pre-line break-words rounded-[18px] p-4 text-left text-[14px] leading-6 lg:text-[16px] lg:leading-7 ${fromClient ? "rounded-br-[4px] bg-primary text-primary-foreground" : "rounded-bl-[4px] border border-foreground/24 bg-foreground/14"}`}>{m.body}</p>
-              <p className="mt-1 px-1 text-[11px] text-muted-foreground">{mine ? t("Vous") : delegateName ?? t("Votre conciergerie")} · {stamp(m.created_at)}</p>
+              <p className="mt-1 px-1 text-[11px] text-muted-foreground">{mine ? t("Vous") : delegateName ?? t("Notre conciergerie")} · {stamp(m.created_at)}</p>
             </li>
           );
         })}
       </ol>
       {!cancelled && (
         <form onSubmit={submit} className="mt-5 flex items-end gap-2">
-          <label htmlFor="member-reply" className="sr-only">{t("Répondre à votre conciergerie")}</label>
+          <label htmlFor="member-reply" className="sr-only">{t("Répondre à notre conciergerie")}</label>
           <Textarea id="member-reply" value={text} onChange={(e) => setText(e.target.value)} maxLength={4000} rows={1} placeholder={t("Répondre…")} className="min-h-12 flex-1 resize-none rounded-[22px] bg-card py-3" />
           <Button type="submit" size="icon" disabled={busy || !text.trim()} aria-label={t("Envoyer")} className="size-12 shrink-0 rounded-full">
             <ArrowUp className="size-5" />
@@ -294,7 +296,7 @@ function RequestActions({ item }: { item: RequestItem }) {
     <section className="mt-3 grid gap-3">
       {pending && (
         <p role="status" className="rounded-[22px] bg-panel p-4 text-[13px] leading-5 text-primary">
-          {t("Modification demandée · {type}. Votre conciergerie vous confirme la modification ; d’ici là, votre demande reste telle qu’elle est.", { type: t(changeKindLabel(pending.kind)) })}
+          {t("Modification demandée · {type}. Notre conciergerie vous confirme la modification ; d’ici là, votre demande reste telle qu’elle est.", { type: t(changeKindLabel(pending.kind)) })}
         </p>
       )}
       {!pending && lastDecided && (
@@ -312,6 +314,7 @@ function RequestActions({ item }: { item: RequestItem }) {
           </Link>
         </Button>
       )}
+      {showChange && !pending && <CancelBlock item={item} />}
       {showCalendar && (
         <Button type="button" variant="soft" size="lg" className="w-full justify-start" onClick={downloadIcs}>
           <CalendarPlus />
@@ -331,6 +334,52 @@ function RequestActions({ item }: { item: RequestItem }) {
   );
 }
 
+/** Annulation : immédiate tant que la demande est « Nouvelle », soumise à notre équipe ensuite. */
+function CancelBlock({ item }: { item: RequestItem }) {
+  const queryClient = useQueryClient();
+  const cancel = useServerFn(cancelMyRequest);
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const immediate = item.status === "Nouvelle";
+
+  async function confirm() {
+    setBusy(true);
+    try {
+      const res = await cancel({ data: { requestId: item.id } });
+      if (!res.ok) { toast.error(t(res.reason)); return; }
+      toast.success(res.mode === "annulée" ? t("Votre demande est annulée.") : t("Votre demande d’annulation est transmise à notre conciergerie."));
+      setOpen(false);
+      await queryClient.invalidateQueries({ queryKey: ["requests"] });
+    } catch {
+      toast.error(t("Votre demande n’a pas pu être envoyée."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <Button type="button" variant="soft" size="lg" className="w-full justify-start" onClick={() => setOpen(true)}>
+        <X />
+        {t("Annuler la demande")}
+      </Button>
+    );
+  }
+  return (
+    <div role="alertdialog" aria-labelledby={`cancel-${item.id}`} className="rounded-[22px] bg-panel p-4 text-primary">
+      <p id={`cancel-${item.id}`} className="text-[14px] leading-6">
+        {immediate
+          ? t("Annuler « {title} » ? Rien n’ayant encore été engagé, l’annulation est immédiate.", { title: item.title })
+          : t("Annuler « {title} » ? La demande étant déjà prise en charge, notre conciergerie confirme l’annulation et vous informe d’éventuels frais.", { title: item.title })}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button type="button" size="sm" disabled={busy} onClick={() => void confirm()}>{immediate ? t("Annuler la demande") : t("Demander l’annulation")}</Button>
+        <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => setOpen(false)}>{t("Conserver la demande")}</Button>
+      </div>
+    </div>
+  );
+}
+
 function ReviewBlock({ requestId, category }: { requestId: string; category: string }) {
   const reviewTitle = tPair(...(REVIEW_TITLES[category] ?? DEFAULT_REVIEW_TITLE));
   const queryClient = useQueryClient();
@@ -347,7 +396,7 @@ function ReviewBlock({ requestId, category }: { requestId: string; category: str
         <h2 className="eyebrow text-primary">{t("Votre avis")}</h2>
         <p className="mt-3 font-display text-[24px] italic">{t(review.rating)}</p>
         {review.comment && <p className="mt-2 whitespace-pre-line text-[14px] leading-6">{review.comment}</p>}
-        <p className="mt-3 text-[12px] text-muted-foreground">{t("Merci, votre avis a été transmis à votre conciergerie.")}</p>
+        <p className="mt-3 text-[12px] text-muted-foreground">{t("Merci, votre avis a été transmis à notre conciergerie.")}</p>
       </div>
     );
 
@@ -392,7 +441,7 @@ function ProposalBanner({ requestId }: { requestId: string }) {
   return (
     <Link to="/demandes/$requestId/proposition" params={{ requestId }} className="mt-3 flex items-center justify-between gap-4 rounded-[28px] bg-primary p-5 text-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:mt-3 lg:p-8">
       <span>
-        <span className="eyebrow block text-background/80">{t("Votre conciergerie vous propose")}</span>
+        <span className="eyebrow block text-background/80">{t("Notre conciergerie vous propose")}</span>
         <span className="mt-2 block text-[20px] lg:text-[26px]">{t(proposalBanner(proposal.options.length))}</span>
       </span>
       <ArrowUp className="size-5 rotate-45" aria-hidden="true" />

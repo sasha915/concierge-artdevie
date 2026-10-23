@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { canInviteDelegate, delegateStatusLabel, firstName, isDelegatePathAllowed, MAX_DELEGATES, openDelegates } from "./delegate-rules";
+import { exactLike, canInviteDelegate, delegateStatusLabel, firstName, isDelegatePathAllowed, MAX_DELEGATES, openDelegates } from "./delegate-rules";
 
 describe("proches autorisés", () => {
   test("trois places au plus, les accès retirés ou refusés libèrent la place", () => {
@@ -34,5 +34,21 @@ describe("proches autorisés", () => {
     expect(delegateStatusLabel("inconnu")).toBe("inconnu");
     expect(firstName("  Léa Martin ")).toBe("Léa");
     expect(firstName(null)).toBe("");
+  });
+
+  test("comparaison d'adresses sans joker", () => {
+    expect(exactLike("jean_dupont@exemple.com")).toBe("jean\\_dupont@exemple.com");
+    expect(exactLike("a%b\\c")).toBe("a\\%b\\\\c");
+  });
+});
+
+import { trustedOrigin, DEFAULT_APP_ORIGIN } from "./app-origin";
+describe("adresse de l'application", () => {
+  test("seuls nos domaines sont retenus", () => {
+    expect(trustedOrigin("https://app.artdevie.co")).toBe("https://app.artdevie.co");
+    expect(trustedOrigin("https://id-preview--x.lovable.app")).toBe("https://id-preview--x.lovable.app");
+    expect(trustedOrigin("https://artdevie.co.evil.com")).toBe(DEFAULT_APP_ORIGIN);
+    expect(trustedOrigin("https://evil.com")).toBe(DEFAULT_APP_ORIGIN);
+    expect(trustedOrigin(null)).toBe(DEFAULT_APP_ORIGIN);
   });
 });

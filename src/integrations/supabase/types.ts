@@ -14,6 +14,12 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_gate_attempts: {
+        Row: { created_at: string; id: number; succeeded: boolean; user_id: string }
+        Insert: { created_at?: string; id?: never; succeeded: boolean; user_id: string }
+        Update: { created_at?: string; id?: never; succeeded?: boolean; user_id?: string }
+        Relationships: []
+      }
       invoices: {
         Row: {
           amount_cents: number
@@ -891,7 +897,23 @@ export type Database = {
         Returns: boolean
       }
       generate_recurring_requests: { Args: { _today?: string }; Returns: number }
+      create_invoice: {
+        Args: {
+          _user_id: string
+          _kind: string
+          _status: string
+          _amount_cents: number
+          _request_id?: string | null
+          _service_cents?: number | null
+          _commission_cents?: number | null
+          _commission_rate?: number | null
+          _mollie_payment_id?: string | null
+        }
+        Returns: { id: string; number: string }[]
+      }
       is_member: { Args: { _user_id: string }; Returns: boolean }
+      notify_webhook_secret: { Args: never; Returns: string }
+      team_member_counts: { Args: never; Returns: { user_id: string; requests_count: number; invoices_count: number }[] }
       is_team: { Args: { _user_id: string }; Returns: boolean }
       mark_request_notifications_read: { Args: { _request_id: string }; Returns: undefined }
       next_invoice_number: { Args: never; Returns: string }

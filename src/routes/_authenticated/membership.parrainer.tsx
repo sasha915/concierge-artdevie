@@ -13,6 +13,7 @@ import { sendReferralInvite } from "@/lib/referrals.functions";
 import { formatShortDate } from "@/data/art-de-vie";
 import { PillAction } from "@/components/art-de-vie/v3";
 import { t } from "@/lib/i18n";
+import { LabeledField } from "@/components/art-de-vie/field";
 
 export const Route = createFileRoute("/_authenticated/membership/parrainer")({ head: () => ({ meta: [{ title: t("Parrainer un membre — Art de Vie") }, { name: "description", content: t("Recommandez une personne de votre entourage à la conciergerie Art de Vie.") }, { property: "og:title", content: t("Parrainer un membre — Art de Vie") }, { property: "og:description", content: t("Recommandez une personne de votre entourage à la conciergerie Art de Vie.") }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
 
@@ -77,5 +78,5 @@ function Page() {
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div><Label className="eyebrow">{label}</Label><div className="mt-2">{children}</div></div>;
+  return <LabeledField label={label}>{children}</LabeledField>;
 }

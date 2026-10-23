@@ -1,5 +1,4 @@
 import { Logo } from "@/components/art-de-vie/app-shell";
-import { Star } from "lucide-react";
 import { useState, type MouseEvent } from "react";
 import { formatMonth, initials, type Profile } from "@/data/art-de-vie";
 import { t } from "@/lib/i18n";
@@ -27,11 +26,7 @@ export function MemberCard({ profile }: { profile: Profile | null }) {
             </div>
           </div>
           <div className="mt-[18px] flex items-center gap-3">
-            <span className="font-display text-2xl sm:text-3xl">{profile?.plan ?? "Signature"}</span>
-            <span className="relative top-[2px] inline-flex items-center gap-1 rounded-full border border-gold px-2.5 py-1 text-[9px] font-semibold text-foreground">
-              <Star className="size-2.5 text-gold" />
-              {t("VIP")}
-            </span>
+            <span className="font-display text-2xl sm:text-3xl">{profile?.plan ?? t("Membre")}</span>
           </div>
           <p className="mt-[10px] text-[11px] tracking-[0.13em]">{profile?.member_number ?? t("N° ADV")}</p>
           <p className="mt-1 text-sm font-medium">{name}</p>

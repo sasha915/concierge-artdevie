@@ -17,9 +17,9 @@ import { t } from "@/lib/i18n";
 export const Route = createFileRoute("/_authenticated/demandes/$requestId_/proposition")({
   head: () => ({
     meta: [
-      { title: t("Votre conciergerie vous propose — Art de Vie") },
+      { title: t("Notre conciergerie vous propose — Art de Vie") },
       { name: "description", content: t("Choisissez l’option qui vous convient.") },
-      { property: "og:title", content: t("Votre conciergerie vous propose — Art de Vie") },
+      { property: "og:title", content: t("Notre conciergerie vous propose — Art de Vie") },
       { property: "og:description", content: t("Choisissez l’option qui vous convient.") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -50,7 +50,7 @@ function Page() {
 
   async function respond(optionId: string | null) {
     if (!proposal) return;
-    if (optionId === null && !window.confirm(t("Aucune option ne vous convient ? Votre conciergerie en sera prévenue."))) return;
+    if (optionId === null && !window.confirm(t("Aucune option ne vous convient ? Notre conciergerie en sera prévenue."))) return;
     setBusy(true); setError(null);
     try {
       const res = await answer({ data: { proposalId: proposal.id, optionId } });
@@ -67,7 +67,7 @@ function Page() {
   return (
     <AppShell nav={false}>
       <div className="mx-auto max-w-3xl lg:max-w-none">
-        <SubHeader title="Votre conciergerie vous propose" close backTo="/demandes" />
+        <SubHeader title="Notre conciergerie vous propose" close backTo="/demandes" />
         {isLoading ? (
           <Skeleton className="h-[420px] rounded-[28px] bg-panel" />
         ) : !proposal || proposal.status !== "en attente" ? (

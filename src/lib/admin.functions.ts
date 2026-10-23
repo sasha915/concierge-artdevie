@@ -2,6 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { REQUEST_IMAGE } from "@/lib/request-images";
+import { exactLike } from "@/lib/delegate-rules";
+import { trustedOrigin } from "@/lib/app-origin";
 import { mollie, mollieKey, statusLabel, type MolliePayment } from "./mollie.server";
 import { translate } from "@/lib/i18n";
 
@@ -17,9 +20,9 @@ async function teamRoleOf(context: Ctx): Promise<TeamRole | null> {
   return roles.includes("admin") ? "admin" : roles.includes("concierge") ? "concierge" : null;
 }
 
-async function unlockedAdminClient() {
+async function unlockedAdminClient(userId: string) {
   const { requireAdminUnlocked } = await import("./admin-gate.server");
-  await requireAdminUnlocked();
+  await requireAdminUnlocked(userId);
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return supabaseAdmin;
 }
@@ -28,14 +31,35 @@ async function unlockedAdminClient() {
 async function assertTeam(context: Ctx) {
   const role = await teamRoleOf(context);
   if (!role) throw new Error("Forbidden");
-  return { admin: await unlockedAdminClient(), role };
+  return { admin: await unlockedAdminClient(context.userId), role };
 }
 
 /** Administrateur seul, session d'équipe déverrouillée. */
 async function assertAdmin(context: Ctx) {
   const role = await teamRoleOf(context);
   if (role !== "admin") throw new Error("Forbidden");
-  return unlockedAdminClient();
+  return unlockedAdminClient(context.userId);
+}
+
+/**
+ * Lit toutes les lignes d'une requête par pages de 1 000 (limite de l'API Supabase),
+ * pour qu'aucune liste de l'équipe ne soit tronquée en silence.
+ */
+async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>): Promise<T[]> {
+  const size = 1000;
+  const rows: T[] = [];
+  for (let from = 0; ; from += size) {
+    const { data, error } = await page(from, from + size - 1);
+    if (error) throw new Error(error.message);
+    rows.push(...(data ?? []));
+    if (!data || data.length < size) return rows;
+  }
+}
+
+/** Écrit une ligne d'historique ; un échec est journalisé sans bloquer l'action déjà faite. */
+async function logEvent(admin: any, row: { request_id: string; actor_id: string | null; kind: string; detail: string | null }) {
+  const { error } = await admin.from("request_events").insert(row);
+  if (error) console.error("[historique] ligne non écrite", row.kind, error.message);
 }
 
 async function teamIds(admin: any): Promise<string[]> {
@@ -44,7 +68,7 @@ async function teamIds(admin: any): Promise<string[]> {
 }
 
 function originOf(): string {
-  return getRequest().headers.get("origin") ?? "";
+  return trustedOrigin(getRequest().headers.get("origin"));
 }
 
 const memberFields = {
@@ -60,20 +84,16 @@ export const listMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { admin, role } = await assertTeam(context as Ctx);
-    const [{ data: profiles }, { data: requests }, { data: invoices }] = await Promise.all([
-      admin.from("profiles").select("id, full_name, email, phone, plan, role_label, member_number, member_since, valid_until, disabled_at, concierge_referent, concierge_whatsapp").order("member_since", { ascending: false }),
-      admin.from("requests").select("user_id"),
-      admin.from("invoices").select("user_id"),
+    const [profiles, counts] = await Promise.all([
+      fetchAll<Record<string, unknown>>((from, to) => admin.from("profiles").select("id, full_name, email, phone, plan, role_label, member_number, member_since, valid_until, disabled_at, concierge_referent, concierge_whatsapp").order("member_since", { ascending: false }).order("id").range(from, to)),
+      fetchAll<{ user_id: string; requests_count: number; invoices_count: number }>((from, to) => admin.rpc("team_member_counts").range(from, to)),
     ]);
-    const countBy = (rows: { user_id: string }[] | null) =>
-      (rows ?? []).reduce<Record<string, number>>((acc, r) => ({ ...acc, [r.user_id]: (acc[r.user_id] ?? 0) + 1 }), {});
-    const rc = countBy(requests as { user_id: string }[] | null);
-    const ic = countBy(invoices as { user_id: string }[] | null);
+    const byMember = new Map(counts.map((c) => [c.user_id, c]));
     const team = await teamIds(admin);
-    return (profiles ?? []).filter((p: Record<string, unknown>) => !team.includes(p['id'] as string)).map((p: Record<string, unknown>) => ({
+    return profiles.filter((p) => !team.includes(p['id'] as string)).map((p) => ({
       ...p,
-      requests_count: rc[p['id'] as string] ?? 0,
-      invoices_count: role === "admin" ? ic[p['id'] as string] ?? 0 : 0,
+      requests_count: byMember.get(p['id'] as string)?.requests_count ?? 0,
+      invoices_count: role === "admin" ? byMember.get(p['id'] as string)?.invoices_count ?? 0 : 0,
     }));
   });
 
@@ -108,14 +128,19 @@ export const createMember = createServerFn({ method: "POST" })
       const already = /already|exist|registered/i.test(error?.message ?? "");
       return { ok: false as const, reason: already ? "Cette adresse correspond déjà à un membre." : "La création du compte a échoué." };
     }
-    await admin.from("profiles").update({
+    const { data: saved, error: profileError } = await admin.from("profiles").update({
       full_name: data.fullName,
       phone: data.phone || null,
       plan: data.plan,
       role_label: data.roleLabel || `Membre ${data.plan}`,
       concierge_referent: data.conciergeReferent || null,
       concierge_whatsapp: data.conciergeWhatsapp || null,
-    }).eq("id", created.user.id);
+    }).eq("id", created.user.id).select("id").maybeSingle();
+    if (profileError || !saved) {
+      // Fiche incomplète : le compte est retiré pour ne pas laisser un membre à la formule par défaut.
+      await admin.auth.admin.deleteUser(created.user.id);
+      return { ok: false as const, reason: "La fiche du membre n’a pas pu être enregistrée ; rien n’a été créé." };
+    }
     return { ok: true as const, id: created.user.id };
   });
 
@@ -159,7 +184,12 @@ export const setMemberDisabled = createServerFn({ method: "POST" })
     }
     const { error } = await admin.auth.admin.updateUserById(data.id, { ban_duration: data.disabled ? "876000h" : "none" });
     if (error) return { ok: false as const, reason: "L’opération a échoué." };
-    await admin.from("profiles").update({ disabled_at: data.disabled ? new Date().toISOString() : null }).eq("id", data.id);
+    const { error: profileError } = await admin.from("profiles").update({ disabled_at: data.disabled ? new Date().toISOString() : null }).eq("id", data.id);
+    if (profileError) {
+      // La fiche et la connexion doivent dire la même chose : on revient à l'état précédent.
+      await admin.auth.admin.updateUserById(data.id, { ban_duration: data.disabled ? "none" : "876000h" });
+      return { ok: false as const, reason: "L’opération a échoué ; rien n’a été modifié." };
+    }
     return { ok: true as const };
   });
 
@@ -222,11 +252,11 @@ export const listAllRequests = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { admin, role } = await assertTeam(context as Ctx);
-    const [{ data: requests }, { data: profiles }] = await Promise.all([
-      admin.from("requests").select(requestCols).order("created_at", { ascending: false }),
-      admin.from("profiles").select("id, full_name, email, plan"),
+    const [requests, profiles] = await Promise.all([
+      fetchAll<{ id: string; user_id: string }>((from, to) => admin.from("requests").select(requestCols).order("created_at", { ascending: false }).order("id").range(from, to)),
+      fetchAll<{ id: string; full_name: string; email: string | null; plan: string }>((from, to) => admin.from("profiles").select("id, full_name, email, plan").order("id").range(from, to)),
     ]);
-    const byId = new Map((profiles ?? []).map((p: { id: string }) => [p.id, p]));
+    const byId = new Map(profiles.map((p) => [p.id, p]));
     const { data: pending } = await admin.from("request_changes").select("request_id").eq("status", "en attente");
     const pendingIds = new Set((pending ?? []).map((c: { request_id: string }) => c.request_id));
     return (requests ?? []).map((r: { id: string; user_id: string }) => {
@@ -313,7 +343,7 @@ export const setRequestReply = createServerFn({ method: "POST" })
     const { data: row, error } = await admin.from("requests").update(replyUpdate(data.reply)).eq("id", data.id).select("id").maybeSingle();
     if (error || !row) return { ok: false as const, reason: "La réponse n’a pas pu être enregistrée." };
     const { error: eventError } = await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: data.reply.trim() ? "réponse publiée" : "réponse retirée", detail: null });
-    if (data.reply.trim()) await notifyMember(admin, data.id, "réponse", (title, tr) => tr("Votre conciergerie a répondu à votre demande « {title} ».", { title }));
+    if (data.reply.trim()) await notifyMember(admin, data.id, "réponse", (title, tr) => tr("Notre conciergerie a répondu à votre demande « {title} ».", { title }));
     if (eventError) return { ok: false as const, reason: "La réponse a été enregistrée, mais son historique n’a pas pu être enregistré. Rechargez la demande." };
     return { ok: true as const };
   });
@@ -345,23 +375,30 @@ export const getDashboard = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { admin, role } = await assertTeam(context as Ctx);
-    const today = new Date().toISOString().slice(0, 10);
+    const { todayParis } = await import("./billing-webhook-rules");
+    const today = todayParis();
     const ids = await teamIds(admin);
-    const [{ data: requests }, { data: profiles }] = await Promise.all([
-      admin.from("requests").select("id, user_id, title, category, status, concierge, scheduled_date, scheduled_time, created_at").order("created_at", { ascending: true }),
-      admin.from("profiles").select("id, full_name, disabled_at"),
+    const cols = "id, user_id, title, category, status, concierge, scheduled_date, scheduled_time, created_at";
+    // Seules les demandes ouvertes sont chargées, plus la dernière reçue : le tableau de bord ne dépend pas du volume total.
+    const [rows, { data: lastRows }, profiles] = await Promise.all([
+      fetchAll<{ id: string; user_id: string; title: string; category: string; status: string; concierge: string; scheduled_date: string | null; scheduled_time: string | null; created_at: string }>((from, to) =>
+        admin.from("requests").select(cols).in("status", ["Nouvelle", "En cours", "Confirmée"]).order("created_at", { ascending: true }).order("id").range(from, to)),
+      admin.from("requests").select(cols).order("created_at", { ascending: false }).limit(1),
+      fetchAll<{ id: string; full_name: string; disabled_at: string | null; valid_until: string | null }>((from, to) => admin.from("profiles").select("id, full_name, disabled_at, valid_until").order("id").range(from, to)),
     ]);
-    const rows = (requests ?? []) as Array<{ id: string; user_id: string; title: string; category: string; status: string; concierge: string; scheduled_date: string | null; scheduled_time: string | null; created_at: string }>;
-    const names = new Map((profiles ?? []).map((p: { id: string; full_name: string }) => [p.id, p.full_name]));
+    const names = new Map(profiles.map((p) => [p.id, p.full_name]));
     const withName = (r: (typeof rows)[number]) => ({ ...r, member_name: names.get(r.user_id) ?? "" });
-    const open = rows.filter((r) => ["Nouvelle", "En cours", "Confirmée"].includes(r.status));
-    const last = rows[rows.length - 1];
-    const watch = await dashboardWatch(admin, role, rows.map(withName), ids, names);
+    const open = rows;
+    const last = (lastRows ?? [])[0] as (typeof rows)[number] | undefined;
+    const watch = await dashboardWatch(admin, role, rows.map(withName), ids, names, profiles);
+    const { mollieMode } = await import("./mollie.server");
     return {
       watch,
+      // Mode du compte Mollie (administrateurs) : à vérifier avant l'ouverture aux membres.
+      mollieMode: role === "admin" ? mollieMode() : undefined,
       openCount: open.length,
       unassignedCount: open.filter((r) => r.concierge === "À attribuer").length,
-      activeMembers: (profiles ?? []).filter((p: { id: string; disabled_at: string | null }) => !p.disabled_at && !ids.includes(p.id)).length,
+      activeMembers: profiles.filter((p) => !p.disabled_at && !ids.includes(p.id)).length,
       lastRequest: last ? { id: last.id, title: last.title, created_at: last.created_at, status: last.status, member_name: names.get(last.user_id) ?? "", scheduled_date: last.scheduled_date } : null,
       byStatus: { nouvelle: open.filter((r) => r.status === "Nouvelle").length, enCours: open.filter((r) => r.status === "En cours").length, confirmee: open.filter((r) => r.status === "Confirmée").length },
       toProcess: rows.filter((r) => r.status === "Nouvelle").map(withName),
@@ -375,7 +412,6 @@ export const getDashboard = createServerFn({ method: "GET" })
 
 // ---- Lot 2.1 : demande au nom d'un membre, notes internes ----
 
-const REQUEST_IMAGE: Record<string, string> = { Tables: "entree-de-nuit", "Séjours": "village-cotier", Transferts: "place-vendome", Soins: "bassin", "Sur mesure": "sur-mesure" };
 
 export const createRequestForMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -631,9 +667,12 @@ export const inviteColleague = createServerFn({ method: "POST" })
       return { ok: false as const, reason: already ? "Cette adresse correspond déjà à un compte." : "La création du compte a échoué." };
     }
     const id = created.user.id;
-    await admin.from("profiles").update({ full_name: data.fullName, role_label: "Équipe Art de Vie", concierge_referent: null, concierge_whatsapp: null }).eq("id", id);
-    const { error: roleError } = await admin.from("user_roles").insert({ user_id: id, role: data.role });
-    if (roleError) return { ok: false as const, reason: "Le compte a été créé, mais le rôle n’a pas pu être attribué." };
+    const { error: profileError } = await admin.from("profiles").update({ full_name: data.fullName, role_label: "Équipe Art de Vie", concierge_referent: null, concierge_whatsapp: null }).eq("id", id);
+    const { error: roleError } = profileError ? { error: profileError } : await admin.from("user_roles").insert({ user_id: id, role: data.role });
+    if (roleError) {
+      await admin.auth.admin.deleteUser(id);
+      return { ok: false as const, reason: "Le compte n’a pas pu être préparé ; rien n’a été créé." };
+    }
     const origin = originOf();
     const { error: mailError } = await admin.auth.resetPasswordForEmail(email, origin ? { redirectTo: `${origin}/reset-password` } : {});
     if (mailError) return { ok: true as const, id, mailed: false };
@@ -761,7 +800,7 @@ export const setRequestAmount = createServerFn({ method: "POST" })
     const { data: row, error } = await admin.from("requests").update({ amount_cents: data.amountCents }).eq("id", data.id).select("id").maybeSingle();
     if (error || !row) return { ok: false as const, reason: "Le montant n’a pas pu être enregistré." };
     const { formatAmount } = await import("@/data/art-de-vie");
-    await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: data.amountCents === null ? "montant retiré" : "montant renseigné", detail: data.amountCents === null ? null : formatAmount(data.amountCents) });
+    await logEvent(admin, { request_id: data.id, actor_id: (context as Ctx).userId, kind: data.amountCents === null ? "montant retiré" : "montant renseigné", detail: data.amountCents === null ? null : formatAmount(data.amountCents) });
     return { ok: true as const };
   });
 
@@ -780,35 +819,39 @@ export const createRequestInvoice = createServerFn({ method: "POST" })
     if (existing) return { ok: false as const, reason: "Une facture existe déjà pour cette demande." };
     const { data: member } = await admin.from("profiles").select("plan").eq("id", request.user_id).maybeSingle();
     const b = invoiceBreakdown(request.amount_cents, member?.plan ?? "Signature");
-    const { data: number, error: numberError } = await admin.rpc("next_invoice_number");
-    if (numberError || !number) return { ok: false as const, reason: "Le numéro de facture n’a pas pu être attribué." };
-    const { data: invoice, error } = await admin.from("invoices").insert({
-      user_id: request.user_id,
-      request_id: request.id,
-      number,
-      kind: "Prestations",
-      status: "En attente",
-      amount_cents: b.total_cents,
-      service_cents: b.service_cents,
-      commission_cents: b.commission_cents,
-      commission_rate: b.commission_rate,
-    }).select("id, number").single();
+    // Numéro et facture dans la même transaction : aucun numéro perdu en cas d'échec ou de double clic.
+    const { data: rows, error } = await admin.rpc("create_invoice", {
+      _user_id: request.user_id,
+      _kind: "Prestations",
+      _status: "En attente",
+      _amount_cents: b.total_cents,
+      _request_id: request.id,
+      _service_cents: b.service_cents,
+      _commission_cents: b.commission_cents,
+      _commission_rate: b.commission_rate,
+    });
+    const invoice = (rows as Array<{ id: string; number: string }> | null)?.[0];
     if (error || !invoice) return { ok: false as const, reason: error?.code === "23505" ? "Une facture existe déjà pour cette demande." : "La facture n’a pas pu être créée." };
-    await admin.from("request_events").insert({ request_id: request.id, actor_id: (context as Ctx).userId, kind: "facture créée", detail: invoice.number });
+    await logEvent(admin, { request_id: request.id, actor_id: (context as Ctx).userId, kind: "facture créée", detail: invoice.number });
     return { ok: true as const, number: invoice.number as string };
   });
 
 // ---- Lot 4.3 : « À surveiller », préférences du membre ----
 
-async function dashboardWatch(admin: any, role: TeamRole, rows: Array<{ id: string; title: string; status: string; created_at: string; member_name: string }>, teamIdList: string[], names: Map<string, string>) {
+async function dashboardWatch(admin: any, role: TeamRole, rows: Array<{ id: string; title: string; status: string; created_at: string; member_name: string; user_id: string }>, teamIdList: string[], names: Map<string, string>, members: Array<{ id: string; full_name: string; valid_until: string | null; disabled_at: string | null }>) {
   const { isStaleRequest, isRenewalDue, waitingLabel, FAILED_INVOICE_STATUSES } = await import("./watch-rules");
   const staleRequests = rows.filter((r) => isStaleRequest(r)).map((r) => ({ id: r.id, title: r.title, member_name: r.member_name, waiting: waitingLabel(r.created_at) }));
   const { data: changes } = await admin.from("request_changes").select("id, request_id, kind, created_at").eq("status", "en attente").order("created_at");
-  const titles = new Map(rows.map((r) => [r.id, r]));
+  const titles = new Map<string, { title: string; member_name: string }>(rows.map((r) => [r.id, r]));
+  // Modifications portant sur des demandes déjà closes : leur titre est lu à part.
+  const missing = [...new Set(((changes ?? []) as Array<{ request_id: string }>).map((c) => c.request_id).filter((id) => !titles.has(id)))];
+  if (missing.length) {
+    const { data: extra } = await admin.from("requests").select("id, title, user_id").in("id", missing);
+    for (const r of (extra ?? []) as Array<{ id: string; title: string; user_id: string }>) titles.set(r.id, { title: r.title, member_name: names.get(r.user_id) ?? "" });
+  }
   const { changeKindLabel } = await import("./request-actions-rules");
   const pendingChanges = ((changes ?? []) as Array<{ id: string; request_id: string; kind: string; created_at: string }>).map((c) => ({ id: c.id, request_id: c.request_id, label: changeKindLabel(c.kind), title: titles.get(c.request_id)?.title ?? "Demande", member_name: titles.get(c.request_id)?.member_name ?? "" }));
-  const { data: members } = await admin.from("profiles").select("id, full_name, valid_until, disabled_at");
-  const renewals = ((members ?? []) as Array<{ id: string; full_name: string; valid_until: string | null; disabled_at: string | null }>)
+  const renewals = members
     .filter((m) => !m.disabled_at && !teamIdList.includes(m.id) && isRenewalDue(m.valid_until))
     .sort((a, b) => (a.valid_until ?? "").localeCompare(b.valid_until ?? ""))
     .map((m) => ({ id: m.id, full_name: m.full_name, valid_until: m.valid_until as string }));
@@ -894,7 +937,8 @@ async function notifyMember(admin: any, requestId: string, kind: string, body: (
     const { data: profile } = await admin.from("profiles").select("notify_requests, notify_messages, language").eq("id", request.user_id).maybeSingle();
     // Messages de l'équipe : réglage « Messages » ; statuts et réponses : réglage « Mes demandes ».
     if (!(kind === "message" ? profile?.notify_messages : profile?.notify_requests)) return;
-    await admin.from("member_notifications").insert({ user_id: request.user_id, request_id: requestId, kind, body: body(request.title, (fr, vars) => translate(profile?.language === "en" ? "en" : "fr", fr, vars)) });
+    const { error } = await admin.from("member_notifications").insert({ user_id: request.user_id, request_id: requestId, kind, body: body(request.title, (fr, vars) => translate(profile?.language === "en" ? "en" : "fr", fr, vars)) });
+    if (error) console.error("[notifyMember] notification non créée", error.message);
   } catch (err) {
     console.error("[notifyMember] notification non créée", err);
   }
@@ -932,8 +976,8 @@ export const sendTeamMessage = createServerFn({ method: "POST" })
     const { admin } = await assertTeam(context as Ctx);
     const { error } = await admin.from("request_messages").insert({ request_id: data.requestId, author_id: (context as Ctx).userId, author_role: "équipe", body: data.body });
     if (error) return { ok: false as const, reason: "Le message n’a pas pu être envoyé." };
-    await admin.from("request_events").insert({ request_id: data.requestId, actor_id: (context as Ctx).userId, kind: "message envoyé", detail: null });
-    await notifyMember(admin, data.requestId, "message", (title, tr) => tr("Votre conciergerie vous a écrit au sujet de « {title} ».", { title }));
+    await logEvent(admin, { request_id: data.requestId, actor_id: (context as Ctx).userId, kind: "message envoyé", detail: null });
+    await notifyMember(admin, data.requestId, "message", (title, tr) => tr("Notre conciergerie vous a écrit au sujet de « {title} ».", { title }));
     return { ok: true as const };
   });
 
@@ -979,7 +1023,7 @@ export const uploadRequestFile = createServerFn({ method: "POST" })
       await admin.storage.from("request-files").remove([path]);
       return { ok: false as const, reason: "Le fichier n’a pas pu être enregistré." };
     }
-    await admin.from("request_events").insert({ request_id: data.requestId, actor_id: (context as Ctx).userId, kind: "pièce jointe ajoutée", detail: `${name}${data.visible ? " · visible par le membre" : " · interne"}` });
+    await logEvent(admin, { request_id: data.requestId, actor_id: (context as Ctx).userId, kind: "pièce jointe ajoutée", detail: `${name}${data.visible ? " · visible par le membre" : " · interne"}` });
     if (data.visible) await notifyMember(admin, data.requestId, "document", (title, tr) => tr("Un document a été ajouté à votre demande « {title} ».", { title }));
     return { ok: true as const };
   });
@@ -994,7 +1038,7 @@ export const setRequestFileVisibility = createServerFn({ method: "POST" })
     if (file.visible_to_member === data.visible) return { ok: true as const };
     const { error } = await admin.from("request_files").update({ visible_to_member: data.visible }).eq("id", data.id);
     if (error) return { ok: false as const, reason: "La visibilité n’a pas pu être modifiée." };
-    await admin.from("request_events").insert({ request_id: file.request_id, actor_id: (context as Ctx).userId, kind: data.visible ? "document rendu visible" : "document rendu interne", detail: file.name });
+    await logEvent(admin, { request_id: file.request_id, actor_id: (context as Ctx).userId, kind: data.visible ? "document rendu visible" : "document rendu interne", detail: file.name });
     if (data.visible) await notifyMember(admin, file.request_id, "document", (title, tr) => tr("Un document a été ajouté à votre demande « {title} ».", { title }));
     return { ok: true as const };
   });
@@ -1039,7 +1083,19 @@ export const decideRequestChange = createServerFn({ method: "POST" })
     const { data: row, error } = await admin.from("request_changes").update({ status: data.decision, decided_by: (context as Ctx).userId, decided_at: new Date().toISOString() }).eq("id", data.id).eq("status", "en attente").select("request_id, kind").maybeSingle();
     if (error || !row) return { ok: false as const, reason: "Cette demande de modification a déjà été traitée." };
     const { changeKindLabel } = await import("./request-actions-rules");
-    await admin.from("request_events").insert({ request_id: row.request_id, actor_id: (context as Ctx).userId, kind: data.decision === "acceptée" ? "modification acceptée" : "modification refusée", detail: changeKindLabel(row.kind) });
+    await logEvent(admin, { request_id: row.request_id, actor_id: (context as Ctx).userId, kind: data.decision === "acceptée" ? "modification acceptée" : "modification refusée", detail: changeKindLabel(row.kind) });
+    // Annulation acceptée : la demande passe en « Annulée » (sauf si elle est déjà close).
+    if (data.decision === "acceptée" && row.kind === "annulation") {
+      const { data: before } = await admin.from("requests").select("status").eq("id", row.request_id).maybeSingle();
+      if (before && before.status !== "Annulée" && before.status !== "Terminée") {
+        const { data: cancelled } = await admin.from("requests").update({ status: "Annulée" }).eq("id", row.request_id).eq("status", before.status).select("id").maybeSingle();
+        if (cancelled) {
+          await logEvent(admin, { request_id: row.request_id, actor_id: (context as Ctx).userId, kind: "statut changé", detail: `${before.status} → Annulée` });
+          await notifyMember(admin, row.request_id, "statut", (title, tr) => tr("Votre demande « {title} » a été annulée.", { title }));
+          return { ok: true as const };
+        }
+      }
+    }
     await notifyMember(admin, row.request_id, "statut", (title, tr) => data.decision === "acceptée" ? tr("Votre demande de modification pour « {title} » est acceptée.", { title }) : tr("Votre demande de modification pour « {title} » n’a pas pu être retenue.", { title }));
     return { ok: true as const };
   });
@@ -1098,8 +1154,8 @@ export const sendProposal = createServerFn({ method: "POST" })
       await admin.from("request_proposals").delete().eq("id", proposal.id);
       return { ok: false as const, reason: "La proposition n’a pas pu être envoyée." };
     }
-    await admin.from("request_events").insert({ request_id: data.requestId, actor_id: (context as Ctx).userId, kind: "proposition envoyée", detail: `${data.options.length} option${data.options.length > 1 ? "s" : ""}` });
-    await notifyMember(admin, data.requestId, "proposition", (title, tr) => data.options.length > 1 ? tr("Votre conciergerie vous propose {n} options pour « {title} ».", { n: data.options.length, title }) : tr("Votre conciergerie vous propose une option pour « {title} ».", { title }));
+    await logEvent(admin, { request_id: data.requestId, actor_id: (context as Ctx).userId, kind: "proposition envoyée", detail: `${data.options.length} option${data.options.length > 1 ? "s" : ""}` });
+    await notifyMember(admin, data.requestId, "proposition", (title, tr) => data.options.length > 1 ? tr("Notre conciergerie vous propose {n} options pour « {title} ».", { n: data.options.length, title }) : tr("Notre conciergerie vous propose une option pour « {title} ».", { title }));
     return { ok: true as const };
   });
 
@@ -1111,7 +1167,7 @@ export const withdrawProposal = createServerFn({ method: "POST" })
     const { admin } = await assertTeam(context as Ctx);
     const { data: row, error } = await admin.from("request_proposals").delete().eq("id", data.id).eq("status", "en attente").select("request_id").maybeSingle();
     if (error || !row) return { ok: false as const, reason: "Le membre a déjà répondu à cette proposition." };
-    await admin.from("request_events").insert({ request_id: row.request_id, actor_id: (context as Ctx).userId, kind: "proposition retirée", detail: null });
+    await logEvent(admin, { request_id: row.request_id, actor_id: (context as Ctx).userId, kind: "proposition retirée", detail: null });
     return { ok: true as const };
   });
 
@@ -1139,7 +1195,8 @@ export const getAgenda = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { admin } = await assertTeam(context as Ctx);
     const { occurrencesBetween } = await import("./agenda-rules");
-    const today = new Date().toISOString().slice(0, 10);
+    const { todayParis } = await import("./billing-webhook-rules");
+    const today = todayParis();
     const [{ data: requests, error }, { data: rules }, { data: profiles }] = await Promise.all([
       admin.from("requests").select("id, user_id, title, status, scheduled_date, scheduled_time, concierge_id, recurring_id, created_at").gte("scheduled_date", data.from).lte("scheduled_date", data.to).neq("status", "Annulée"),
       admin.from("recurring_requests").select("id, user_id, title, rhythm, start_date, dates, end_date, paused, last_occurrence, scheduled_time").eq("paused", false),
@@ -1206,7 +1263,7 @@ export const takeRequest = createServerFn({ method: "POST" })
     if (error || !row) return { ok: false as const, reason: "La prise en charge a échoué. Rechargez la page." };
     const events = [{ request_id: data.id, actor_id: me, kind: "statut changé", detail: "Nouvelle → En cours" }];
     if (resolved?.concierge_id) events.push({ request_id: data.id, actor_id: me, kind: "attribuée", detail: resolved.concierge });
-    await admin.from("request_events").insert(events);
+    { const { error: eventsError } = await admin.from("request_events").insert(events); if (eventsError) console.error("[historique] lignes non écrites", eventsError.message); }
     await notifyMember(admin, data.id, "statut", (title, tr) => statusNotice(title, "En cours", tr));
     return { ok: true as const };
   });
@@ -1221,8 +1278,8 @@ export const resendProposal = createServerFn({ method: "POST" })
     if (!proposal || proposal.status !== "en attente") return { ok: false as const, reason: "Aucune proposition en attente." };
     const { count } = await admin.from("request_proposal_options").select("id", { count: "exact", head: true }).eq("proposal_id", proposal.id);
     const n = count ?? 1;
-    await admin.from("request_events").insert({ request_id: proposal.request_id, actor_id: (context as Ctx).userId, kind: "proposition renvoyée", detail: null });
-    await notifyMember(admin, proposal.request_id, "proposition", (title, tr) => n > 1 ? tr("Votre conciergerie vous propose {n} options pour « {title} ».", { n, title }) : tr("Votre conciergerie vous propose une option pour « {title} ».", { title }));
+    await logEvent(admin, { request_id: proposal.request_id, actor_id: (context as Ctx).userId, kind: "proposition renvoyée", detail: null });
+    await notifyMember(admin, proposal.request_id, "proposition", (title, tr) => n > 1 ? tr("Notre conciergerie vous propose {n} options pour « {title} ».", { n, title }) : tr("Notre conciergerie vous propose une option pour « {title} ».", { title }));
     return { ok: true as const };
   });
 
@@ -1271,6 +1328,7 @@ export const approveDelegate = createServerFn({ method: "POST" })
     if (!member || member.disabled_at) return { ok: false as const, reason: "Le compte du membre n’est pas actif." };
 
     let delegateId: string | null = null;
+    let createdNow = false;
     const { data: created, error } = await admin.auth.admin.createUser({
       email: row.email,
       email_confirm: true,
@@ -1280,9 +1338,10 @@ export const approveDelegate = createServerFn({ method: "POST" })
     });
     if (created?.user) {
       delegateId = created.user.id;
+      createdNow = true;
     } else if (/already|exist|registered/i.test(error?.message ?? "")) {
       // Adresse déjà connue : seul un ancien compte de proche peut être réutilisé, jamais un compte membre ou d'équipe.
-      const { data: previous } = await admin.from("member_delegates").select("delegate_id").ilike("email", row.email).not("delegate_id", "is", null).limit(1);
+      const { data: previous } = await admin.from("member_delegates").select("delegate_id").ilike("email", exactLike(row.email)).not("delegate_id", "is", null).limit(1);
       const candidate = previous?.[0]?.delegate_id as string | undefined;
       if (candidate) {
         const [{ data: profile }, ids] = await Promise.all([admin.from("profiles").select("id").eq("id", candidate).maybeSingle(), teamIds(admin)]);
@@ -1303,7 +1362,10 @@ export const approveDelegate = createServerFn({ method: "POST" })
       .eq("status", "en_attente")
       .select("id")
       .maybeSingle();
-    if (updateError || !updated) return { ok: false as const, reason: "L’accès n’a pas pu être activé." };
+    if (updateError || !updated) {
+      if (createdNow && delegateId) await admin.auth.admin.deleteUser(delegateId);
+      return { ok: false as const, reason: "L’accès n’a pas pu être activé." };
+    }
     const origin = originOf();
     const { error: mailError } = await admin.auth.resetPasswordForEmail(row.email, origin ? { redirectTo: `${origin}/reset-password` } : {});
     return { ok: true as const, mailed: !mailError };

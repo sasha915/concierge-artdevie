@@ -40,3 +40,8 @@ export function isDelegatePathAllowed(pathname: string): boolean {
 export function firstName(fullName: string | null | undefined): string {
   return (fullName ?? "").trim().split(/\s+/)[0] ?? "";
 }
+
+/** Motif ILIKE qui ne correspond qu'à la valeur exacte (casse ignorée) : « _ » et « % » ne sont plus des jokers. */
+export function exactLike(value: string): string {
+  return value.replace(/[\\%_]/g, (c) => `\\${c}`);
+}

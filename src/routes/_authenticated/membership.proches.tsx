@@ -19,9 +19,9 @@ export const Route = createFileRoute("/_authenticated/membership/proches")({
   head: () => ({
     meta: [
       { title: t("Proches autorisés — Art de Vie") },
-      { name: "description", content: t("Permettez à un proche de confier des demandes à votre conciergerie en votre nom.") },
+      { name: "description", content: t("Permettez à un proche de confier des demandes à notre conciergerie en votre nom.") },
       { property: "og:title", content: t("Proches autorisés — Art de Vie") },
-      { property: "og:description", content: t("Permettez à un proche de confier des demandes à votre conciergerie en votre nom.") },
+      { property: "og:description", content: t("Permettez à un proche de confier des demandes à notre conciergerie en votre nom.") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

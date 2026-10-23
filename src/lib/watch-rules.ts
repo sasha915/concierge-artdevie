@@ -1,3 +1,4 @@
+import { todayParis } from "./billing-webhook-rules";
 /** Règles du bloc « À surveiller » (lot 4.3) — pures et testées. */
 
 /** Une demande Nouvelle sans prise en charge au-delà de ce délai est signalée. */
@@ -21,8 +22,9 @@ export function waitingLabel(iso: string, now: Date = new Date()): string {
   return h < 48 ? `${h} h` : `${Math.floor(h / 24)} j`;
 }
 
+/** Jour à Paris (et non en temps universel) : juste entre minuit et deux heures du matin. */
 function isoDay(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  return todayParis(d);
 }
 
 /** Échéance comprise entre aujourd'hui et aujourd'hui + RENEWAL_WINDOW_DAYS (incluses). */

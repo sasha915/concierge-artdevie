@@ -36,7 +36,7 @@ function Page() {
     try {
       const r = await unlock({ data: { password } });
       if (!r.ok) {
-        setError(r.reason === "not_configured" ? "L’accès équipe n’est pas encore configuré." : "Mot de passe de l’équipe incorrect.");
+        setError(r.reason === "not_configured" ? "L’accès équipe n’est pas encore configuré." : r.reason === "locked" ? "Trop d’essais. Réessayez dans un quart d’heure." : "Mot de passe de l’équipe incorrect.");
         return;
       }
       await navigate({ to: "/admin", replace: true });

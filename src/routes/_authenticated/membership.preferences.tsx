@@ -75,7 +75,7 @@ function Page() {
               </section>
             ))}
             <section className="rounded-card bg-panel p-5 lg:p-6">
-              <p className="eyebrow">{t("( Dates à retenir )")}</p>
+              <p className="eyebrow">{t("Dates à retenir")}</p>
               <label htmlFor="pref-dates" className="v3-card-title mt-3 block text-[22px] lg:text-[26px]">{t("Quelles dates comptent pour vous ?")}</label>
               <Textarea id="pref-dates" rows={5} maxLength={2000} value={answers.dates_membre} onChange={(e) => setAnswers((a) => ({ ...a, dates_membre: e.target.value }))} className="mt-5" />
             </section>

@@ -51,9 +51,19 @@ function fill(text: string, vars?: Vars): string {
   return text.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m));
 }
 
+/**
+ * Typographie française : espace fine insécable avant ; : ! ? et à l'intérieur des guillemets.
+ * Appliquée au texte du dictionnaire avant insertion des valeurs (le contenu saisi n'est pas retouché).
+ */
+export function frenchTypography(text: string): string {
+  return text
+    .replace(/ ([;:!?»])/g, "\u202F$1")
+    .replace(/« /g, "«\u202F");
+}
+
 /** Traduction dans une langue donnée (relevé de l'équipe, notifications). */
 export function translate(lang: Lang, fr: string, vars?: Vars): string {
-  if (lang === "fr") return fill(fr, vars);
+  if (lang === "fr") return fill(frenchTypography(fr), vars);
   const en = EN[fr];
   if (en === undefined && import.meta.env?.DEV) console.warn(`[i18n] traduction manquante : ${fr}`);
   return fill(en ?? fr, vars);

@@ -56,7 +56,7 @@ function Page() {
         return;
       }
       await queryClient.invalidateQueries({ queryKey: ["welcome"] });
-      toast.success(t("Merci. Vos réponses sont transmises à votre conciergerie."));
+      toast.success(t("Merci. Vos réponses sont transmises à notre conciergerie."));
       await navigate({ to: "/", replace: true });
     } catch {
       toast.error(t("Vos réponses n’ont pas pu être enregistrées."));
@@ -75,7 +75,7 @@ function Page() {
           <Button type="button" variant="link" onClick={later} className="px-0">{t("Plus tard")}</Button>
         </div>
 
-        <p className="eyebrow mt-10">{t("( Étape {n} sur {total} )", { n: step + 1, total: TOTAL })}</p>
+        <p className="eyebrow mt-10">{t("Étape {n} sur {total}", { n: step + 1, total: TOTAL })}</p>
         <Title italic={tPair("Faisons", "connaissance.")[1]} className="mt-4 text-[44px] lg:text-[72px]">{tPair("Faisons", "connaissance.")[0]} </Title>
         <p className="mt-5 max-w-[560px] text-[14px] leading-6 text-muted-foreground lg:text-[18px] lg:leading-7">
           {t("Quelques réponses suffisent pour que nos propositions vous ressemblent dès la première demande. Vous pourrez les modifier à tout moment depuis votre Membership.")}
@@ -98,7 +98,7 @@ function Page() {
             </>
           ) : (
             <>
-              <p className="eyebrow">{t("( Dates à retenir )")}</p>
+              <p className="eyebrow">{t("Dates à retenir")}</p>
               <h2 id="welcome-step" className="v3-card-title mt-3 text-[26px] lg:text-[32px]">{t("Quelles dates comptent pour vous ?")}</h2>
               <label htmlFor="welcome-dates" className="mt-2 block text-[13px] text-muted-foreground">{t("Anniversaires, fêtes, rendez-vous de chaque année.")}</label>
               <Textarea

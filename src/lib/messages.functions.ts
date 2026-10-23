@@ -52,6 +52,52 @@ export const getMemberFileUrl = createServerFn({ method: "GET" })
     return { ok: true as const, url: signed.signedUrl };
   });
 
+// ---- Annulation par le membre (analyse du 23 octobre) ----
+
+/**
+ * Une demande encore « Nouvelle » (rien d'engagé) est annulée aussitôt.
+ * Une demande prise en charge ou confirmée fait l'objet d'une demande d'annulation :
+ * notre équipe l'accepte (la demande passe alors en « Annulée ») ou revient vers le membre.
+ */
+export const cancelMyRequest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ requestId: z.string().uuid(), body: z.string().trim().max(2000).optional() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { canRequestChange } = await import("./request-actions-rules");
+    const { data: request } = await context.supabase
+      .from("requests")
+      .select("id, user_id, title, category, status")
+      .eq("id", data.requestId)
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (!request) return { ok: false as const, reason: "Cette demande est introuvable." };
+    if (!canRequestChange(request.status)) return { ok: false as const, reason: "Cette demande ne peut plus être annulée." };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const notify = async (text: string) => {
+      try {
+        const { notifyConcierge } = await import("./notify-concierge.server");
+        await notifyConcierge({ id: request.id, user_id: request.user_id, title: request.title, category: request.category }, text);
+      } catch (err) {
+        console.error("[cancelMyRequest] notification équipe impossible", err);
+      }
+    };
+
+    if (request.status === "Nouvelle") {
+      const { data: row, error } = await supabaseAdmin.from("requests").update({ status: "Annulée" }).eq("id", request.id).eq("status", "Nouvelle").select("id").maybeSingle();
+      if (!error && row) {
+        await supabaseAdmin.from("request_events").insert({ request_id: request.id, actor_id: context.userId, kind: "statut changé", detail: "Nouvelle → Annulée (par le membre)" });
+        await notify("Demande annulée par le membre.");
+        return { ok: true as const, mode: "annulée" as const };
+      }
+      // Prise en charge entre-temps : on bascule sur une demande d'annulation.
+    }
+    const { error } = await supabaseAdmin.from("request_changes").insert({ request_id: request.id, kind: "annulation", body: data.body ?? "" });
+    if (error) return { ok: false as const, reason: error.code === "23505" ? "Une demande de modification est déjà en cours d’examen." : "Votre demande n’a pas pu être envoyée." };
+    await supabaseAdmin.from("request_events").insert({ request_id: request.id, actor_id: context.userId, kind: "modification demandée", detail: "Annuler la demande" });
+    await notify(`Demande d’annulation${data.body ? ` : ${data.body}` : ""}`);
+    return { ok: true as const, mode: "demandée" as const };
+  });
+
 // ---- Lot 5.3 : modification, avis ----
 
 const changeKinds = z.enum(["date", "couverts", "precision", "annulation"]);
@@ -123,10 +169,18 @@ export const answerProposal = createServerFn({ method: "POST" })
     const { data: updated } = await supabaseAdmin.from("request_proposals").update({ status: option ? "acceptée" : "déclinée", decided_at: new Date().toISOString() }).eq("id", proposal.id).eq("status", "en attente").select("id").maybeSingle();
     if (!updated) return { ok: false as const, reason: "Vous avez déjà répondu à cette proposition." };
     if (option) {
-      await supabaseAdmin.from("request_proposal_options").update({ chosen: true }).eq("id", option.id);
+      const { error: chosenError } = await supabaseAdmin.from("request_proposal_options").update({ chosen: true }).eq("id", option.id);
+      if (chosenError) {
+        // L'option n'a pas pu être retenue : la proposition revient en attente, le membre peut répondre de nouveau.
+        await supabaseAdmin.from("request_proposals").update({ status: "en attente", decided_at: null }).eq("id", proposal.id);
+        return { ok: false as const, reason: "Votre choix n’a pas pu être enregistré. Réessayez dans un instant." };
+      }
       if (option.estimate_cents !== null) {
         const { data: invoice } = await supabaseAdmin.from("invoices").select("id").eq("request_id", proposal.request_id).maybeSingle();
-        if (!invoice) await supabaseAdmin.from("requests").update({ amount_cents: option.estimate_cents }).eq("id", proposal.request_id);
+        if (!invoice) {
+          const { error: amountError } = await supabaseAdmin.from("requests").update({ amount_cents: option.estimate_cents }).eq("id", proposal.request_id);
+          if (amountError) console.error("[answerProposal] montant non reporté", amountError.message);
+        }
       }
     }
     await supabaseAdmin.from("request_events").insert({ request_id: proposal.request_id, actor_id: context.userId, kind: option ? "proposition acceptée" : "proposition déclinée", detail: option?.label ?? null });
@@ -166,6 +220,20 @@ export const createRecurringFromRequest = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { createRecurringRule } = await import("./recurring.server");
     return createRecurringRule(supabaseAdmin, request, data.recurrence, context.userId);
+  });
+
+/** Fin d'une série : plus aucune échéance après aujourd'hui ; les demandes déjà créées restent suivies normalement. */
+export const endRecurring = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: rule } = await context.supabase.from("recurring_requests").select("id").eq("id", data.id).eq("user_id", context.userId).maybeSingle();
+    if (!rule) return { ok: false as const, reason: "Cette série est introuvable." };
+    const { todayParis } = await import("./billing-webhook-rules");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("recurring_requests").update({ end_date: todayParis(), paused: false }).eq("id", rule.id);
+    if (error) return { ok: false as const, reason: "Le changement n’a pas pu être enregistré." };
+    return { ok: true as const };
   });
 
 export const setRecurringPaused = createServerFn({ method: "POST" })

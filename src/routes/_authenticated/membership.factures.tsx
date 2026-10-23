@@ -6,7 +6,7 @@ import { CreditCard, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/art-de-vie/app-shell";
 import { SubHeader } from "@/components/art-de-vie/page-header";
-import { EmptyState, Filters } from "@/components/art-de-vie/cards";
+import { EmptyState, ErrorState, Filters } from "@/components/art-de-vie/cards";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PillAction } from "@/components/art-de-vie/v3";
@@ -34,16 +34,16 @@ function Page() {
   const [active, setActive] = useState("Toutes");
   const [busy, setBusy] = useState(false);
   const queryClient = useQueryClient();
-  const { data: invoices = [], isLoading } = useQuery(invoicesQuery);
+  const { data: invoices = [], isLoading, isError, refetch } = useQuery(invoicesQuery);
   const { data: profile } = useQuery(profileQuery);
   const { data: billing } = useQuery({ queryKey: ["billing-status"], queryFn: useServerFn(billingStatus) });
   const list = active === "Toutes" ? invoices : invoices.filter((i) => i.kind === active);
   const planName = billing?.plan ?? profile?.plan ?? null;
   const essentiel = planName === "Essentiel";
   const { data: plan } = useQuery(planQuery(planName));
-  const next = new Date();
-  if (plan ? plan.period === "an" : essentiel) next.setFullYear(next.getFullYear() + 1);
-  else next.setMonth(next.getMonth() + 1);
+  // Prochain prélèvement réel (abonnement Mollie actif) ; à défaut, échéance de l'adhésion.
+  const nextDate = billing?.nextPaymentDate ?? profile?.valid_until ?? null;
+  const nextLabel = billing?.nextPaymentDate ? t("Prochain prélèvement") : t("Échéance de l’adhésion");
 
   useEffect(() => {
     if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("paiement")) {
@@ -62,7 +62,7 @@ function Page() {
       }
       toast.error(t(
         res.reason === "mollie_not_configured"
-          ? "Le paiement en ligne n'est pas encore activé."
+          ? "Le paiement en ligne n’est pas encore activé."
           : "Impossible de préparer ce paiement.",
       ));
     } catch {
@@ -82,7 +82,7 @@ function Page() {
       }
       toast.error(t(
         res.reason === "mollie_not_configured"
-          ? "Le prélèvement automatique n'est pas encore activé."
+          ? "Le prélèvement automatique n’est pas encore activé."
           : "Impossible de préparer le prélèvement.",
       ));
     } catch {
@@ -97,7 +97,7 @@ function Page() {
       <div className="mx-auto max-w-3xl lg:max-w-none">
         <SubHeader title="Mes factures" />
         <section className="rounded-[28px] bg-primary-deep p-6 text-foreground sm:p-8 lg:mx-4 lg:p-10">
-          <span className="eyebrow text-foreground/80">{t("Formule {name}", { name: profile?.plan ?? "Signature" })}</span>
+          <span className="eyebrow text-foreground/80">{profile?.plan ? t("Formule {name}", { name: profile.plan }) : t("Votre formule")}</span>
           <div className="mt-6 flex items-end justify-between gap-5">
             <div>
               <strong className="font-display text-[40px] lg:text-[88px] font-normal">
@@ -106,11 +106,13 @@ function Page() {
               <span className="text-sm">{plan ? (plan.period === "an" ? t(" / an") : t(" / mois")) : ""}</span>
             </div>
             <div className="text-right text-[10px] leading-4 opacity-80">
-              <p>
-                {t("Prochain prélèvement")}
-                <br />
-                {next.toLocaleDateString(locale(), { day: "numeric", month: "long", year: "numeric" })}
-              </p>
+              {nextDate && (
+                <p>
+                  {nextLabel}
+                  <br />
+                  {new Date(`${nextDate.slice(0, 10)}T12:00:00`).toLocaleDateString(locale(), { day: "numeric", month: "long", year: "numeric" })}
+                </p>
+              )}
               {plan?.min_commitment_months && (
                 <p className="mt-2">
                   {t("Engagement minimum")}
@@ -204,7 +206,8 @@ function Page() {
             })}
           </div>
         )}
-        {!isLoading && list.length === 0 && (
+        {isError && <div className="mt-6 lg:mx-4"><ErrorState onRetry={() => void refetch()} /></div>}
+        {!isLoading && !isError && list.length === 0 && (
           <div className="mt-6">
             <EmptyState>{t("Aucune facture dans cette catégorie.")}</EmptyState>
           </div>

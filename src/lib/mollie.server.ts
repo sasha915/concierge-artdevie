@@ -36,15 +36,24 @@ export async function mollie<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const euro = (cents: number) => (cents / 100).toFixed(2);
 
+import { DEFAULT_APP_ORIGIN, trustedOrigin } from "./app-origin";
+
+/** Adresse de retour après paiement : seulement l'un de nos domaines. */
 export function publicBase(request: Request): string {
-  return request.headers.get("origin") ?? new URL(request.url).origin;
+  return trustedOrigin(request.headers.get("origin") ?? new URL(request.url).origin);
 }
 
 // Mollie doit pouvoir joindre le webhook : en local, on pointe vers l'URL publique stable du projet.
-const DEV_WEBHOOK_BASE = "https://project--41b1075b-2b17-4a5b-8120-aca5edc05f47-dev.lovable.app";
 export function webhookBase(request: Request): string {
   const base = publicBase(request);
-  return /^https?:\/\/(localhost|127\.0\.0\.1)/.test(base) ? DEV_WEBHOOK_BASE : base;
+  return /^https?:\/\/(localhost|127\.0\.0\.1)/.test(base) ? DEFAULT_APP_ORIGIN : base;
+}
+
+/** Mode du compte Mollie, d'après le préfixe de la clé. */
+export function mollieMode(): "test" | "live" | null {
+  const key = mollieKey();
+  if (!key) return null;
+  return key.startsWith("live_") ? "live" : "test";
 }
 
 // Statuts Mollie → libellé affiché en facturation

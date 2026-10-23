@@ -23,6 +23,7 @@ import vendome from "@/assets/v3/place-vendome.jpg.asset.json";
 import village from "@/assets/v3/village-cotier.jpg.asset.json";
 import { locale, t, tPair } from "@/lib/i18n";
 import { useDelegation } from "@/components/art-de-vie/use-delegation";
+import { LabeledField } from "@/components/art-de-vie/field";
 import { createDelegateRequest } from "@/lib/delegates.functions";
 
 const cats = [
@@ -35,10 +36,17 @@ const cats = [
 const surMesure = { name: "Sur mesure", note: "Billetterie, intendance, démarches", imageKey: "sur-mesure" } as const;
 const allCats = [...cats, surMesure];
 
+/** Date du jour à Paris, pour interdire une date passée. */
+function todayIso(): string {
+  return new Intl.DateTimeFormat("fr-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+}
+
 export const Route = createFileRoute("/_authenticated/demandes/nouvelle")({
-  validateSearch: (search: Record<string, unknown>): { offer?: string | undefined; renew?: string | undefined } => ({
+  validateSearch: (search: Record<string, unknown>): { offer?: string | undefined; renew?: string | undefined; category?: string | undefined; partner?: string | undefined } => ({
     offer: typeof search["offer"] === "string" ? search["offer"] : undefined,
     renew: typeof search["renew"] === "string" ? search["renew"] : undefined,
+    category: typeof search["category"] === "string" && allCats.some((c) => c.name === search["category"]) ? search["category"] : undefined,
+    partner: typeof search["partner"] === "string" ? search["partner"].slice(0, 200) : undefined,
   }),
   head: () => ({
     meta: [
@@ -59,16 +67,17 @@ function Page() {
   // Lot 5.4 : un proche autorisé envoie sa demande par le serveur, sans récurrence.
   const { delegation } = useDelegation();
   const createAsDelegate = useServerFn(createDelegateRequest);
-  const { offer, renew } = Route.useSearch();
+  const { offer, renew, category: offerCategory, partner } = Route.useSearch();
   const queryClient = useQueryClient();
   const { data: previous = [] } = useQuery(requestsQuery);
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [category, setCategory] = useState("Tables");
+  // Depuis une offre : catégorie déjà choisie, on commence aux précisions.
+  const [step, setStep] = useState<1 | 2 | 3>(offer && offerCategory ? 2 : 1);
+  const [category, setCategory] = useState(offerCategory ?? "Tables");
   const [title, setTitle] = useState(offer ?? "");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [guests, setGuests] = useState("");
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(offer && partner ? t("Offre : {partner}", { partner }) : "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
@@ -266,7 +275,7 @@ function Page() {
           <section className="pt-8 lg:mx-[clamp(20px,3.9vw,56px)] lg:grid lg:grid-cols-12 lg:gap-6 lg:pt-16">
             <aside className="hidden lg:col-span-4 lg:flex lg:flex-col lg:rounded-[28px] lg:bg-primary-deep lg:p-8 lg:text-foreground">
               <p className="lg:eyebrow lg:text-foreground/80">{t("Catégorie")}</p>
-              <h2 className="lg:v3-card-title lg:mt-auto lg:pt-24 lg:text-[64px]">{category}</h2>
+              <h2 className="lg:v3-card-title lg:mt-auto lg:pt-24 lg:text-[64px]">{t(category)}</h2>
               <p className="lg:mt-5 lg:text-[16px] lg:leading-7">
                 {t("Indiquez l’essentiel ; votre concierge reviendra vers vous pour le reste.")}
               </p>
@@ -279,6 +288,7 @@ function Page() {
               className="mt-6 rounded-card bg-card p-4 sm:p-7 lg:col-span-8 lg:mt-0 lg:p-8"
               onSubmit={(e) => {
                 e.preventDefault();
+                if (date && date < todayIso()) { setStepError(t("La date souhaitée est déjà passée.")); return; }
                 if (rhythm !== "aucune" && !date) { setStepError(t("Indiquez la date de la première échéance.")); return; }
                 if (rhythm === "dates" && extraDates.length === 0) { setStepError(t("Ajoutez au moins une autre date.")); return; }
                 setStepError(null);
@@ -295,7 +305,7 @@ function Page() {
                   />
                 </Field>
                 <Field label={t("Date souhaitée")}>
-                  <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                  <Input type="date" min={todayIso()} value={date} onChange={(e) => setDate(e.target.value)} />
                 </Field>
                 <div className="grid grid-cols-2 gap-3 lg:col-span-2">
                   <Field label={t("Heure")}>
@@ -335,7 +345,7 @@ function Page() {
                         <div>
                           <p className="text-[12px] text-muted-foreground">{t("Autres dates (la première est la date souhaitée)")}</p>
                           <div className="mt-2 flex gap-2">
-                            <Input type="date" value={nextDate} onChange={(e) => setNextDate(e.target.value)} aria-label={t("Ajouter une date")} />
+                            <Input type="date" min={date || todayIso()} value={nextDate} onChange={(e) => setNextDate(e.target.value)} aria-label={t("Ajouter une date")} />
                             <Button type="button" variant="soft" onClick={() => { if (nextDate && !extraDates.includes(nextDate)) setExtraDates([...extraDates, nextDate].sort()); setNextDate(""); }}>{t("Ajouter")}</Button>
                           </div>
                           {extraDates.length > 0 && (
@@ -353,7 +363,7 @@ function Page() {
                       )}
                       <div>
                         <p className="text-[12px] text-muted-foreground">{t("Date de fin (facultative)")}</p>
-                        <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-2" aria-label={t("Date de fin de la récurrence")} />
+                        <Input type="date" min={date || todayIso()} value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-2" aria-label={t("Date de fin de la récurrence")} />
                       </div>
                       <p className="text-[12px] leading-5 text-muted-foreground">{t("Chaque échéance crée une demande sept jours avant sa date, que vous suivez comme les autres.")}</p>
                     </div>
@@ -393,10 +403,10 @@ function Page() {
               </dl>
             </div>
             <p className="mt-5 text-[13px] leading-5 text-muted-foreground lg:col-span-5 lg:mt-0 lg:self-end lg:border-t lg:border-primary/25 lg:pt-6 lg:text-[18px] lg:leading-7">
-              {t("Votre demande sera transmise à votre conciergerie dès l’envoi.")}
+              {t("Votre demande sera transmise à notre conciergerie dès l’envoi.")}
             </p>
             {error && (
-              <p className="mt-4 rounded-[18px] lg:col-span-5 bg-panel p-4 text-xs leading-5 text-primary">
+              <p role="alert" className="mt-4 rounded-[18px] lg:col-span-5 bg-panel p-4 text-xs leading-5 text-primary">
                 {error}
               </p>
             )}
@@ -450,12 +460,7 @@ function Field({
   children: React.ReactNode;
   desktopFull?: boolean;
 }) {
-  return (
-    <div className={desktopFull ? "lg:col-span-3" : undefined}>
-      <Label className="eyebrow">{label}</Label>
-      <div className="mt-2">{children}</div>
-    </div>
-  );
+  return <LabeledField label={label} className={desktopFull ? "lg:col-span-3" : undefined}>{children}</LabeledField>;
 }
 
 function Review({ label, value }: { label: string; value: string }) {

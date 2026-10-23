@@ -40,7 +40,7 @@ function Page() {
     greetingInitialized = true;
     const hasVisited = localStorage.getItem("adv-visited");
     if (hasVisited) {
-      const variants = ["Bon retour", "Heureux de vous revoir", "Ravi de vous retrouver"];
+      const variants = ["Bon retour", "Bon retour parmi nous", "Quel plaisir de vous retrouver"];
       setGreeting(variants[Math.floor(Math.random() * variants.length)] ?? "Bon retour");
     } else localStorage.setItem("adv-visited", "true");
   }, []);
@@ -59,14 +59,23 @@ function Page() {
     navigate({ to: "/", replace: true });
   }
 
+  const [sending, setSending] = useState(false);
   async function reset() {
     if (!email) {
       setError(t("Indiquez votre email pour recevoir un lien."));
       return;
     }
     setError(null);
-    await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
-    setNotice(t("Un lien de réinitialisation vient de vous être envoyé."));
+    setNotice(null);
+    setSending(true);
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+    setSending(false);
+    if (resetError) {
+      setError(t("Le lien n’a pas pu être envoyé. Réessayez dans quelques minutes."));
+      return;
+    }
+    // Message identique que l'adresse soit connue ou non : rien n'est révélé sur les comptes existants.
+    setNotice(t("Si cette adresse correspond à un compte, un lien de réinitialisation vient de lui être envoyé."));
   }
 
   const parts = t(greeting).split(" ");
@@ -103,8 +112,8 @@ function Page() {
             </Label>
             <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-2.5" />
           </div>
-          <button type="button" onClick={reset} className="-my-1.5 inline-flex min-h-11 items-center self-start text-[15px] font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            {t("Mot de passe oublié ?")}
+          <button type="button" onClick={() => void reset()} disabled={sending} className="-my-1.5 inline-flex min-h-11 items-center self-start text-[15px] font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            {sending ? t("Envoi en cours") : t("Mot de passe oublié ?")}
           </button>
           {error ? <p role="alert" className="rounded-[16px] bg-foreground/10 p-4 text-xs leading-5">{error}</p> : null}
           {notice ? <p role="status" className="rounded-[16px] bg-foreground/10 p-4 text-xs leading-5">{notice}</p> : null}

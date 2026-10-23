@@ -18,9 +18,9 @@ export const Route = createFileRoute("/_authenticated/demandes/$requestId_/modif
   head: () => ({
     meta: [
       { title: t("Modifier ma demande — Art de Vie") },
-      { name: "description", content: t("Demandez une modification de votre demande à votre conciergerie.") },
+      { name: "description", content: t("Demandez une modification de votre demande à notre conciergerie.") },
       { property: "og:title", content: t("Modifier ma demande — Art de Vie") },
-      { property: "og:description", content: t("Demandez une modification de votre demande à votre conciergerie.") },
+      { property: "og:description", content: t("Demandez une modification de votre demande à notre conciergerie.") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -69,7 +69,7 @@ function Page() {
           <EmptyState>{t("Cette demande est introuvable.")}</EmptyState>
         ) : !canRequestChange(item.status) || pending ? (
           <div className="lg:mx-4">
-            <EmptyState>{pending ? t("Une demande de modification est déjà en cours d’examen par votre conciergerie.") : t("Cette demande ne peut plus être modifiée.")}</EmptyState>
+            <EmptyState>{pending ? t("Une demande de modification est déjà en cours d’examen par notre conciergerie.") : t("Cette demande ne peut plus être modifiée.")}</EmptyState>
             <Link to="/demandes/$requestId" params={{ requestId }} className="mt-4 inline-block text-[14px] text-primary underline underline-offset-4">{t("Revenir à la demande")}</Link>
           </div>
         ) : (
@@ -79,7 +79,7 @@ function Page() {
             <fieldset className="mt-6">
               <legend className="eyebrow text-primary">{t("Votre modification")}</legend>
               <div role="radiogroup" className="mt-3 grid gap-2 sm:grid-cols-2">
-                {CHANGE_KINDS.map((k) => {
+                {CHANGE_KINDS.filter((k) => k.value !== "annulation").map((k) => {
                   const active = kind === k.value;
                   return (
                     <button key={k.value} type="button" role="radio" aria-checked={active} onClick={() => setKind(k.value)}
@@ -91,9 +91,9 @@ function Page() {
                 })}
               </div>
             </fieldset>
-            <label htmlFor="change-body" className="eyebrow mt-6 block text-primary">{t("Votre souhait")}</label>
-            <Textarea id="change-body" value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000} rows={4} className="mt-3" placeholder={kind === "annulation" ? t("Un mot pour votre conciergerie (facultatif)") : t("Nouvelle date, nombre de couverts, précision…")} />
-            <p className="mt-4 text-[13px] leading-5 text-muted-foreground">{t("Votre conciergerie vous confirme la modification. D’ici là, votre demande reste telle qu’elle est.")}</p>
+            <label htmlFor="change-body" className="eyebrow mt-6 block text-primary">{t("Précisions")}</label>
+            <Textarea id="change-body" value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000} rows={4} className="mt-3" placeholder={kind === "annulation" ? t("Un mot pour notre conciergerie (facultatif)") : t("Nouvelle date, nombre de couverts, précision…")} />
+            <p className="mt-4 text-[13px] leading-5 text-muted-foreground">{t("Notre conciergerie vous confirme la modification. D’ici là, votre demande reste telle qu’elle est.")}</p>
             {error && <p role="alert" className="mt-4 rounded-2xl bg-panel p-4 text-xs leading-5">{error}</p>}
             <PillAction type="submit" className="mt-6 w-full sm:max-w-sm" disabled={busy}>{busy ? t("Envoi en cours") : t("Envoyer la demande")}</PillAction>
           </form>

@@ -35,6 +35,10 @@ export async function createRecurringRule(admin: any, first: FirstRequest, rec: 
     created_by: createdBy,
   }).select("id").single();
   if (error || !rule) return { ok: false as const, reason: "La récurrence n’a pas pu être enregistrée." };
-  await admin.from("requests").update({ recurring_id: rule.id }).eq("id", first.id);
+  const { error: linkError } = await admin.from("requests").update({ recurring_id: rule.id }).eq("id", first.id);
+  if (linkError) {
+    await admin.from("recurring_requests").delete().eq("id", rule.id);
+    return { ok: false as const, reason: "La récurrence n’a pas pu être enregistrée." };
+  }
   return { ok: true as const, id: rule.id as string };
 }

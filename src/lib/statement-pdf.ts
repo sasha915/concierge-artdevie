@@ -1,3 +1,4 @@
+import { todayParis } from "./billing-webhook-rules";
 /** Relevé mensuel au format PDF (lot 6.4), généré dans le navigateur. Aucun service externe. */
 import { monthLabel, statementTotal, type StatementLine } from "./member-rules";
 import { localeOf, translate, type Lang } from "./i18n";
@@ -99,7 +100,7 @@ export async function downloadStatement({ lang = "fr", month, memberName, member
   doc.setFontSize(8);
   doc.setTextColor(...MUTED);
   doc.text(tr("Ce relevé récapitule vos prestations du mois. Il ne vaut pas facture."), left, 282);
-  doc.text(tr("Édité le {date}", { date: day(new Date().toISOString().slice(0, 10), lang) }), right, 282, { align: "right" });
+  doc.text(tr("Édité le {date}", { date: day(todayParis(), lang) }), right, 282, { align: "right" });
 
   doc.save(`Art-de-Vie-${lang === "en" ? "statement" : "releve"}-${month}.pdf`);
 }

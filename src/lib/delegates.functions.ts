@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { REQUEST_IMAGE } from "@/lib/request-images";
+import { exactLike } from "@/lib/delegate-rules";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { translate } from "@/lib/i18n";
 import { canInviteDelegate } from "@/lib/delegate-rules";
@@ -49,7 +51,7 @@ export const inviteDelegate = createServerFn({ method: "POST" })
     const { data: mine } = await admin.from("member_delegates").select("status").eq("member_id", ctx.userId);
     if (!canInviteDelegate(mine ?? [])) return { ok: false as const, reason: "Vous avez déjà trois proches autorisés. Retirez un accès pour en inviter un autre." };
 
-    const { data: accounts } = await admin.from("profiles").select("email").ilike("email", email);
+    const { data: accounts } = await admin.from("profiles").select("email").ilike("email", exactLike(email));
     if ((accounts ?? []).some((p: { email: string | null }) => (p.email ?? "").toLowerCase() === email)) {
       return { ok: false as const, reason: "Cette adresse correspond déjà à un compte Art de Vie." };
     }
@@ -189,7 +191,6 @@ export const getDelegateFileUrl = createServerFn({ method: "GET" })
     return { ok: true as const, url: signed.signedUrl as string };
   });
 
-const REQUEST_IMAGE: Record<string, string> = { Tables: "entree-de-nuit", "Séjours": "village-cotier", Transferts: "place-vendome", Soins: "bassin", "Sur mesure": "sur-mesure" };
 
 export const createDelegateRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
