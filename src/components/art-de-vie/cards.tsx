@@ -4,7 +4,7 @@ import { unreadRequestNotificationsQuery } from "@/lib/adv-queries";
 import { MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { formatDate, formatTime, imageFor, offerImage, type Offer, type RequestItem, type RequestStatus } from "@/data/art-de-vie";
+import { formatDate, formatTime, imageFor, offerImage, type Offer, type RequestItem, type RequestStatus, requestPhoto } from "@/data/art-de-vie";
 import logoBeige from "@/assets/logo-beige.svg";
 import { ArrowCircle, StatusTimeline } from "./v3";
 import { t } from "@/lib/i18n";
@@ -62,7 +62,7 @@ export function RequestCard({
         )}
       >
         <Photo
-          src={imageFor(item.image_key)}
+          src={requestPhoto(item)}
           alt={item.title}
           category={item.category}
           className="absolute inset-0 h-full w-full"
@@ -107,12 +107,16 @@ export function RequestCard({
           desktop && "lg:grid-cols-[104px_minmax(0,1fr)]",
         )}
       >
-        <Photo
-          src={imageFor(item.image_key)}
-          alt={item.title}
-          category={item.category}
-          className={cn("h-[124px] rounded-[16px]", desktop && "lg:h-[140px]")}
-        />
+        {item.status === "Annulée" ? (
+          <CancelledThumb category={item.category} className={cn("size-[88px] self-center", desktop && "lg:size-[104px]")} />
+        ) : (
+          <Photo
+            src={requestPhoto(item)}
+            alt={item.title}
+            category={item.category}
+            className={cn("h-[124px] rounded-[16px]", desktop && "lg:h-[140px]")}
+          />
+        )}
         <div className="min-w-0">
           <div className="flex items-start justify-between gap-2">
             <span className="eyebrow text-muted-foreground">{t(item.category)}</span>
@@ -144,7 +148,9 @@ export function RequestRow({ item }: { item: RequestItem }) {
       params={{ requestId: item.id }}
       className={cn("flex gap-[18px] border-b border-foreground/16 py-[18px] text-foreground last:border-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", cancelled && "text-muted-foreground")}
     >
-      <Photo src={imageFor(item.image_key)} alt={item.title} category={item.category} className={cn("h-[128px] w-[104px] shrink-0 rounded-[16px]", cancelled && "opacity-60")} />
+      {cancelled
+        ? <CancelledThumb category={item.category} className="size-[104px] shrink-0 self-center" />
+        : <Photo src={requestPhoto(item)} alt={item.title} category={item.category} className="h-[128px] w-[104px] shrink-0 rounded-[16px]" />}
       <span className="min-w-0 flex-1">
         <span className="flex items-center justify-between gap-2.5">
           <span className="text-[12px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">( {t(item.category)} )</span>
@@ -155,6 +161,15 @@ export function RequestRow({ item }: { item: RequestItem }) {
         {!cancelled && <span className="mt-3.5 block"><StatusTimeline status={item.status} dark /></span>}
       </span>
     </Link>
+  );
+}
+
+/** Demande annulée (maquette V4) : pas de photo, un cadre pointillé portant la catégorie en italique. */
+function CancelledThumb({ category, className }: { category: string; className?: string }) {
+  return (
+    <span aria-hidden="true" className={cn("grid place-items-center rounded-[16px] border border-dashed border-foreground/24 font-display text-[17px] italic text-muted-foreground", className)}>
+      {t(category)}
+    </span>
   );
 }
 

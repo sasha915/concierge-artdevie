@@ -16,12 +16,12 @@ import {
   initials,
   type Offer,
   type Profile,
-  type RequestItem,
-} from "@/data/art-de-vie";
+  type RequestItem, requestPhoto } from "@/data/art-de-vie";
 import { offersQuery, profileQuery, requestsQuery } from "@/lib/adv-queries";
 import { WELCOME_LATER_KEY } from "@/components/art-de-vie/welcome";
 import vendome from "@/assets/v3/place-vendome.jpg.asset.json";
 import { locale, t, tPair } from "@/lib/i18n";
+import { isActiveRequest, orderForDisplay, todayInParis } from "@/lib/request-order";
 import { useDelegation } from "@/components/art-de-vie/use-delegation";
 import { DelegateHome } from "@/components/art-de-vie/delegate";
 
@@ -71,7 +71,7 @@ function CurrentRequest({ item }: { item: RequestItem }) {
       params={{ requestId: item.id }}
       className="block h-full rounded-[24px] bg-primary p-[18px] text-primary-foreground transition-transform active:scale-[0.98] lg:flex lg:flex-col lg:rounded-[28px] lg:p-3"
     >
-      <Photo src={imageFor(item.image_key)} alt={item.title} category={item.category} className="hidden lg:block lg:h-[250px] lg:rounded-[20px]" />
+      <Photo src={requestPhoto(item)} alt={item.title} category={item.category} className="hidden lg:block lg:h-[250px] lg:rounded-[20px]" />
       <span className="block lg:mt-auto lg:px-3 lg:pb-1 lg:pt-5">
         <span className="flex items-center justify-between gap-3">
           <span className="eyebrow text-ink-soft">{t("Demande en cours")}</span>
@@ -163,9 +163,8 @@ function MemberHome() {
     const d = new Date().toLocaleDateString(locale(), { weekday: "long", day: "numeric", month: "long" });
     setToday(d.charAt(0).toUpperCase() + d.slice(1));
   }, []);
-  const upcoming = requests.filter(
-    (r) => r.status === "Nouvelle" || r.status === "En cours" || r.status === "Confirmée",
-  );
+  const ordered = orderForDisplay(requests, todayInParis());
+  const upcoming = ordered.filter(isActiveRequest);
   const nextRequest = upcoming[0];
   const firstName = profile?.full_name?.trim().split(/\s+/)[0] || "";
   const conciergeFirstName = profile?.concierge_referent?.split(/\s+/)[0] ?? null;
@@ -244,7 +243,7 @@ function MemberHome() {
               <span className="mt-1.5 block text-[20px] leading-tight tracking-[-0.025em] lg:text-[28px]">{t("Votre carte")}</span>
             </span>
           </Link>
-          {showConcierge && (
+          {showConcierge ? (
             <a href={whatsappUrl} target="_blank" rel="noreferrer" className={`${tile} bg-panel text-foreground lg:border lg:border-foreground/16 lg:bg-glass`}>
               <span className="flex justify-end">
                 <span className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground"><MessageCircle className="size-4" /></span>
@@ -254,6 +253,17 @@ function MemberHome() {
                 <span className="mt-1.5 block text-[18px] leading-tight tracking-[-0.02em] lg:text-[28px]">{t("Écrire à")} {conciergeFirstName}</span>
               </span>
             </a>
+          ) : (
+            /* Sans concierge référent : la quatrième tuile de la maquette ouvre une demande écrite à la conciergerie. */
+            <Link to="/demandes/nouvelle" search={{ offer: undefined }} className={`${tile} bg-panel text-foreground lg:border lg:border-foreground/16 lg:bg-glass`}>
+              <span className="flex justify-end">
+                <span className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground"><MessageCircle className="size-4" /></span>
+              </span>
+              <span>
+                <span className="eyebrow block whitespace-nowrap text-[10px] text-muted-foreground lg:text-[11px]">{t("Votre conciergerie")}</span>
+                <span className="mt-1.5 block text-[18px] leading-tight tracking-[-0.02em] lg:text-[28px]">{t("Nous écrire")}</span>
+              </span>
+            </Link>
           )}
         </section>
 
@@ -284,8 +294,8 @@ function MemberHome() {
           </div>
           <div className="mt-4">
             {requestsPending ? <Skeleton className="h-60 bg-foreground/10" />
-              : requests.length ? requests.slice(0, 3).map((item) => (
-                  <Row key={item.id} to="/demandes/$requestId" params={{ requestId: item.id }} image={imageFor(item.image_key)} category={item.category} title={item.title} meta={formatDate(item.scheduled_date)} badge={<StatusBadge status={item.status} />} />
+              : ordered.length ? ordered.slice(0, 3).map((item) => (
+                  <Row key={item.id} to="/demandes/$requestId" params={{ requestId: item.id }} image={requestPhoto(item)} category={item.category} title={item.title} meta={formatDate(item.scheduled_date)} badge={<StatusBadge status={item.status} />} />
                 ))
               : <EmptyState>{t("Aucune demande pour le moment.")}</EmptyState>}
           </div>

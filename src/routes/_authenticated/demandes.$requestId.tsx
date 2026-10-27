@@ -16,7 +16,7 @@ import { EmptyState, ErrorState, Photo, StatusBadge } from "@/components/art-de-
 import { Button } from "@/components/ui/button";
 import { PillAction, StatusTimeline, Title } from "@/components/art-de-vie/v3";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatDate, imageFor, formatTime } from "@/data/art-de-vie";
+import { formatDate, imageFor, formatTime, requestPhoto } from "@/data/art-de-vie";
 import { myDelegatesQuery, profileQuery, requestChangesMemberQuery, requestFilesMemberQuery, requestProposalMemberQuery, requestMessagesQuery, requestReviewMemberQuery, requestsQuery, unreadRequestNotificationsQuery } from "@/lib/adv-queries";
 import { getLang, locale, t, tPair } from "@/lib/i18n";
 import { useDelegation } from "@/components/art-de-vie/use-delegation";
@@ -79,7 +79,7 @@ function MemberPage({ requestId }: { requestId: string }) {
         <div className="min-w-0 lg:col-span-8">
         <section className="relative -mx-2 -mt-3 h-[452px] overflow-hidden rounded-[28px] bg-panel text-foreground sm:mx-0 sm:mt-0 lg:h-[340px]">
           <Photo
-            src={imageFor(item.image_key)}
+            src={requestPhoto(item)}
             alt={item.title}
             category={item.category}
             hero

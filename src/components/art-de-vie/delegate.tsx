@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useSignOut } from "@/components/art-de-vie/use-delegation";
-import { formatDate, formatTime, imageFor, type RequestItem } from "@/data/art-de-vie";
+import { formatDate, formatTime, imageFor, type RequestItem, requestPhoto } from "@/data/art-de-vie";
 import { delegateRequestQuery, delegateRequestsQuery } from "@/lib/adv-queries";
 import { firstName } from "@/lib/delegate-rules";
 import { getDelegateFileUrl, sendDelegateMessage, type DelegationInfo } from "@/lib/delegates.functions";
@@ -177,7 +177,7 @@ export function DelegateRequestDetail({ requestId, delegation }: { requestId: st
       <div className="mx-auto max-w-[760px] lg:grid lg:max-w-none lg:grid-cols-12 lg:items-start lg:gap-4">
         <div className="min-w-0 lg:col-span-8">
           <section className="relative -mx-2 -mt-3 h-[400px] overflow-hidden rounded-[28px] bg-panel text-foreground sm:mx-0 sm:mt-0 lg:h-[340px]">
-            <Photo src={imageFor(item.image_key)} alt={item.title} category={item.category} hero className="absolute inset-0 h-full w-full" />
+            <Photo src={requestPhoto(item)} alt={item.title} category={item.category} hero className="absolute inset-0 h-full w-full" />
             <div className="absolute inset-x-4 top-4 flex items-center justify-between lg:inset-x-5 lg:top-5">
               <Link to="/demandes" className="dark-glass inline-flex h-10 items-center gap-2 rounded-full px-4 text-[14px]">
                 <ChevronLeft className="size-4" />

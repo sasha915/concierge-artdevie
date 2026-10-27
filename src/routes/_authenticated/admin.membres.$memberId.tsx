@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState, StatusBadge } from "@/components/art-de-vie/cards";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatAmount, formatShortDate, formatMonth, imageFor, initials } from "@/data/art-de-vie";
+import { formatAmount, formatShortDate, formatMonth, imageFor, initials, requestPhoto } from "@/data/art-de-vie";
 import { memberDelegatesQuery, memberDetailQuery, memberParrainQuery, memberPaymentsQuery, memberPreferencesQuery, memberReviewsQuery } from "@/lib/admin-queries";
 import { approveDelegate, refuseDelegate, revokeDelegateTeam, getMemberStatement, saveMemberPreferences, setMemberLanguage, sendMemberInvite, setMemberDisabled, updateMember, type MemberAnswers as Answers } from "@/lib/admin.functions";
 import { monthLabel, shiftMonth, WELCOME_STEPS } from "@/lib/member-rules";
@@ -138,7 +138,7 @@ function Page() {
             : <div className="mt-3">
                 {(data?.requests ?? []).map((r) => <div key={r.id} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-4 last:border-0">
                   <div className="min-w-0 flex-1">
-                    <div className="flex min-w-0 items-center gap-3">{imageFor(r.image_key) && <img src={imageFor(r.image_key)} alt="" className="h-16 w-12 shrink-0 rounded-lg object-cover" />}<p className="min-w-0 break-words text-[18px] text-primary">{r.title}</p></div>
+                    <div className="flex min-w-0 items-center gap-3">{requestPhoto(r) && <img src={requestPhoto(r)} alt="" className="h-16 w-12 shrink-0 rounded-lg object-cover" />}<p className="min-w-0 break-words text-[18px] text-primary">{r.title}</p></div>
                     <p className="mt-1 text-[12px] text-muted-foreground">{r.category} · {formatShortDate(r.scheduled_date)}</p>
                     {r.description ? <p className="mt-1 text-[12px] leading-5 text-muted-foreground line-clamp-2">{r.description}</p> : null}
                   </div>

@@ -279,6 +279,7 @@ export const EN: Record<string, string> = {
   "Aucune précision complémentaire n’a été indiquée.": "No further details were given.",
   "Vous": "You",
   "Votre conciergerie": "Your concierge",
+  "Nous écrire": "Write to us",
   "Répondre à votre conciergerie": "Reply to your concierge",
   "Répondre…": "Reply…",
   "Votre message n’a pas pu être envoyé.": "Your message could not be sent.",

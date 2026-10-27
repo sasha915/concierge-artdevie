@@ -6,6 +6,7 @@ import entreeDeNuit from "@/assets/v3/entree-de-nuit.jpg.asset.json";
 import placeVendome from "@/assets/v3/place-vendome.jpg.asset.json";
 import villageCotier from "@/assets/v3/village-cotier.jpg.asset.json";
 import { getLang, locale, t } from "@/lib/i18n";
+import { REQUEST_IMAGE } from "@/lib/request-images";
 
 export type RequestStatus = "Nouvelle" | "En cours" | "Confirmée" | "Terminée" | "Annulée";
 
@@ -85,6 +86,14 @@ export function imageFor(key: string | null | undefined): string | undefined {
   return key ? images[key] : undefined;
 }
 
+/**
+ * Photo d'une demande : celle de sa catégorie (maquette V4), sinon la photo enregistrée.
+ * Les demandes anciennes portent encore une photo d'offre (restaurant, hôtel, spa) : la catégorie l'emporte.
+ */
+export function requestPhoto(item: { category: string; image_key?: string | null }): string | undefined {
+  return imageFor(REQUEST_IMAGE[item.category]) ?? imageFor(item.image_key);
+}
+
 /** Photo d'une offre : photo envoyée par l'équipe, sinon photo par code. */
 export function offerImage(offer: Pick<Offer, "image_key" | "image_url">): string | undefined {
   return offer.image_url || imageFor(offer.image_key);
@@ -98,8 +107,11 @@ export function formatDate(iso: string | null | undefined): string {
 /** « 20:30:00 » → « 20 h 30 » en français, « 20:30 » en anglais. */
 export function formatTime(time: string | null | undefined): string {
   if (!time) return "";
-  const hhmm = time.slice(0, 5);
-  return getLang() === "en" ? hhmm : hhmm.replace(":", " h ");
+  // Heure saisie librement (« 20h30 », « 9:00 », « Départ à 9h00 ») : seule une heure seule est mise en forme.
+  const m = /^\s*(\d{1,2})\s*[:h]\s*(\d{2})(?::\d{2})?\s*$/i.exec(time);
+  if (!m) return time.trim();
+  const hh = (m[1] ?? "").padStart(2, "0");
+  return getLang() === "en" ? `${hh}:${m[2]}` : `${hh} h ${m[2]}`;
 }
 
 export function formatShortDate(iso: string | null | undefined): string {
