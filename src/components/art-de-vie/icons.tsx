@@ -1,8 +1,9 @@
 import type { SVGProps } from "react";
 
 type IconProps = SVGProps<SVGSVGElement> & { filled?: boolean };
-const common = { width: 22, height: 22, viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-export function HomeIcon({ filled, ...props }: IconProps) { return <svg {...common} {...props} fill={filled ? "currentColor" : "none"}><path d="m3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z" /></svg>; }
-export function InboxIcon({ filled, ...props }: IconProps) { return <svg {...common} {...props} fill={filled ? "currentColor" : "none"}><path d="M4 5h16v14H4z"/><path d="m4 13 4-3 3 3h2l3-3 4 3"/></svg>; }
-export function BookmarkIcon({ filled, ...props }: IconProps) { return <svg {...common} {...props} fill={filled ? "currentColor" : "none"}><path d="M6 3h12v18l-6-4-6 4z"/></svg>; }
-export function UserIcon({ filled, ...props }: IconProps) { return <svg {...common} {...props} fill={filled ? "currentColor" : "none"}><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>; }
+// Icônes de la barre de navigation V4 : traits fins de la maquette, jamais pleines ; l'onglet actif est signalé par son cercle.
+const common = { width: 20, height: 20, viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill: "none" };
+export function HomeIcon({ filled: _filled, ...props }: IconProps) { return <svg {...common} {...props}><path d="M4 10.5 12 4l8 6.5V20H4z" /></svg>; }
+export function InboxIcon({ filled: _filled, ...props }: IconProps) { return <svg {...common} {...props}><path d="M3 12h5l2 3h4l2-3h5" /><path d="M5.4 5.5 3 12v6a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-6l-2.4-6.5A1 1 0 0 0 17.7 5H6.3a1 1 0 0 0-.9.5z" /></svg>; }
+export function BookmarkIcon({ filled: _filled, ...props }: IconProps) { return <svg {...common} {...props}><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1z" /></svg>; }
+export function UserIcon({ filled: _filled, ...props }: IconProps) { return <svg {...common} {...props}><circle cx="12" cy="8.5" r="3.5" /><path d="M5 20c0-3.6 3.1-5.5 7-5.5s7 1.9 7 5.5" /></svg>; }

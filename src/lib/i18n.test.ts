@@ -34,7 +34,7 @@ const dynamicKeys = [
   "Accueil", "Demandes", "Offres", "Membership", "Historique",
   "Bonjour", "Bonsoir", "Bienvenue", "Bon retour", "Heureux de vous revoir", "Ravi de vous retrouver",
   "Mes |demandes.", "Historique des |demandes.", "Les |offres.",
-  "Suivez l’avancement de chacune de vos demandes.", "Retrouvez les demandes que nous avons accompagnées.", "Des offres négociées pour vous par notre maison.",
+  "Suivez l’avancement de chaque demande en temps réel.", "Retrouvez les demandes que nous avons accompagnées.", "Des offres négociées pour vous par notre maison.",
   "Mes factures", "Notre conciergerie vous propose", "Mon relevé", "Mes demandes récurrentes", "Vos informations", "Modifier ma demande", "Mes préférences", "Parrainer un membre", "Langue de l’application",
   "PDF", "Image", "Fichier",
   ...RHYTHMS.map((r) => r.label),

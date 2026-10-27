@@ -32,7 +32,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label={t("Navigation principale")}
-      className={`fixed bottom-[max(16px,env(safe-area-inset-bottom))] left-1/2 z-50 grid h-16 w-[calc(100%-32px)] max-w-[500px] -translate-x-1/2 ${delegation ? "grid-cols-3" : "grid-cols-5"} items-center justify-items-center rounded-full border border-foreground/22 bg-primary-deep/86 px-2 text-foreground shadow-nav backdrop-blur-[18px] lg:hidden`}
+      className={`fixed bottom-[max(16px,env(safe-area-inset-bottom))] left-1/2 z-50 grid h-16 w-[calc(100%-28px)] max-w-[500px] -translate-x-1/2 ${delegation ? "grid-cols-3" : "grid-cols-5"} items-center justify-items-center rounded-full border border-foreground/22 bg-primary-deep/86 px-2 text-foreground shadow-nav backdrop-blur-[18px] lg:hidden`}
     >
       {items.map(({ to, label, Icon }, index) => {
         const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
@@ -130,8 +130,9 @@ export function TopBar({ title, action }: { title?: string; action?: ReactNode }
             </Button>
           );
         })}
-        <Button asChild variant="light" className="lg:ml-2 lg:h-11 lg:px-5 lg:text-[15px]">
+        <Button asChild variant="light" className="lg:ml-2 lg:h-11 lg:gap-2 lg:px-5 lg:text-[15px]">
           <Link to="/demandes/nouvelle" search={{ offer: undefined }}>
+            <Plus className="size-4" aria-hidden="true" />
             {t("Nouvelle demande")}
           </Link>
         </Button>
@@ -174,7 +175,7 @@ export function PageHeader({ title: rawTitle, subtitle }: { title: string; subti
 
 export function NewRequestButton({ className }: { className?: string }) {
   return (
-    <PillAction asChild className={className}>
+    <PillAction asChild plus className={className}>
       <Link to="/demandes/nouvelle" search={{ offer: undefined }}>
         {t("Nouvelle demande")}
       </Link>
@@ -206,7 +207,7 @@ export function ListHeader({
     >
       <Logo inverse className={`pointer-events-none absolute -right-[18%] top-[36%] -z-10 w-[112%] max-w-none opacity-5 ${desktop ? "lg:hidden" : ""}`} />
       <TopBar />
-      <div className={`px-1.5 pt-[34px] ${desktop ? "lg:px-4 lg:pt-14" : ""}`}>
+      <div className={`px-1.5 pt-[34px] ${desktop ? "lg:px-8 lg:pt-14" : ""}`}>
         <p className="eyebrow mb-3.5 text-muted-foreground">{t(eyebrow)}</p>
         <Title italic={tail} className={`text-[46px] leading-[0.98] ${desktop ? "lg:text-[clamp(56px,6vw,96px)]" : ""}`}>
           {head}
@@ -218,7 +219,7 @@ export function ListHeader({
           {action && <div className={desktop ? "hidden lg:block" : "hidden"}>{action}</div>}
         </div>
       </div>
-      {children && <div className={`-mx-[14px] mt-5 px-5 ${desktop ? "lg:mx-0 lg:mt-7 lg:px-4" : ""}`}>{children}</div>}
+      {children && <div className={`-mx-[14px] mt-5 px-5 ${desktop ? "lg:mx-0 lg:mt-7 lg:px-8" : ""}`}>{children}</div>}
     </section>
   );
 }

@@ -150,7 +150,7 @@ function Home() {
 }
 
 function MemberHome() {
-  const heroTitle = tPair("Notre conciergerie, à votre", "rythme.");
+  const heroTitle = tPair("Votre conciergerie, à votre", "rythme.");
   const offersTitle = tPair("Offres en", "vedette.");
   const latestTitle = tPair("Vos dernières", "demandes.");
   const { data: requests = [], isPending: requestsPending } = useQuery(requestsQuery);
@@ -179,7 +179,8 @@ function MemberHome() {
       <div className="hidden lg:mb-5 lg:block">
         <TopBar />
       </div>
-      <div className="grid gap-3 lg:grid-cols-12 lg:gap-4">
+      {/* Une colonne bornée à l'écran sur mobile : le carrousel d'offres défile au lieu d'élargir la page. */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-12 lg:gap-4">
         {/* Héros */}
         <section className={`relative flex min-h-[476px] flex-col justify-between overflow-hidden rounded-[28px] bg-panel p-[14px] pb-[18px] text-foreground lg:min-h-[540px] lg:p-9 ${nextRequest ? "lg:col-span-8" : "lg:col-span-12"}`}>
           <Photo src={vendome.url} alt={t("La place Vendôme à Paris")} hero eager className="absolute inset-0 h-full w-full" />
@@ -196,10 +197,10 @@ function MemberHome() {
               {heroTitle[0]}{" "}
             </Title>
             <p className="mt-6 hidden max-w-[520px] text-[18px] leading-7 text-foreground/90 lg:block">
-              {t("Suivez vos demandes, découvrez nos offres, ou écrivez à votre concierge.")}
+              {t("Suivez vos demandes et vos privilèges, ou contactez votre concierge en un geste.")}
             </p>
             <div className="mt-[22px] lg:mt-7 lg:flex lg:flex-wrap lg:gap-3">
-              <PillAction asChild light className="w-full lg:w-auto">
+              <PillAction asChild light plus className="w-full lg:w-auto">
                 <Link to="/demandes/nouvelle" search={{ offer: undefined }}>
                   {t("Nouvelle demande")}
                 </Link>
@@ -239,7 +240,7 @@ function MemberHome() {
           <Link to="/membership" className={`${tile} border border-foreground/16 bg-glass text-foreground lg:border-0 lg:bg-panel`}>
             <span className="flex items-start justify-between gap-2"><MiniMember profile={profile} /><Ring className="hidden lg:flex" /></span>
             <span>
-              <span className="eyebrow block text-[11px] text-muted-foreground">{t("Membership")}</span>
+              <span className="eyebrow block whitespace-nowrap text-[10px] text-muted-foreground lg:text-[11px]">{t("Membership")}</span>
               <span className="mt-1.5 block text-[20px] leading-tight tracking-[-0.025em] lg:text-[28px]">{t("Votre carte")}</span>
             </span>
           </Link>
@@ -249,7 +250,7 @@ function MemberHome() {
                 <span className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground"><MessageCircle className="size-4" /></span>
               </span>
               <span>
-                <span className="eyebrow block text-[11px] text-muted-foreground">{t("Votre concierge")}</span>
+                <span className="eyebrow block whitespace-nowrap text-[10px] text-muted-foreground lg:text-[11px]">{t("Votre concierge")}</span>
                 <span className="mt-1.5 block text-[18px] leading-tight tracking-[-0.02em] lg:text-[28px]">{t("Écrire à")} {conciergeFirstName}</span>
               </span>
             </a>
@@ -257,7 +258,7 @@ function MemberHome() {
         </section>
 
         {/* Mobile : offres en carrousel */}
-        <section className="mt-6 lg:hidden">
+        <section className="mt-6 min-w-0 lg:hidden">
           <div className="flex items-end justify-between gap-3 px-2 pb-4">
             <Title as="h2" italic={offersTitle[1]} className="text-[34px] leading-[1.04] text-primary">
               {offersTitle[0]}{" "}

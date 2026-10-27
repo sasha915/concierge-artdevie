@@ -57,8 +57,8 @@ export function RequestCard({
         to="/demandes/$requestId"
         params={{ requestId: item.id }}
         className={cn(
-          "relative block h-[404px] overflow-hidden rounded-card text-foreground transition-transform active:scale-[0.99] lg:h-[430px]",
-          desktop && "lg:h-full lg:min-h-[620px]",
+          "relative block h-[400px] overflow-hidden rounded-card text-foreground transition-transform active:scale-[0.99] lg:h-[430px]",
+          desktop && "lg:h-full lg:min-h-[600px]",
         )}
       >
         <Photo
@@ -67,23 +67,25 @@ export function RequestCard({
           category={item.category}
           className="absolute inset-0 h-full w-full"
         />
-        <div className="absolute inset-x-4 top-4 flex items-start justify-between gap-3">
-          <span className="dark-glass inline-flex h-[30px] items-center rounded-full px-3 text-[11px] font-semibold uppercase tracking-[0.13em]">
-            {t(item.category)}
+        {/* Maquette V4 : marges de 12 px, panneau verre 16/18 px, titre 30 px sur une ligne. */}
+        <div className={cn("absolute inset-x-3 top-3 flex items-start justify-between gap-3", desktop && "lg:inset-x-4 lg:top-4")}>
+          <span className={cn("dark-glass inline-flex h-[30px] items-center whitespace-nowrap rounded-full px-3 text-[11px] font-semibold uppercase tracking-[0.13em]", desktop && "lg:h-[34px] lg:px-3.5 lg:text-[12px]")}>
+            <span className={desktop ? "lg:hidden" : undefined}>( {t(item.category)} )</span>
+            {desktop && <span className="hidden lg:inline">{t(item.category)}</span>}
           </span>
           <span className="flex shrink-0 items-center gap-2">{isNew && <NewMark onPhoto />}<StatusBadge status={item.status} onPhoto /></span>
         </div>
         <div
           className={cn(
-            "dark-glass absolute inset-x-4 bottom-4 rounded-[20px] p-5",
+            "dark-glass absolute inset-x-3 bottom-3 rounded-[20px] px-[18px] pb-[18px] pt-4",
             desktop && "lg:inset-x-6 lg:bottom-6 lg:max-w-[520px] lg:p-6",
           )}
         >
           <div className="flex items-center justify-between gap-3">
             <p className="text-[13px] text-muted-foreground">{formatRequestDate(item)}</p>
           </div>
-          <h2 className={cn("v3-card-title mt-5 text-[29px]", desktop && "lg:text-[40px]")}>{item.title}</h2>
-          <div className="mt-5">
+          <h2 className={cn("mt-2 text-[30px] leading-[1.06] tracking-[-0.04em]", desktop && "lg:text-[40px]")}>{item.title}</h2>
+          <div className="mt-4">
             <StatusTimeline status={item.status} dark />
           </div>
         </div>
@@ -113,7 +115,7 @@ export function RequestCard({
         />
         <div className="min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <span className="eyebrow text-primary">{t(item.category)}</span>
+            <span className="eyebrow text-muted-foreground">{t(item.category)}</span>
             <span className="flex shrink-0 flex-wrap items-center justify-end gap-2">{isNew && <NewMark />}<StatusBadge status={item.status} /></span>
           </div>
           <h2 className={cn("v3-card-title mt-2.5 text-[21px] leading-[1.14]", desktop && "lg:text-[26px]")}>{item.title}</h2>
@@ -125,6 +127,33 @@ export function RequestCard({
           )}
         </div>
       </div>
+    </Link>
+  );
+}
+
+/**
+ * Ligne de demande du panneau de droite (ordinateur, maquette V4) : vignette 104 × 128,
+ * catégorie et statut, titre 26 px, date, suivi ; séparée de la suivante par un filet.
+ */
+export function RequestRow({ item }: { item: RequestItem }) {
+  const { data: unread = [] } = useQuery(unreadRequestNotificationsQuery);
+  const cancelled = item.status === "Annulée";
+  return (
+    <Link
+      to="/demandes/$requestId"
+      params={{ requestId: item.id }}
+      className={cn("flex gap-[18px] border-b border-foreground/16 py-[18px] text-foreground last:border-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", cancelled && "text-muted-foreground")}
+    >
+      <Photo src={imageFor(item.image_key)} alt={item.title} category={item.category} className={cn("h-[128px] w-[104px] shrink-0 rounded-[16px]", cancelled && "opacity-60")} />
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center justify-between gap-2.5">
+          <span className="text-[12px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">( {t(item.category)} )</span>
+          <span className="flex shrink-0 items-center gap-2">{unread.includes(item.id) && <NewMark />}<StatusBadge status={item.status} /></span>
+        </span>
+        <span className="mt-3 block text-[26px] leading-[1.12] tracking-[-0.03em]">{item.title}</span>
+        <span className="mt-1.5 block text-[14px] leading-5 text-muted-foreground">{formatDate(item.scheduled_date)}</span>
+        {!cancelled && <span className="mt-3.5 block"><StatusTimeline status={item.status} dark /></span>}
+      </span>
     </Link>
   );
 }

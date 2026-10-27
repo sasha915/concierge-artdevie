@@ -1,5 +1,5 @@
 import { cloneElement, isValidElement, useEffect, useState, type ReactNode } from "react";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { RequestStatus } from "@/data/art-de-vie";
@@ -51,9 +51,13 @@ export function ArrowCircle({
 export function PillAction({
   children,
   light = false,
+  plus = false,
   ...props
-}: React.ComponentProps<typeof Button> & { light?: boolean }) {
-  const arrow = <ArrowCircle className="size-9 bg-primary-foreground text-primary" />;
+}: React.ComponentProps<typeof Button> & { light?: boolean; plus?: boolean }) {
+  // « Nouvelle demande » de l'accueil : cercle « + » de la maquette V4 ; ailleurs, la flèche.
+  const arrow = plus ? (
+    <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-foreground text-primary"><Plus className="size-4" strokeWidth={2} /></span>
+  ) : <ArrowCircle className="size-9 bg-primary-foreground text-primary" />;
   const content =
     props.asChild && isValidElement<{ children?: ReactNode }>(children) ? (
       cloneElement(children, {}, children.props.children, arrow)
