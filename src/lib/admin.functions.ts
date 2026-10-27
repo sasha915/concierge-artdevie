@@ -400,7 +400,7 @@ export const setRequestReply = createServerFn({ method: "POST" })
     const { data: row, error } = await admin.from("requests").update(replyUpdate(data.reply)).eq("id", data.id).select("id").maybeSingle();
     if (error || !row) return { ok: false as const, reason: "La réponse n’a pas pu être enregistrée." };
     const { error: eventError } = await admin.from("request_events").insert({ request_id: data.id, actor_id: (context as Ctx).userId, kind: data.reply.trim() ? "réponse publiée" : "réponse retirée", detail: null });
-    if (data.reply.trim()) await notifyMember(admin, data.id, "réponse", (title, tr) => tr("Notre conciergerie a répondu à votre demande « {title} ».", { title }));
+    if (data.reply.trim()) await notifyMember(admin, data.id, "réponse", (title, tr) => tr("Nous avons répondu à votre demande « {title} ».", { title }));
     if (eventError) return { ok: false as const, reason: "La réponse a été enregistrée, mais son historique n’a pas pu être enregistré. Rechargez la demande." };
     return { ok: true as const };
   });
@@ -1054,7 +1054,7 @@ export const sendTeamMessage = createServerFn({ method: "POST" })
     const { error } = await admin.from("request_messages").insert({ request_id: data.requestId, author_id: (context as Ctx).userId, author_role: "équipe", body: data.body });
     if (error) return { ok: false as const, reason: "Le message n’a pas pu être envoyé." };
     await logEvent(admin, { request_id: data.requestId, actor_id: (context as Ctx).userId, kind: "message envoyé", detail: null });
-    await notifyMember(admin, data.requestId, "message", (title, tr) => tr("Notre conciergerie vous a écrit au sujet de « {title} ».", { title }));
+    await notifyMember(admin, data.requestId, "message", (title, tr) => tr("Nous vous avons écrit au sujet de « {title} ».", { title }));
     return { ok: true as const };
   });
 
@@ -1244,7 +1244,7 @@ export const sendProposal = createServerFn({ method: "POST" })
       return { ok: false as const, reason: "La proposition n’a pas pu être envoyée." };
     }
     await logEvent(admin, { request_id: data.requestId, actor_id: (context as Ctx).userId, kind: "proposition envoyée", detail: `${data.options.length} option${data.options.length > 1 ? "s" : ""}` });
-    await notifyMember(admin, data.requestId, "proposition", (title, tr) => data.options.length > 1 ? tr("Notre conciergerie vous propose {n} options pour « {title} ».", { n: data.options.length, title }) : tr("Notre conciergerie vous propose une option pour « {title} ».", { title }));
+    await notifyMember(admin, data.requestId, "proposition", (title, tr) => data.options.length > 1 ? tr("Nous vous proposons {n} options pour « {title} ».", { n: data.options.length, title }) : tr("Nous vous proposons une option pour « {title} ».", { title }));
     return { ok: true as const };
   });
 
@@ -1368,7 +1368,7 @@ export const resendProposal = createServerFn({ method: "POST" })
     const { count } = await admin.from("request_proposal_options").select("id", { count: "exact", head: true }).eq("proposal_id", proposal.id);
     const n = count ?? 1;
     await logEvent(admin, { request_id: proposal.request_id, actor_id: (context as Ctx).userId, kind: "proposition renvoyée", detail: null });
-    await notifyMember(admin, proposal.request_id, "proposition", (title, tr) => n > 1 ? tr("Notre conciergerie vous propose {n} options pour « {title} ».", { n, title }) : tr("Notre conciergerie vous propose une option pour « {title} ».", { title }));
+    await notifyMember(admin, proposal.request_id, "proposition", (title, tr) => n > 1 ? tr("Nous vous proposons {n} options pour « {title} ».", { n, title }) : tr("Nous vous proposons une option pour « {title} ».", { title }));
     return { ok: true as const };
   });
 

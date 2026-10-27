@@ -27,7 +27,7 @@ export function InactiveAccess() {
         <Logo inverse className="h-[22px] w-auto" />
         <Title italic={tPair("Accès", "inactif.")[1]} className="mt-10 text-[44px] lg:text-[64px]">{tPair("Accès", "inactif.")[0]} </Title>
         <p className="mt-5 text-[15px] leading-6 text-muted-foreground lg:text-[18px] lg:leading-7">
-          {t("Ce compte n’a pas, ou plus, d’accès actif à l’espace Art de Vie. Pour toute question, adressez-vous à notre conciergerie ou au membre qui vous l’avait ouvert.")}
+          {t("Ce compte n’a pas, ou plus, d’accès actif à l’espace Art de Vie. Pour toute question, écrivez-nous ou adressez-vous au membre qui vous l’avait ouvert.")}
         </p>
         <PillAction type="button" className="mt-8" onClick={() => void signOut()}>{t("Se déconnecter")}</PillAction>
       </div>
@@ -62,7 +62,7 @@ export function DelegateHome({ delegation }: { delegation: DelegationInfo }) {
           <p className="eyebrow mb-3.5 text-muted-foreground">{t("Proche autorisé")}</p>
           <Title italic={tail} className="text-[46px] leading-[0.98] lg:text-[clamp(56px,6vw,96px)]">{head} </Title>
           <p className="mt-[22px] max-w-[620px] border-t border-foreground/24 pt-[18px] text-[15px] leading-[23px] text-muted-foreground lg:border-0 lg:pt-0 lg:text-[18px] lg:leading-7">
-            {t("Vous faites des demandes au nom de {name}. Chacune lui est signalée et transmise à notre conciergerie, qui vous répond ici.", { name: delegation.memberName })}
+            {t("Vous faites des demandes au nom de {name}. Chacune lui est signalée et nous est transmise ; nous vous répondons ici.", { name: delegation.memberName })}
           </p>
           <NewRequestButton className="mt-7 w-full lg:w-fit" />
         </div>
@@ -222,14 +222,14 @@ export function DelegateRequestDetail({ requestId, delegation }: { requestId: st
                 return (
                   <li key={m.id} className={right ? "ml-auto max-w-[88%] text-right lg:max-w-[78%]" : "mr-auto max-w-[88%] lg:max-w-[78%]"}>
                     <p className={`whitespace-pre-line break-words rounded-[18px] p-4 text-left text-[14px] leading-6 lg:text-[16px] lg:leading-7 ${right ? "rounded-br-[4px] bg-primary text-primary-foreground" : "rounded-bl-[4px] border border-foreground/24 bg-foreground/14"}`}>{m.body}</p>
-                    <p className="mt-1 px-1 text-[11px] text-muted-foreground">{mine ? t("Vous") : m.from === "membre" ? memberFirst : t("Notre conciergerie")} · {stamp(m.created_at)}</p>
+                    <p className="mt-1 px-1 text-[11px] text-muted-foreground">{mine ? t("Vous") : m.from === "membre" ? memberFirst : t("Art de Vie")} · {stamp(m.created_at)}</p>
                   </li>
                 );
               })}
             </ol>
             {!cancelled && (
               <form onSubmit={submit} className="mt-5 flex items-end gap-2">
-                <label htmlFor="delegate-reply" className="sr-only">{t("Répondre à notre conciergerie")}</label>
+                <label htmlFor="delegate-reply" className="sr-only">{t("Votre message")}</label>
                 <Textarea id="delegate-reply" value={text} onChange={(e) => setText(e.target.value)} maxLength={4000} rows={1} placeholder={t("Répondre…")} className="min-h-12 flex-1 resize-none rounded-[22px] bg-card py-3" />
                 <Button type="submit" size="icon" disabled={busy || !text.trim()} aria-label={t("Envoyer")} className="size-12 shrink-0 rounded-full"><ArrowUp className="size-5" /></Button>
               </form>

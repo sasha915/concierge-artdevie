@@ -56,7 +56,7 @@ function Page() {
         return;
       }
       await queryClient.invalidateQueries({ queryKey: ["welcome"] });
-      toast.success(t("Merci. Vos réponses sont transmises à notre conciergerie."));
+      toast.success(t("Merci. Vos réponses nous sont transmises."));
       await navigate({ to: "/", replace: true });
     } catch {
       toast.error(t("Vos réponses n’ont pas pu être enregistrées."));

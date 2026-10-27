@@ -63,7 +63,7 @@ function Page() {
     </section>
     <section className="mt-[22px] lg:mt-16 rounded-[28px] bg-panel p-5 sm:p-8 lg:mx-4 lg:p-10"><h2 className="v3-card-title text-[28px] text-primary lg:text-[clamp(38px,4.44vw,64px)]">{t("Notifications")}</h2>
       <div className="flex items-center gap-5 border-b border-primary/25 py-5"><div className="flex-1"><p id="notify-requests" className="text-sm font-medium">{t("Suivi de mes demandes")}</p><p className="mt-1 text-xs text-muted-foreground">{t("Recevoir chaque évolution importante")}</p></div><Switch aria-labelledby="notify-requests" checked={profile?.notify_requests ?? true} onCheckedChange={(v) => void update({ notify_requests: v })}/></div>
-      <div className="flex items-center gap-5 py-5 pb-0"><div className="flex-1"><p id="notify-messages" className="text-sm font-medium">{t("Messages de notre conciergerie")}</p><p className="mt-1 text-xs text-muted-foreground">{t("Être averti des nouveaux messages")}</p></div><Switch aria-labelledby="notify-messages" checked={profile?.notify_messages ?? true} onCheckedChange={(v) => void update({ notify_messages: v })}/></div>
+      <div className="flex items-center gap-5 py-5 pb-0"><div className="flex-1"><p id="notify-messages" className="text-sm font-medium">{t("Messages de votre conciergerie")}</p><p className="mt-1 text-xs text-muted-foreground">{t("Être averti des nouveaux messages")}</p></div><Switch aria-labelledby="notify-messages" checked={profile?.notify_messages ?? true} onCheckedChange={(v) => void update({ notify_messages: v })}/></div>
     </section>
   </div></AppShell>;
 }

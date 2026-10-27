@@ -209,14 +209,14 @@ function Exchanges({ requestId, description, cancelled }: { requestId: string; d
           return (
             <li key={m.id} className={fromClient ? "ml-auto max-w-[88%] text-right lg:max-w-[78%]" : "mr-auto max-w-[88%] lg:max-w-[78%]"}>
               <p className={`whitespace-pre-line break-words rounded-[18px] p-4 text-left text-[14px] leading-6 lg:text-[16px] lg:leading-7 ${fromClient ? "rounded-br-[4px] bg-primary text-primary-foreground" : "rounded-bl-[4px] border border-foreground/24 bg-foreground/14"}`}>{m.body}</p>
-              <p className="mt-1 px-1 text-[11px] text-muted-foreground">{mine ? t("Vous") : delegateName ?? t("Notre conciergerie")} · {stamp(m.created_at)}</p>
+              <p className="mt-1 px-1 text-[11px] text-muted-foreground">{mine ? t("Vous") : delegateName ?? t("Votre conciergerie")} · {stamp(m.created_at)}</p>
             </li>
           );
         })}
       </ol>
       {!cancelled && (
         <form onSubmit={submit} className="mt-5 flex items-end gap-2">
-          <label htmlFor="member-reply" className="sr-only">{t("Répondre à notre conciergerie")}</label>
+          <label htmlFor="member-reply" className="sr-only">{t("Répondre à votre conciergerie")}</label>
           <Textarea id="member-reply" value={text} onChange={(e) => setText(e.target.value)} maxLength={4000} rows={1} placeholder={t("Répondre…")} className="min-h-12 flex-1 resize-none rounded-[22px] bg-card py-3" />
           <Button type="submit" size="icon" disabled={busy || !text.trim()} aria-label={t("Envoyer")} className="size-12 shrink-0 rounded-full">
             <ArrowUp className="size-5" />
@@ -296,7 +296,7 @@ function RequestActions({ item }: { item: RequestItem }) {
     <section className="mt-3 grid gap-3">
       {pending && (
         <p role="status" className="rounded-[22px] bg-panel p-4 text-[13px] leading-5 text-primary">
-          {t("Modification demandée · {type}. Notre conciergerie vous confirme la modification ; d’ici là, votre demande reste telle qu’elle est.", { type: t(changeKindLabel(pending.kind)) })}
+          {t("Modification demandée · {type}. Nous vous confirmerons la modification ; d’ici là, votre demande reste telle qu’elle est.", { type: t(changeKindLabel(pending.kind)) })}
         </p>
       )}
       {!pending && lastDecided && (
@@ -347,7 +347,7 @@ function CancelBlock({ item }: { item: RequestItem }) {
     try {
       const res = await cancel({ data: { requestId: item.id } });
       if (!res.ok) { toast.error(t(res.reason)); return; }
-      toast.success(res.mode === "annulée" ? t("Votre demande est annulée.") : t("Votre demande d’annulation est transmise à notre conciergerie."));
+      toast.success(res.mode === "annulée" ? t("Votre demande est annulée.") : t("Votre demande d’annulation nous est transmise."));
       setOpen(false);
       await queryClient.invalidateQueries({ queryKey: ["requests"] });
     } catch {
@@ -370,7 +370,7 @@ function CancelBlock({ item }: { item: RequestItem }) {
       <p id={`cancel-${item.id}`} className="text-[14px] leading-6">
         {immediate
           ? t("Annuler « {title} » ? Rien n’ayant encore été engagé, l’annulation est immédiate.", { title: item.title })
-          : t("Annuler « {title} » ? La demande étant déjà prise en charge, notre conciergerie confirme l’annulation et vous informe d’éventuels frais.", { title: item.title })}
+          : t("Annuler « {title} » ? La demande étant déjà prise en charge, nous vous confirmerons l’annulation et vous informerons d’éventuels frais.", { title: item.title })}
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         <Button type="button" size="sm" disabled={busy} onClick={() => void confirm()}>{immediate ? t("Annuler la demande") : t("Demander l’annulation")}</Button>
@@ -396,7 +396,7 @@ function ReviewBlock({ requestId, category }: { requestId: string; category: str
         <h2 className="eyebrow text-primary">{t("Votre avis")}</h2>
         <p className="mt-3 font-display text-[24px] italic">{t(review.rating)}</p>
         {review.comment && <p className="mt-2 whitespace-pre-line text-[14px] leading-6">{review.comment}</p>}
-        <p className="mt-3 text-[12px] text-muted-foreground">{t("Merci, votre avis a été transmis à notre conciergerie.")}</p>
+        <p className="mt-3 text-[12px] text-muted-foreground">{t("Merci, votre avis nous a été transmis.")}</p>
       </div>
     );
 
@@ -441,7 +441,7 @@ function ProposalBanner({ requestId }: { requestId: string }) {
   return (
     <Link to="/demandes/$requestId/proposition" params={{ requestId }} className="mt-3 flex items-center justify-between gap-4 rounded-[28px] bg-primary p-5 text-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:mt-3 lg:p-8">
       <span>
-        <span className="eyebrow block text-background/80">{t("Notre conciergerie vous propose")}</span>
+        <span className="eyebrow block text-background/80">{t("Votre conciergerie vous propose")}</span>
         <span className="mt-2 block text-[20px] lg:text-[26px]">{t(proposalBanner(proposal.options.length))}</span>
       </span>
       <ArrowUp className="size-5 rotate-45" aria-hidden="true" />

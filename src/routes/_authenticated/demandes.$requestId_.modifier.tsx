@@ -18,9 +18,9 @@ export const Route = createFileRoute("/_authenticated/demandes/$requestId_/modif
   head: () => ({
     meta: [
       { title: t("Modifier ma demande — Art de Vie") },
-      { name: "description", content: t("Demandez une modification de votre demande à notre conciergerie.") },
+      { name: "description", content: t("Demandez-nous une modification de votre demande.") },
       { property: "og:title", content: t("Modifier ma demande — Art de Vie") },
-      { property: "og:description", content: t("Demandez une modification de votre demande à notre conciergerie.") },
+      { property: "og:description", content: t("Demandez-nous une modification de votre demande.") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -69,7 +69,7 @@ function Page() {
           <EmptyState>{t("Cette demande est introuvable.")}</EmptyState>
         ) : !canRequestChange(item.status) || pending ? (
           <div className="lg:mx-4">
-            <EmptyState>{pending ? t("Une demande de modification est déjà en cours d’examen par notre conciergerie.") : t("Cette demande ne peut plus être modifiée.")}</EmptyState>
+            <EmptyState>{pending ? t("Nous examinons déjà une demande de modification.") : t("Cette demande ne peut plus être modifiée.")}</EmptyState>
             <Link to="/demandes/$requestId" params={{ requestId }} className="mt-4 inline-block text-[14px] text-primary underline underline-offset-4">{t("Revenir à la demande")}</Link>
           </div>
         ) : (
@@ -92,8 +92,8 @@ function Page() {
               </div>
             </fieldset>
             <label htmlFor="change-body" className="eyebrow mt-6 block text-primary">{t("Précisions")}</label>
-            <Textarea id="change-body" value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000} rows={4} className="mt-3" placeholder={kind === "annulation" ? t("Un mot pour notre conciergerie (facultatif)") : t("Nouvelle date, nombre de couverts, précision…")} />
-            <p className="mt-4 text-[13px] leading-5 text-muted-foreground">{t("Notre conciergerie vous confirme la modification. D’ici là, votre demande reste telle qu’elle est.")}</p>
+            <Textarea id="change-body" value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000} rows={4} className="mt-3" placeholder={kind === "annulation" ? t("Un mot à notre intention (facultatif)") : t("Nouvelle date, nombre de couverts, précision…")} />
+            <p className="mt-4 text-[13px] leading-5 text-muted-foreground">{t("Nous vous confirmerons la modification. D’ici là, votre demande reste telle qu’elle est.")}</p>
             {error && <p role="alert" className="mt-4 rounded-2xl bg-panel p-4 text-xs leading-5">{error}</p>}
             <PillAction type="submit" className="mt-6 w-full sm:max-w-sm" disabled={busy}>{busy ? t("Envoi en cours") : t("Envoyer la demande")}</PillAction>
           </form>

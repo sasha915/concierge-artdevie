@@ -43,9 +43,9 @@ export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: t("Accueil — Art de Vie") },
-      { name: "description", content: t("Notre conciergerie privée : vos demandes et nos offres.") },
+      { name: "description", content: t("Votre conciergerie privée : vos demandes et nos offres.") },
       { property: "og:title", content: t("Accueil — Art de Vie") },
-      { property: "og:description", content: t("Notre conciergerie privée : vos demandes et nos offres.") },
+      { property: "og:description", content: t("Votre conciergerie privée : vos demandes et nos offres.") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

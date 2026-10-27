@@ -403,7 +403,7 @@ function Page() {
               </dl>
             </div>
             <p className="mt-5 text-[13px] leading-5 text-muted-foreground lg:col-span-5 lg:mt-0 lg:self-end lg:border-t lg:border-primary/25 lg:pt-6 lg:text-[18px] lg:leading-7">
-              {t("Votre demande sera transmise à notre conciergerie dès l’envoi.")}
+              {t("Votre demande nous sera transmise dès l’envoi.")}
             </p>
             {error && (
               <p role="alert" className="mt-4 rounded-[18px] lg:col-span-5 bg-panel p-4 text-xs leading-5 text-primary">

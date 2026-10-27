@@ -120,7 +120,7 @@ function Page() {
           </ul>
         )}
         <p className="mt-6 max-w-[560px] text-[14px] leading-6 text-muted-foreground lg:ml-4 lg:max-w-[760px]">
-          {t("Chaque échéance crée une demande que vous suivez comme les autres. Vous pouvez suspendre une série ou y mettre fin à tout moment ; pour en changer le rythme ou l’horaire, écrivez à notre conciergerie.")}
+          {t("Chaque échéance crée une demande que vous suivez comme les autres. Vous pouvez suspendre une série ou y mettre fin à tout moment ; pour en changer le rythme ou l’horaire, écrivez-nous.")}
         </p>
         <div className="mt-5 lg:mx-4">
           <PillAction asChild className="w-full sm:w-auto">

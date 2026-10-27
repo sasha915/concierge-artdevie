@@ -19,9 +19,9 @@ export const Route = createFileRoute("/_authenticated/membership/proches")({
   head: () => ({
     meta: [
       { title: t("Proches autorisés — Art de Vie") },
-      { name: "description", content: t("Permettez à un proche de confier des demandes à notre conciergerie en votre nom.") },
+      { name: "description", content: t("Permettez à un proche de nous confier des demandes en votre nom.") },
       { property: "og:title", content: t("Proches autorisés — Art de Vie") },
-      { property: "og:description", content: t("Permettez à un proche de confier des demandes à notre conciergerie en votre nom.") },
+      { property: "og:description", content: t("Permettez à un proche de nous confier des demandes en votre nom.") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/_authenticated/membership/proches")({
 
 const CAN = [
   "Confier une demande en votre nom",
-  "Suivre les demandes qu’il a faites et échanger avec notre conciergerie à leur sujet",
+  "Suivre les demandes qu’il a faites et échanger avec nous à leur sujet",
 ];
 const CANNOT = [
   "Voir vos autres demandes, vos factures, votre relevé ou votre formule",
@@ -87,7 +87,7 @@ function Page() {
       <div className="mx-auto max-w-3xl lg:max-w-none">
         <SubHeader title="Proches autorisés" close backTo="/membership" />
         <p className="mb-6 max-w-[560px] text-[14px] leading-6 text-muted-foreground lg:ml-4 lg:max-w-[760px] lg:text-[18px] lg:leading-7">
-          {t("Un proche, votre agent ou votre assistant peut confier des demandes à notre conciergerie en votre nom, avec son propre accès. Vous êtes prévenu de chacune, et vous pouvez retirer cet accès à tout moment.")}
+          {t("Un proche, votre agent ou votre assistant peut nous confier des demandes en votre nom, avec son propre accès. Vous êtes prévenu de chacune, et vous pouvez retirer cet accès à tout moment.")}
         </p>
 
         <section className="grid gap-3 lg:mx-4 lg:grid-cols-2 lg:gap-4">
