@@ -141,8 +141,8 @@ function Page() {
         <Field label="Adresse email"><Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} required maxLength={160} /></Field>
         <Field label="Téléphone"><Input value={form.phone} onChange={(e) => set("phone", e.target.value)} maxLength={40} /></Field>
         <Field label="Formule"><PlanSelect value={form.plan} onChange={(v) => set("plan", v)} /></Field>
-        <Field label="Concierge attribué"><Input value={form.conciergeReferent} onChange={(e) => set("conciergeReferent", e.target.value)} maxLength={60} /></Field>
-        <Field label="WhatsApp du concierge attribué"><Input type="tel" value={form.conciergeWhatsapp} onChange={(e) => set("conciergeWhatsapp", e.target.value)} required={form.conciergeReferent.trim().length > 0} pattern="[+0-9 ().-]{8,30}" maxLength={30} /></Field>
+        <Field label={form.plan === "Signature" ? "Concierge attribué (obligatoire en Signature)" : "Concierge attribué"}><Input value={form.conciergeReferent} onChange={(e) => set("conciergeReferent", e.target.value)} required={form.plan === "Signature" || form.conciergeWhatsapp.trim().length > 0} maxLength={60} /></Field>
+        <Field label={form.plan === "Signature" ? "WhatsApp du concierge attribué (obligatoire en Signature)" : "WhatsApp du concierge attribué"}><Input type="tel" value={form.conciergeWhatsapp} onChange={(e) => set("conciergeWhatsapp", e.target.value)} required={form.plan === "Signature" || form.conciergeReferent.trim().length > 0} pattern="[+0-9 ().-]{8,30}" maxLength={30} /></Field>
       </div>
       <Button type="submit" variant="primary" size="lg" className="mt-6 w-full" disabled={busy}>{busy ? "Création…" : "Créer le membre"}</Button>
     </form>
