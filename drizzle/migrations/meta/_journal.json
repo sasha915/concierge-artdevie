@@ -239,6 +239,13 @@
       "when": 1793306400000,
       "tag": "0033_disabled_accounts_and_alerts",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793310000000,
+      "tag": "0034_timezone_amount_lock_request_checks",
+      "breakpoints": true
     }
   ]
 }

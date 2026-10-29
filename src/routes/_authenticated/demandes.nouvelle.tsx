@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { getTimeZone, guestsIssue, scheduleIssue, todayIn } from "@/lib/timezone";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Check, X } from "lucide-react";
@@ -36,9 +37,17 @@ const cats = [
 const surMesure = { name: "Sur mesure", note: "Billetterie, intendance, démarches", imageKey: "sur-mesure" } as const;
 const allCats = [...cats, surMesure];
 
-/** Date du jour à Paris, pour interdire une date passée. */
+/** Date du jour dans la ville du membre, pour interdire une date passée. */
 function todayIso(): string {
-  return new Intl.DateTimeFormat("fr-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  return todayIn();
+}
+
+/** Raisons de refus renvoyées par la base (contrôles serveur), en clair. */
+function rejectionMessage(message: string | undefined): string {
+  if (/date_passee/.test(message ?? "")) return t("La date souhaitée est déjà passée.");
+  if (/heure_passee/.test(message ?? "")) return t("L’heure souhaitée est déjà passée.");
+  if (/couverts_invalides/.test(message ?? "")) return t("Indiquez un nombre de personnes entre 1 et 500.");
+  return t("L’envoi a échoué. Réessayez dans un instant.");
 }
 
 export const Route = createFileRoute("/_authenticated/demandes/nouvelle")({
@@ -154,7 +163,7 @@ function Page() {
     if (insertError && insertError.code !== "23505") {
       sending.current = false;
       setBusy(false);
-      setError(t("L’envoi a échoué. Réessayez dans un instant."));
+      setError(rejectionMessage(insertError.message));
       return;
     }
     const data = { id: draftId.current };
@@ -299,6 +308,8 @@ function Page() {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (date && date < todayIso()) { setStepError(t("La date souhaitée est déjà passée.")); return; }
+                if (scheduleIssue(date, time, getTimeZone()) === "heure_passee") { setStepError(t("L’heure souhaitée est déjà passée.")); return; }
+                if (guestsIssue(guests ? Number(guests) : null)) { setStepError(t("Indiquez un nombre de personnes entre 1 et 500.")); return; }
                 if (rhythm !== "aucune" && !date) { setStepError(t("Indiquez la date de la première échéance.")); return; }
                 if (rhythm === "dates" && extraDates.length === 0) { setStepError(t("Ajoutez au moins une autre date.")); return; }
                 setStepError(null);

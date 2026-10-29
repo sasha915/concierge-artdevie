@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { getTimeZone } from "@/lib/timezone";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -157,7 +158,7 @@ function Detail({ label, value }: { label: string; value: string }) {
 }
 
 function stamp(iso: string) {
-  return new Date(iso).toLocaleString(locale(), { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleString(locale(), { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: getTimeZone() });
 }
 
 /** Lot 5.1 — fil d'échanges : messages du membre à droite, de la conciergerie à gauche dans la bulle violette. */
@@ -256,7 +257,7 @@ function Documents({ requestId }: { requestId: string }) {
             <FileText className="size-5 shrink-0" aria-hidden="true" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[14px] font-medium lg:text-[16px]">{f.name}</p>
-              <p className="mt-0.5 text-[12px] text-muted-foreground">{t(FILE_TYPES[f.mime]?.label ?? "Fichier")} · {fileSizeLabel(f.size, getLang())} · {new Date(f.created_at).toLocaleDateString(locale(), { day: "numeric", month: "long" })}</p>
+              <p className="mt-0.5 text-[12px] text-muted-foreground">{t(FILE_TYPES[f.mime]?.label ?? "Fichier")} · {fileSizeLabel(f.size, getLang())} · {new Date(f.created_at).toLocaleDateString(locale(), { day: "numeric", month: "long", timeZone: getTimeZone() })}</p>
             </div>
             <Button type="button" variant="icon" size="icon" disabled={busy === f.id} onClick={() => download(f.id)} aria-label={t("Télécharger {name}", { name: f.name })}>
               <Download />

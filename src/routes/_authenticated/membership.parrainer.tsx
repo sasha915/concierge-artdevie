@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { referralsQuery } from "@/lib/adv-queries";
 import { sendReferralInvite } from "@/lib/referrals.functions";
 import { formatShortDate } from "@/data/art-de-vie";
+import { dayOf } from "@/lib/timezone";
 import { PillAction } from "@/components/art-de-vie/v3";
 import { t } from "@/lib/i18n";
 import { LabeledField } from "@/components/art-de-vie/field";
@@ -66,7 +67,7 @@ function Page() {
             <div key={r.id} className="flex items-center gap-4 border-b border-primary/25 py-5 last:border-0">
               <div className="min-w-0 flex-1">
                 <p className="v3-card-title truncate text-[19px] text-primary">{r.full_name}</p>
-                <p className="mt-1 truncate text-[12px] text-muted-foreground">{r.email} · {formatShortDate(r.created_at.slice(0, 10))}</p>
+                <p className="mt-1 truncate text-[12px] text-muted-foreground">{r.email} · {formatShortDate(dayOf(r.created_at))}</p>
               </div>
               <span className="shrink-0 rounded-full bg-panel px-[13px] py-[5px] text-[12px] font-medium text-primary">{r.status === "Converti" ? t("Devenu membre") : r.status === "Contacté" ? t("Contacté par notre équipe") : t("Transmise")}</span>
             </div>

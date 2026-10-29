@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { getTimeZone } from "@/lib/timezone";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -52,7 +53,9 @@ function asItem(r: { status: string } & Omit<RequestItem, "status">): RequestIte
 /** Accueil du proche : pour qui il agit, ses demandes, une nouvelle demande. */
 export function DelegateHome({ delegation }: { delegation: DelegationInfo }) {
   const { data: requests = [], isLoading } = useQuery(delegateRequestsQuery);
-  const [head, tail] = tPair("Bonjour", `${firstName(delegation.delegateName)}.`);
+  // Le prénom n'est pas une clé du dictionnaire : seule la salutation est traduite.
+  const head = t("Bonjour");
+  const tail = `${firstName(delegation.delegateName)}.`;
   const open = requests.filter((r) => r.status !== "Terminée" && r.status !== "Annulée");
   return (
     <AppShell>
@@ -115,7 +118,7 @@ export function DelegateRequestsList() {
 }
 
 function stamp(iso: string) {
-  return new Date(iso).toLocaleString(locale(), { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleString(locale(), { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: getTimeZone() });
 }
 
 /** Suivi d'une demande du proche : statut, échanges, documents ; jamais de proposition ni de montant. */
@@ -222,7 +225,7 @@ export function DelegateRequestDetail({ requestId, delegation }: { requestId: st
                 return (
                   <li key={m.id} className={right ? "ml-auto max-w-[88%] text-right lg:max-w-[78%]" : "mr-auto max-w-[88%] lg:max-w-[78%]"}>
                     <p className={`whitespace-pre-line break-words rounded-[18px] p-4 text-left text-[14px] leading-6 lg:text-[16px] lg:leading-7 ${right ? "rounded-br-[4px] bg-primary text-primary-foreground" : "rounded-bl-[4px] border border-foreground/24 bg-foreground/14"}`}>{m.body}</p>
-                    <p className="mt-1 px-1 text-[11px] text-muted-foreground">{mine ? t("Vous") : m.from === "membre" ? memberFirst : t("Art de Vie")} · {stamp(m.created_at)}</p>
+                    <p className="mt-1 px-1 text-[11px] text-muted-foreground">{mine ? t("Vous") : m.from === "membre" ? memberFirst : t("Votre conciergerie")} · {stamp(m.created_at)}</p>
                   </li>
                 );
               })}

@@ -6,6 +6,8 @@ export type Delegation = {
   fullName: string;
   memberName: string;
   language: "fr" | "en";
+  /** Fuseau du membre : le proche lit les horodatages à la même heure que lui. */
+  timezone: string;
 };
 
 /**
@@ -20,9 +22,9 @@ export async function delegationOf(admin: any, userId: string): Promise<Delegati
     .eq("status", "actif")
     .maybeSingle();
   if (!row) return null;
-  const { data: member } = await admin.from("profiles").select("full_name, disabled_at, language").eq("id", row.member_id).maybeSingle();
+  const { data: member } = await admin.from("profiles").select("full_name, disabled_at, language, timezone").eq("id", row.member_id).maybeSingle();
   if (!member || member.disabled_at) return null;
-  return { id: row.id, memberId: row.member_id, fullName: row.full_name, memberName: member.full_name ?? "", language: member.language === "en" ? "en" : "fr" };
+  return { id: row.id, memberId: row.member_id, fullName: row.full_name, memberName: member.full_name ?? "", language: member.language === "en" ? "en" : "fr", timezone: member.timezone ?? "Europe/Paris" };
 }
 
 /** Retire un accès : effet immédiat (les fonctions de proche vérifient le statut à chaque appel) et connexion bloquée. */

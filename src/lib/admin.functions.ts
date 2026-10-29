@@ -124,7 +124,7 @@ export const getMemberDetail = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { admin, role } = await assertTeam(context as Ctx);
     const [{ data: profile }, { data: requests }, { data: invoices }] = await Promise.all([
-      admin.from("profiles").select("id, full_name, email, phone, plan, role_label, member_number, member_since, valid_until, disabled_at, concierge_referent, concierge_whatsapp, language").eq("id", data.id).maybeSingle(),
+      admin.from("profiles").select("id, full_name, email, phone, plan, role_label, member_number, member_since, valid_until, disabled_at, concierge_referent, concierge_whatsapp, language, timezone").eq("id", data.id).maybeSingle(),
       admin.from("requests").select("id, category, status, title, description, scheduled_date, scheduled_time, concierge, image_key").eq("user_id", data.id).order("created_at", { ascending: false }),
       admin.from("invoices").select("id, number, kind, issued_on, amount_cents, status").eq("user_id", data.id).order("issued_on", { ascending: false }),
     ]);
@@ -212,6 +212,21 @@ export const setMemberLanguage = createServerFn({ method: "POST" })
     if (ids.includes(data.id)) return { ok: false as const, reason: "Ce compte appartient à l’équipe." };
     const { data: row, error } = await admin.from("profiles").update({ language: data.language }).eq("id", data.id).select("id").maybeSingle();
     if (error || !row) return { ok: false as const, reason: "La langue n’a pas pu être enregistrée." };
+    return { ok: true as const };
+  });
+
+/** Fuseau horaire du membre (ville proposée dans la liste), modifiable par toute l'équipe. */
+export const setMemberTimezone = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), timezone: z.string().max(64) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { TIMEZONES } = await import("./timezone");
+    if (!TIMEZONES.some((z) => z.id === data.timezone)) return { ok: false as const, reason: "Ce fuseau n’est pas proposé." };
+    const ids = await teamIds(admin);
+    if (ids.includes(data.id)) return { ok: false as const, reason: "Ce compte appartient à l’équipe." };
+    const { data: row, error } = await (admin as any).from("profiles").update({ timezone: data.timezone }).eq("id", data.id).select("id").maybeSingle();
+    if (error || !row) return { ok: false as const, reason: "Le fuseau n’a pas pu être enregistré." };
     return { ok: true as const };
   });
 
@@ -497,6 +512,7 @@ export const createRequestForMember = createServerFn({ method: "POST" })
     if (ids.includes(data.memberId)) return { ok: false as const, reason: "Ce compte appartient à l’équipe." };
     const { data: member } = await admin.from("profiles").select("id, disabled_at").eq("id", data.memberId).maybeSingle();
     if (!member) return { ok: false as const, reason: "Membre introuvable." };
+    if (member.disabled_at) return { ok: false as const, reason: "Le compte de ce membre est désactivé." };
     const resolved = await resolveConcierge(admin, data.conciergeId);
     if (!resolved) return { ok: false as const, reason: "Ce compte ne fait pas partie de l’équipe." };
     if (data.recurrence && !data.scheduledDate) return { ok: false as const, reason: "Indiquez la date de la première échéance pour une demande récurrente." };
@@ -620,8 +636,8 @@ export const listRequestableMembers = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { admin, role } = await assertTeam(context as Ctx);
     const ids = await teamIds(admin);
-    const { data } = await admin.from("profiles").select("id, full_name, email, plan, disabled_at").is("disabled_at", null).order("full_name");
-    return ((data ?? []) as Array<{ id: string; full_name: string; email: string | null; plan: string }>)
+    const data = await fetchAll<{ id: string; full_name: string; email: string | null; plan: string }>((from, to) => admin.from("profiles").select("id, full_name, email, plan").is("disabled_at", null).order("full_name").order("id").range(from, to));
+    return (data as Array<{ id: string; full_name: string; email: string | null; plan: string }>)
       .filter((p) => !ids.includes(p.id))
       .map(({ id, full_name, email, plan }) => ({ id, full_name, email, plan }));
   });
@@ -634,11 +650,13 @@ export const listReferrals = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const admin = await assertAdmin(context as Ctx);
-    const { data: referrals } = await admin
+    const referrals = await fetchAll<Record<string, unknown>>((from, to) => admin
       .from("referrals")
       .select("id, inviter_id, full_name, email, message, status, converted_member_id, created_at")
-      .order("created_at", { ascending: false });
-    const rows = (referrals ?? []) as Array<{ id: string; inviter_id: string; full_name: string; email: string; message: string | null; status: string; converted_member_id: string | null; created_at: string }>;
+      .order("created_at", { ascending: false })
+      .order("id")
+      .range(from, to));
+    const rows = referrals as unknown as Array<{ id: string; inviter_id: string; full_name: string; email: string; message: string | null; status: string; converted_member_id: string | null; created_at: string }>;
     const inviterIds = [...new Set(rows.map((r) => r.inviter_id))];
     const { data: inviters } = inviterIds.length ? await admin.from("profiles").select("id, full_name").in("id", inviterIds) : { data: [] };
     const names = new Map((inviters ?? []).map((p: { id: string; full_name: string }) => [p.id, p.full_name]));
@@ -721,6 +739,19 @@ export const setTeamRole = createServerFn({ method: "POST" })
       const { error: profileError } = await admin.from("profiles").update({ disabled_at: new Date().toISOString() }).eq("id", data.userId);
       if (banError || profileError) return { ok: false as const, reason: "Le rôle est retiré, mais le compte n’a pas pu être désactivé. Désactivez-le depuis sa fiche." };
       await revokeSessions(admin, data.userId);
+      // Ses demandes encore ouvertes repartent « À attribuer », pour qu'aucune ne reste suivie par un compte fermé.
+      const { data: released, error: releaseError } = await admin.from("requests")
+        .update({ concierge: "À attribuer", concierge_id: null })
+        .eq("concierge_id", data.userId)
+        .in("status", ["Nouvelle", "En cours", "Confirmée"])
+        .select("id");
+      if (releaseError) return { ok: false as const, reason: "Le compte est fermé, mais ses demandes n’ont pas pu être remises à attribuer. Réattribuez-les depuis la page Demandes." };
+      const rows = (released ?? []) as Array<{ id: string }>;
+      if (rows.length) {
+        const { error: eventsError } = await admin.from("request_events").insert(rows.map((r) => ({ request_id: r.id, actor_id: (context as Ctx).userId, kind: "attribuée", detail: "À attribuer (collègue retiré de l’équipe)" })));
+        if (eventsError) console.error("[historique] lignes non écrites", eventsError.message);
+      }
+      return { ok: true as const, released: rows.length };
     }
     return { ok: true as const };
   });
@@ -874,6 +905,8 @@ export const setRequestAmount = createServerFn({ method: "POST" })
     const { data: invoice } = await admin.from("invoices").select("id").eq("request_id", data.id).maybeSingle();
     if (invoice) return { ok: false as const, reason: "Une facture existe déjà pour cette demande : le montant ne peut plus être modifié." };
     const { data: row, error } = await admin.from("requests").update({ amount_cents: data.amountCents }).eq("id", data.id).select("id").maybeSingle();
+    // Le verrou en base (montant_facture_verrouille) couvre une facture créée au même instant.
+    if (error && /montant_facture_verrouille/.test(error.message)) return { ok: false as const, reason: "Une facture existe déjà pour cette demande : le montant ne peut plus être modifié." };
     if (error || !row) return { ok: false as const, reason: "Le montant n’a pas pu être enregistré." };
     const { formatAmount } = await import("@/data/art-de-vie");
     await logEvent(admin, { request_id: data.id, actor_id: (context as Ctx).userId, kind: data.amountCents === null ? "montant retiré" : "montant renseigné", detail: data.amountCents === null ? null : formatAmount(data.amountCents) });
@@ -895,7 +928,10 @@ export const createRequestInvoice = createServerFn({ method: "POST" })
     const { data: existing } = await admin.from("invoices").select("id").eq("request_id", data.id).maybeSingle();
     if (existing) return { ok: false as const, reason: "Une facture existe déjà pour cette demande." };
     const { data: member } = await admin.from("profiles").select("plan").eq("id", request.user_id).maybeSingle();
-    const b = invoiceBreakdown(request.amount_cents, member?.plan ?? "Signature");
+    // Sans formule connue, la commission serait fausse : la facture est refusée.
+    const { data: plan } = member?.plan ? await admin.from("membership_plans").select("name").eq("name", member.plan).maybeSingle() : { data: null };
+    if (!plan) return { ok: false as const, reason: "La formule du membre est inconnue : corrigez-la sur sa fiche avant de facturer." };
+    const b = invoiceBreakdown(request.amount_cents, plan.name as string);
     // Numéro et facture dans la même transaction : aucun numéro perdu en cas d'échec ou de double clic.
     const { data: rows, error } = await admin.rpc("create_invoice", {
       _user_id: request.user_id,
@@ -909,8 +945,9 @@ export const createRequestInvoice = createServerFn({ method: "POST" })
     });
     const invoice = (rows as Array<{ id: string; number: string }> | null)?.[0];
     const duplicate = error?.code === "23505" && String(error.message ?? "").includes("invoices_request_id_key");
+    const amountMoved = /montant_modifie_pendant_facturation/.test(String(error?.message ?? ""));
     if (error) console.error("[createRequestInvoice] facture non créée", error.message);
-    if (error || !invoice) return { ok: false as const, reason: duplicate ? "Une facture existe déjà pour cette demande." : "La facture n’a pas pu être créée." };
+    if (error || !invoice) return { ok: false as const, reason: duplicate ? "Une facture existe déjà pour cette demande." : amountMoved ? "Le montant vient d’être modifié : vérifiez-le, puis relancez la facture." : "La facture n’a pas pu être créée." };
     await logEvent(admin, { request_id: request.id, actor_id: (context as Ctx).userId, kind: "facture créée", detail: invoice.number });
     return { ok: true as const, number: invoice.number as string };
   });
@@ -1313,15 +1350,20 @@ export const getAgenda = createServerFn({ method: "GET" })
     const { occurrencesBetween } = await import("./agenda-rules");
     const { todayParis } = await import("./billing-webhook-rules");
     const today = todayParis();
-    const [{ data: requests, error }, { data: rules }, { data: profiles }] = await Promise.all([
-      admin.from("requests").select("id, user_id, title, status, scheduled_date, scheduled_time, concierge_id, recurring_id, created_at").gte("scheduled_date", data.from).lte("scheduled_date", data.to).neq("status", "Annulée"),
-      admin.from("recurring_requests").select("id, user_id, title, rhythm, start_date, dates, end_date, paused, last_occurrence, scheduled_time").eq("paused", false),
-      admin.from("profiles").select("id, full_name"),
-    ]);
-    if (error) throw new Error("L’agenda n’a pas pu être chargé.");
+    // Lecture par pages de 1 000 : aucune ligne de l'agenda n'est tronquée en silence.
+    let requests: any[], rules: any[], profiles: Array<{ id: string; full_name: string }>;
+    try {
+      [requests, rules, profiles] = await Promise.all([
+        fetchAll<any>((from, to) => admin.from("requests").select("id, user_id, title, status, scheduled_date, scheduled_time, concierge_id, recurring_id, created_at").gte("scheduled_date", data.from).lte("scheduled_date", data.to).neq("status", "Annulée").order("scheduled_date").order("id").range(from, to)),
+        fetchAll<any>((from, to) => admin.from("recurring_requests").select("id, user_id, title, rhythm, start_date, dates, end_date, paused, last_occurrence, scheduled_time").eq("paused", false).order("id").range(from, to)),
+        fetchAll<{ id: string; full_name: string }>((from, to) => admin.from("profiles").select("id, full_name").order("id").range(from, to)),
+      ]);
+    } catch {
+      throw new Error("L’agenda n’a pas pu être chargé.");
+    }
     const names = new Map((profiles ?? []).map((p: { id: string; full_name: string }) => [p.id, p.full_name]));
     const items: AgendaItem[] = (requests ?? []).map((r: any) => ({
-      key: r.id, kind: "demande" as const, date: r.scheduled_date, time: r.scheduled_time ? String(r.scheduled_time).slice(0, 5) : null,
+      key: r.id, kind: "demande" as const, date: r.scheduled_date, time: r.scheduled_time ? (/^\d{2}:\d{2}(:\d{2})?$/.test(String(r.scheduled_time)) ? String(r.scheduled_time).slice(0, 5) : String(r.scheduled_time)) : null,
       title: r.title, status: r.status, member_id: r.user_id, member_name: names.get(r.user_id) ?? "", concierge_id: r.concierge_id ?? null, request_id: r.id,
     }));
     const ruleList = (rules ?? []) as Array<any>;
@@ -1352,7 +1394,8 @@ export const getMemberStatement = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), month: z.string().regex(/^\d{4}-\d{2}$/) }).parse(input))
   .handler(async ({ data, context }) => {
-    const { admin } = await assertTeam(context as Ctx);
+    // Montants facturés : réservés aux administrateurs.
+    const admin = await assertAdmin(context as Ctx);
     const { statementLines, STATEMENT_STATUSES } = await import("./member-rules");
     const [{ data: member }, { data: rows, error }] = await Promise.all([
       admin.from("profiles").select("full_name, member_number, language, plan").eq("id", data.id).maybeSingle(),

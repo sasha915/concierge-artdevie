@@ -59,7 +59,8 @@ function Page() {
     setBusy(userId); setNotice(null);
     try {
       const r = await changeRole({ data: { userId, role } });
-      setNotice(r.ok ? { ok: true, text: role ? `${name} est désormais ${ROLE_LABEL[role].toLowerCase()}.` : `${name} ne fait plus partie de l’équipe ; son compte est désactivé.` } : { ok: false, text: r.reason });
+      const released = r.ok && "released" in r && typeof r.released === "number" ? r.released : 0;
+      setNotice(r.ok ? { ok: true, text: role ? `${name} est désormais ${ROLE_LABEL[role].toLowerCase()}.` : `${name} ne fait plus partie de l’équipe ; son compte est désactivé.${released ? ` ${released} demande${released > 1 ? "s" : ""} en cours ${released > 1 ? "sont" : "est"} à réattribuer.` : ""}` } : { ok: false, text: r.reason });
       if (r.ok) await qc.invalidateQueries({ queryKey: ["admin"] });
     } catch { setNotice({ ok: false, text: "L’opération a échoué." }); }
     finally { setBusy(null); }

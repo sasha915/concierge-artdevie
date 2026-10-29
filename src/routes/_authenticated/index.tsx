@@ -21,7 +21,8 @@ import { offersQuery, profileQuery, requestsQuery } from "@/lib/adv-queries";
 import { WELCOME_LATER_KEY } from "@/components/art-de-vie/welcome";
 import vendome from "@/assets/v3/place-vendome.jpg.asset.json";
 import { locale, t, tPair } from "@/lib/i18n";
-import { isActiveRequest, orderForDisplay, todayInParis } from "@/lib/request-order";
+import { isActiveRequest, orderForDisplay } from "@/lib/request-order";
+import { getTimeZone, minutesIn, todayIn } from "@/lib/timezone";
 import { useDelegation } from "@/components/art-de-vie/use-delegation";
 import { DelegateHome } from "@/components/art-de-vie/delegate";
 
@@ -158,12 +159,14 @@ function MemberHome() {
   const { data: profile } = useQuery(profileQuery);
   const [greeting, setGreeting] = useState("Bonjour");
   const [today, setToday] = useState("");
+  // Salutation et date du jour dans la ville du membre.
+  const memberTz = profile?.timezone;
   useEffect(() => {
-    setGreeting(new Date().getHours() < 18 ? "Bonjour" : "Bonsoir");
-    const d = new Date().toLocaleDateString(locale(), { weekday: "long", day: "numeric", month: "long" });
+    setGreeting(minutesIn(getTimeZone()) < 18 * 60 ? "Bonjour" : "Bonsoir");
+    const d = new Date().toLocaleDateString(locale(), { weekday: "long", day: "numeric", month: "long", timeZone: getTimeZone() });
     setToday(d.charAt(0).toUpperCase() + d.slice(1));
-  }, []);
-  const ordered = orderForDisplay(requests, todayInParis());
+  }, [memberTz]);
+  const ordered = orderForDisplay(requests, todayIn());
   const upcoming = ordered.filter(isActiveRequest);
   const nextRequest = upcoming[0];
   const firstName = profile?.full_name?.trim().split(/\s+/)[0] || "";

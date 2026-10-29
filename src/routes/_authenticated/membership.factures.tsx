@@ -86,7 +86,9 @@ function Page() {
       toast.error(t(
         res.reason === "mollie_not_configured"
           ? "Le prélèvement automatique n’est pas encore activé."
-          : "Impossible de préparer le prélèvement.",
+          : res.reason === "payment_processing"
+            ? "Votre premier paiement est en cours de traitement ; le prélèvement s’activera dès sa confirmation."
+            : "Impossible de préparer le prélèvement.",
       ));
     } catch {
       toast.error(t("Impossible de préparer le prélèvement."));
@@ -130,6 +132,9 @@ function Page() {
           )}
           {billing && !billing.hasMandate && (
             <div className="mt-5">
+              {billing.interrupted && (
+                <p role="status" className="mb-3 text-[12px] leading-5 opacity-90">{t("Votre prélèvement automatique est interrompu : réactivez-le pour les prochaines échéances.")}</p>
+              )}
               <Button
                 variant="light"
                 size="lg"

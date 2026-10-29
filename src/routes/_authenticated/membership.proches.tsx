@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatShortDate } from "@/data/art-de-vie";
+import { dayOf } from "@/lib/timezone";
 import { myDelegatesQuery } from "@/lib/adv-queries";
 import { canInviteDelegate, delegateStatusLabel, MAX_DELEGATES, openDelegates } from "@/lib/delegate-rules";
 import { inviteDelegate, revokeMyDelegate } from "@/lib/delegates.functions";
@@ -114,7 +115,7 @@ function Page() {
                     <div className="flex flex-wrap items-center gap-4">
                       <div className="min-w-0 flex-1 basis-[200px]">
                         <p className="v3-card-title truncate text-[19px] text-primary">{d.full_name}</p>
-                        <p className="mt-1 truncate text-[12px] text-muted-foreground">{[d.relation, d.email, formatShortDate(d.invited_at.slice(0, 10))].filter(Boolean).join(" · ")}</p>
+                        <p className="mt-1 truncate text-[12px] text-muted-foreground">{[d.relation, d.email, formatShortDate(dayOf(d.invited_at))].filter(Boolean).join(" · ")}</p>
                       </div>
                       <span className={`shrink-0 rounded-full px-[13px] py-[5px] text-[12px] font-medium ${d.status === "actif" ? "bg-primary text-primary-foreground" : "bg-foreground/10 text-primary"}`}>{t(delegateStatusLabel(d.status))}</span>
                     </div>

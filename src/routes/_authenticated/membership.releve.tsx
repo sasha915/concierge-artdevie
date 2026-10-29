@@ -1,4 +1,4 @@
-import { todayParis } from "@/lib/billing-webhook-rules";
+import { todayIn } from "@/lib/timezone";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -29,13 +29,13 @@ export const Route = createFileRoute("/_authenticated/membership/releve")({
 });
 
 function Page() {
-  const [month, setMonth] = useState(() => todayParis().slice(0, 7));
+  const [month, setMonth] = useState(() => todayIn().slice(0, 7));
   const [busy, setBusy] = useState(false);
   const { data: rows = [], isLoading } = useQuery(statementSourceQuery);
   const { data: profile } = useQuery(profileQuery);
   const lines = statementLines(rows, month, profile?.plan);
   const total = statementTotal(lines);
-  const current = todayParis().slice(0, 7);
+  const current = todayIn().slice(0, 7);
   const months = Array.from({ length: 12 }, (_, i) => shiftMonth(current, -i));
 
   async function download() {

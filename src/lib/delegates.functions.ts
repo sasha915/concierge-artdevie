@@ -81,14 +81,14 @@ export const revokeMyDelegate = createServerFn({ method: "POST" })
 
 // ---------- Proche ----------
 
-export type DelegationInfo = { delegateName: string; memberName: string; language: "fr" | "en" };
+export type DelegationInfo = { delegateName: string; memberName: string; language: "fr" | "en"; timezone: string };
 
 export const getMyDelegation = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<DelegationInfo | null> => {
     const { delegation } = await requireDelegation(context as Ctx);
     if (!delegation) return null;
-    return { delegateName: delegation.fullName, memberName: delegation.memberName, language: delegation.language };
+    return { delegateName: delegation.fullName, memberName: delegation.memberName, language: delegation.language, timezone: delegation.timezone };
   });
 
 const delegateRequestCols = "id, category, status, title, description, scheduled_date, scheduled_time, guests, concierge, image_key, created_at";
@@ -199,12 +199,18 @@ export const createDelegateRequest = createServerFn({ method: "POST" })
     description: z.string().trim().max(4000).optional().or(z.literal("")),
     scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
     scheduledTime: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal("")),
-    guests: z.number().int().min(1).max(999).nullable().optional(),
+    guests: z.number().int().min(1).max(500).nullable().optional(),
   }).parse(input))
   .handler(async ({ data, context }) => {
     const ctx = context as Ctx;
     const { admin, delegation } = await requireDelegation(ctx);
     if (!delegation) return { ok: false as const, reason: "Votre accès n’est plus actif." };
+    // Mêmes contrôles qu'une demande de membre : date et heure jugées dans la ville du membre.
+    const { scheduleIssue, guestsIssue } = await import("./timezone");
+    const issue = guestsIssue(data.guests ?? null) ?? scheduleIssue(data.scheduledDate || null, data.scheduledTime || null, delegation.timezone);
+    if (issue === "date_passee") return { ok: false as const, reason: "La date souhaitée est déjà passée." };
+    if (issue === "heure_passee") return { ok: false as const, reason: "L’heure souhaitée est déjà passée." };
+    if (issue === "couverts_invalides") return { ok: false as const, reason: "Indiquez un nombre de personnes entre 1 et 500." };
     const { data: row, error } = await admin.from("requests").insert({
       user_id: delegation.memberId,
       delegate_record: delegation.id,

@@ -87,7 +87,7 @@ export function locale(): string {
  * la paire est donc traduite d'un bloc. Clé « début|fin ».
  */
 export function tPair(head: string, tail: string): [string, string] {
-  if (current === "fr") return [head, tail];
+  if (current === "fr") return [frenchTypography(head), frenchTypography(tail)];
   const en = EN[`${head}|${tail}`];
   if (en === undefined) {
     if (import.meta.env?.DEV) console.warn(`[i18n] traduction manquante : ${head}|${tail}`);

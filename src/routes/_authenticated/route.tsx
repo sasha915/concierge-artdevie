@@ -4,6 +4,7 @@ import { useLayoutEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { profileQuery } from "@/lib/adv-queries";
 import { setLang } from "@/lib/i18n";
+import { DEFAULT_TIMEZONE, setTimeZone } from "@/lib/timezone";
 import { isDelegatePathAllowed } from "@/lib/delegate-rules";
 import { useDelegation } from "@/components/art-de-vie/use-delegation";
 import { InactiveAccess } from "@/components/art-de-vie/delegate";
@@ -32,6 +33,11 @@ function Authenticated() {
   useLayoutEffect(() => {
     if (lang === "fr" || lang === "en") setLang(lang);
   }, [lang]);
+  // Fuseau du membre (ou de son proche) ; l'interface équipe reste à l'heure de Paris.
+  const tz = team ? DEFAULT_TIMEZONE : profile?.timezone ?? delegation?.timezone ?? DEFAULT_TIMEZONE;
+  useLayoutEffect(() => {
+    setTimeZone(tz);
+  }, [tz]);
 
   // L'interface équipe a sa propre garde (rôle + verrou) : la règle des proches ne s'y applique pas.
   if (!team && isSuccess && profile === null) {

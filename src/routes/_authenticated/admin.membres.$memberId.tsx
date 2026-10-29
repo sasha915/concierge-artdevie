@@ -11,7 +11,8 @@ import { EmptyState, StatusBadge } from "@/components/art-de-vie/cards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatShortDate, formatMonth, imageFor, initials, requestPhoto } from "@/data/art-de-vie";
 import { memberDelegatesQuery, memberDetailQuery, memberParrainQuery, memberPaymentsQuery, memberPreferencesQuery, memberReviewsQuery } from "@/lib/admin-queries";
-import { approveDelegate, refuseDelegate, revokeDelegateTeam, getMemberStatement, saveMemberPreferences, setMemberLanguage, sendMemberInvite, setMemberDisabled, updateMember, type MemberAnswers as Answers } from "@/lib/admin.functions";
+import { approveDelegate, refuseDelegate, revokeDelegateTeam, getMemberStatement, saveMemberPreferences, setMemberLanguage, setMemberTimezone, sendMemberInvite, setMemberDisabled, updateMember, type MemberAnswers as Answers } from "@/lib/admin.functions";
+import { DEFAULT_TIMEZONE, TIMEZONES } from "@/lib/timezone";
 import { monthLabel, shiftMonth, WELCOME_STEPS } from "@/lib/member-rules";
 import { delegateStatusLabel } from "@/lib/delegate-rules";
 import { Textarea } from "@/components/ui/textarea";
@@ -129,7 +130,8 @@ function Page() {
       </div>}
 
       <LanguageField memberId={profile.id} language={(profile as { language?: string }).language === "en" ? "en" : "fr"} />
-      <StatementButton memberId={profile.id} />
+      <TimezoneField memberId={profile.id} timezone={(profile as { timezone?: string }).timezone ?? DEFAULT_TIMEZONE} />
+      {isAdmin && <StatementButton memberId={profile.id} />}
 
       {notice && <p className="mt-4 rounded-2xl bg-primary/10 p-4 text-xs leading-5 text-primary">{notice}</p>}
       {error && <p className="mt-4 rounded-2xl border border-primary/25 p-4 text-xs leading-5 text-primary">{error}</p>}
@@ -373,6 +375,36 @@ function StatementButton({ memberId }: { memberId: string }) {
 }
 
 /** Lot 6.5 : langue de l'espace membre, visible et modifiable par l'équipe. */
+function TimezoneField({ memberId, timezone }: { memberId: string; timezone: string }) {
+  const queryClient = useQueryClient();
+  const save = useServerFn(setMemberTimezone);
+  const [busy, setBusy] = useState(false);
+
+  async function change(next: string) {
+    if (next === timezone) return;
+    setBusy(true);
+    try {
+      const r = await save({ data: { id: memberId, timezone: next } });
+      if (!r.ok) { toast.error(r.reason); return; }
+      toast.success("Le fuseau horaire du membre a été enregistré.");
+      await queryClient.invalidateQueries({ queryKey: ["admin", "member", memberId] });
+    } catch {
+      toast.error("Le fuseau n’a pas pu être enregistré.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const known = TIMEZONES.some((z) => z.id === timezone);
+  return <div className="mt-4 flex flex-wrap items-center gap-3">
+    <label htmlFor="member-timezone" className="eyebrow team-mention">Fuseau horaire</label>
+    <select id="member-timezone" value={timezone} disabled={busy} onChange={(e) => void change(e.target.value)} className="h-11 max-w-full rounded-full border border-border bg-transparent px-4 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      {!known && <option value={timezone} className="text-black">{timezone}</option>}
+      {TIMEZONES.map((z) => <option key={z.id} value={z.id} className="text-black">{z.fr}</option>)}
+    </select>
+  </div>;
+}
+
 function LanguageField({ memberId, language }: { memberId: string; language: "fr" | "en" }) {
   const queryClient = useQueryClient();
   const save = useServerFn(setMemberLanguage);

@@ -8,7 +8,8 @@ import { SubHeader } from "@/components/art-de-vie/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { profileQuery } from "@/lib/adv-queries";
-import { setLang, t, type Lang } from "@/lib/i18n";
+import { getLang, setLang, t, type Lang } from "@/lib/i18n";
+import { DEFAULT_TIMEZONE, TIMEZONES, setTimeZone } from "@/lib/timezone";
 
 export const Route = createFileRoute("/_authenticated/membership/langue")({
   head: () => ({
@@ -35,6 +36,23 @@ function Page() {
   const { data: profile, isLoading } = useQuery(profileQuery);
   const [busy, setBusy] = useState(false);
   const current = profile?.language ?? "fr";
+  const currentTz = profile?.timezone ?? DEFAULT_TIMEZONE;
+
+  async function chooseTimezone(tz: string) {
+    if (!profile || tz === currentTz) return;
+    setBusy(true);
+    try {
+      const { error } = await supabase.from("profiles").update({ timezone: tz } as never).eq("id", profile.id);
+      if (error) throw error;
+      setTimeZone(tz);
+      await queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success(t("Le fuseau horaire a été enregistré."));
+    } catch {
+      toast.error(t("Le changement n’a pas pu être enregistré."));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function choose(lang: Lang) {
     if (!profile || lang === current) return;
@@ -82,6 +100,25 @@ function Page() {
               );
             })}
           </div>
+        )}
+        {!isLoading && (
+          <section aria-labelledby="timezone-title" className="mt-10 text-primary lg:mx-4 lg:mt-14">
+            <h2 id="timezone-title" className="eyebrow">{t("Fuseau horaire")}</h2>
+            <p className="mt-3 max-w-[560px] text-[14px] leading-6 text-muted-foreground lg:max-w-[760px] lg:text-[18px] lg:leading-7">
+              {t("Les heures de vos échanges s’affichent à l’heure de votre ville. L’heure d’une prestation reste celle du lieu.")}
+            </p>
+            <label htmlFor="member-timezone" className="sr-only">{t("Fuseau horaire")}</label>
+            <select
+              id="member-timezone"
+              value={currentTz}
+              disabled={busy}
+              onChange={(e) => void chooseTimezone(e.target.value)}
+              className="mt-4 h-[52px] w-full max-w-[420px] rounded-full border border-foreground/24 bg-panel px-5 text-[15px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {!TIMEZONES.some((z) => z.id === currentTz) && <option value={currentTz}>{currentTz}</option>}
+              {TIMEZONES.map((z) => <option key={z.id} value={z.id}>{getLang() === "en" ? z.en : z.fr}</option>)}
+            </select>
+          </section>
         )}
       </div>
     </AppShell>

@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, formatTime } from "@/data/art-de-vie";
 import { recurringRequestsQuery } from "@/lib/adv-queries";
 import { endRecurring, setRecurringPaused } from "@/lib/messages.functions";
-import { todayParis } from "@/lib/billing-webhook-rules";
+import { todayIn } from "@/lib/timezone";
 import { nextOccurrence, rhythmEyebrow, rhythmLabel, type RecurringRule } from "@/lib/planning-rules";
 import { PillAction } from "@/components/art-de-vie/v3";
 
@@ -46,7 +46,7 @@ function Page() {
   const end = useServerFn(endRecurring);
   const [busy, setBusy] = useState<string | null>(null);
   const [ending, setEnding] = useState<string | null>(null);
-  const today = todayParis();
+  const today = todayIn();
 
   async function stop(id: string) {
     setBusy(id);

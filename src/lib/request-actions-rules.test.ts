@@ -41,3 +41,13 @@ test("fichier .ics sans heure : journée entière", () => {
   expect(ics).toContain("DTSTART;VALUE=DATE:20261231");
   expect(ics).toContain("DTEND;VALUE=DATE:20270101");
 });
+
+test("fichier .ics lisible par Outlook : fuseau décrit, heure saisie librement, lignes repliées", () => {
+  const ics = buildIcs({ id: "abc", title: "Transfert", category: "Transferts", description: "x".repeat(200), scheduled_date: "2026-11-02", scheduled_time: "Départ à 9h00" }, new Date("2026-10-22T10:00:00Z"));
+  expect(ics).toContain("BEGIN:VTIMEZONE\r\nTZID:Europe/Paris");
+  expect(ics).toContain("DTSTART;TZID=Europe/Paris:20261102T090000");
+  expect(ics.split("\r\n").every((l) => new TextEncoder().encode(l).length <= 75)).toBe(true);
+  const allDay = buildIcs({ id: "abc", title: "Séjour", category: "Séjours", description: "", scheduled_date: "2026-12-31", scheduled_time: "en soirée" });
+  expect(allDay).toContain("DTSTART;VALUE=DATE:20261231");
+  expect(allDay).not.toContain("VTIMEZONE");
+});

@@ -70,6 +70,8 @@ export type Profile = {
   notify_offers: boolean;
   notify_messages: boolean;
   language?: "fr" | "en";
+  /** Fuseau horaire du membre (IANA), Paris par défaut. */
+  timezone?: string;
 };
 
 const images: Record<string, string> = {

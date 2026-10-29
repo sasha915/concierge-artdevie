@@ -68,15 +68,69 @@ function compactDate(iso: string): string {
   return iso.replace(/-/g, "");
 }
 
-/** Fichier .ics d'une prestation confirmée : heure locale de Paris si l'heure est connue, sinon journée entière. */
+/** Fuseau de Paris décrit dans le fichier : Outlook et certains agendas Android l'exigent pour lire TZID. */
+const PARIS_VTIMEZONE = [
+  "BEGIN:VTIMEZONE",
+  "TZID:Europe/Paris",
+  "BEGIN:DAYLIGHT",
+  "TZOFFSETFROM:+0100",
+  "TZOFFSETTO:+0200",
+  "TZNAME:CEST",
+  "DTSTART:19700329T020000",
+  "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU",
+  "END:DAYLIGHT",
+  "BEGIN:STANDARD",
+  "TZOFFSETFROM:+0200",
+  "TZOFFSETTO:+0100",
+  "TZNAME:CET",
+  "DTSTART:19701025T030000",
+  "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU",
+  "END:STANDARD",
+  "END:VTIMEZONE",
+];
+
+/** Lignes de plus de 75 octets repliées (RFC 5545), sans couper un caractère accentué. */
+function foldLine(line: string): string {
+  const out: string[] = [];
+  let chunk = "";
+  let bytes = 0;
+  for (const ch of line) {
+    const size = new TextEncoder().encode(ch).length;
+    const limit = out.length === 0 ? 75 : 74;
+    if (bytes + size > limit) {
+      out.push(chunk);
+      chunk = "";
+      bytes = 0;
+    }
+    chunk += ch;
+    bytes += size;
+  }
+  out.push(chunk);
+  return out.join("\r\n ");
+}
+
+/** « 20:30 », « 20h30 », « Départ à 9h00 » → [heures, minutes] ; null si aucune heure lisible. */
+function timeOf(value: string): [number, number] | null {
+  const m = /(\d{1,2})\s*[h:H]\s*(\d{2})?/.exec(value);
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = m[2] ? Number(m[2]) : 0;
+  return h <= 23 && min <= 59 ? [h, min] : null;
+}
+
+/**
+ * Fichier .ics d'une prestation confirmée : heure du lieu (Paris) si une heure est lisible, sinon journée entière.
+ * Le bloc VTIMEZONE accompagne toujours une heure.
+ */
 export function buildIcs(item: { id: string; title: string; category: string; description: string; scheduled_date: string; scheduled_time: string | null }, now: Date = new Date()): string {
   const stamp = now.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
   const day = compactDate(item.scheduled_date);
+  const at = item.scheduled_time ? timeOf(item.scheduled_time) : null;
   let when: string[];
-  if (item.scheduled_time) {
-    const [h = "00", m = "00"] = item.scheduled_time.split(":");
-    const start = `${day}T${h.padStart(2, "0")}${m.padStart(2, "0")}00`;
-    const endDate = new Date(Date.UTC(Number(day.slice(0, 4)), Number(day.slice(4, 6)) - 1, Number(day.slice(6, 8)), Number(h) + 2, Number(m)));
+  if (at) {
+    const [h, m] = at;
+    const start = `${day}T${String(h).padStart(2, "0")}${String(m).padStart(2, "0")}00`;
+    const endDate = new Date(Date.UTC(Number(day.slice(0, 4)), Number(day.slice(4, 6)) - 1, Number(day.slice(6, 8)), h + 2, m));
     const end = `${endDate.toISOString().slice(0, 10).replace(/-/g, "")}T${String(endDate.getUTCHours()).padStart(2, "0")}${String(endDate.getUTCMinutes()).padStart(2, "0")}00`;
     when = [`DTSTART;TZID=Europe/Paris:${start}`, `DTEND;TZID=Europe/Paris:${end}`];
   } else {
@@ -88,6 +142,8 @@ export function buildIcs(item: { id: string; title: string; category: string; de
     "VERSION:2.0",
     "PRODID:-//Art de Vie//Conciergerie//FR",
     "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    ...(at ? PARIS_VTIMEZONE : []),
     "BEGIN:VEVENT",
     `UID:${item.id}@artdevie.co`,
     `DTSTAMP:${stamp}`,
@@ -97,7 +153,7 @@ export function buildIcs(item: { id: string; title: string; category: string; de
     "END:VEVENT",
     "END:VCALENDAR",
   ];
-  return lines.join("\r\n") + "\r\n";
+  return lines.map(foldLine).join("\r\n") + "\r\n";
 }
 
 // ---- Renouvellement ----
