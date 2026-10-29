@@ -56,7 +56,7 @@ function Page() {
           <div className="py-4"><span className="eyebrow">{t("Email")}</span><p className="mt-1 text-sm font-medium lg:text-[24px]">{profile?.email || "—"}</p></div>
           <div className="py-4"><span className="eyebrow">{t("Téléphone")}</span><p className="mt-1 text-sm font-medium lg:text-[24px]">{profile?.phone || "—"}</p></div>
           <div className="py-4 last:pb-0"><span className="eyebrow">{t("Rôle")}</span><p className="mt-1 text-sm font-medium lg:text-[24px]">{t(profile?.role_label ?? "Membre")}</p></div>
-          {profile?.plan === "Signature" && profile.concierge_referent && <div className="py-4 last:pb-0"><span className="eyebrow">{t("Concierge référent")}</span><p className="mt-1 text-sm font-medium lg:text-[24px]">{profile.concierge_referent}</p></div>}
+          {profile?.concierge_referent && <div className="py-4 last:pb-0"><span className="eyebrow">{t("Votre concierge")}</span><p className="mt-1 text-sm font-medium lg:text-[24px]">{profile.concierge_referent}</p></div>}
         </div>
         <PillAction className="mt-7 w-full" onClick={() => setEditing(true)}>{t("Modifier mes informations")}</PillAction>
       </>}

@@ -51,9 +51,9 @@ export const Route = createFileRoute("/_authenticated/demandes/nouvelle")({
   head: () => ({
     meta: [
       { title: t("Nouvelle demande — Art de Vie") },
-      { name: "description", content: t("Confiez une nouvelle demande à votre concierge.") },
+      { name: "description", content: t("Confiez une nouvelle demande à votre conciergerie.") },
       { property: "og:title", content: t("Nouvelle demande — Art de Vie") },
-      { property: "og:description", content: t("Confiez une nouvelle demande à votre concierge.") },
+      { property: "og:description", content: t("Confiez une nouvelle demande à votre conciergerie.") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -277,7 +277,7 @@ function Page() {
               <p className="lg:eyebrow lg:text-foreground/80">{t("Catégorie")}</p>
               <h2 className="lg:v3-card-title lg:mt-auto lg:pt-24 lg:text-[64px]">{t(category)}</h2>
               <p className="lg:mt-5 lg:text-[16px] lg:leading-7">
-                {t("Indiquez l’essentiel ; votre concierge reviendra vers vous pour le reste.")}
+                {t("Indiquez l’essentiel ; votre conciergerie reviendra vers vous pour le reste.")}
               </p>
             </aside>
             <p className="eyebrow text-primary lg:hidden">{t("Détails")} · {t(category)}</p>
@@ -321,7 +321,7 @@ function Page() {
                     />
                   </Field>
                 </div>
-                <Field label={t("Précisions pour votre concierge")} desktopFull>
+                <Field label={t("Précisions pour votre conciergerie")} desktopFull>
                   <Textarea
                     rows={5}
                     value={description}

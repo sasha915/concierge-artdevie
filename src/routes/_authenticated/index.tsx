@@ -169,7 +169,8 @@ function MemberHome() {
   const firstName = profile?.full_name?.trim().split(/\s+/)[0] || "";
   const conciergeFirstName = profile?.concierge_referent?.split(/\s+/)[0] ?? null;
   const whatsappDigits = profile?.concierge_whatsapp?.replace(/[^0-9]/g, "") ?? "";
-  const showConcierge = profile?.plan === "Signature" && Boolean(conciergeFirstName) && whatsappDigits.length > 0;
+  // Le concierge n'est nommé que s'il est réellement attribué (nom et WhatsApp sur la fiche), quelle que soit la formule.
+  const showConcierge = Boolean(conciergeFirstName) && whatsappDigits.length > 0;
   const whatsappUrl = `https://wa.me/${whatsappDigits}?text=${encodeURIComponent(t("Bonjour {name}, j’aimerais échanger avec vous.", { name: conciergeFirstName ?? "" }))}`;
   const hello = `${t(greeting)}${firstName ? ` ${firstName}` : ""}`;
 
@@ -196,7 +197,7 @@ function MemberHome() {
               {heroTitle[0]}{" "}
             </Title>
             <p className="mt-6 hidden max-w-[520px] text-[18px] leading-7 text-foreground/90 md:block">
-              {t("Suivez vos demandes et vos privilèges, ou contactez votre concierge en un geste.")}
+              {t("Suivez vos demandes et vos privilèges, ou contactez votre conciergerie en un geste.")}
             </p>
             <div className="mt-[22px] md:mt-7 md:flex md:flex-wrap md:gap-3">
               <PillAction asChild light plus className="w-full md:w-auto">

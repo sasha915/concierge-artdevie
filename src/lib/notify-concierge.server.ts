@@ -27,7 +27,7 @@ function formatDate(value: string | null | undefined): string {
 
 /**
  * Prévient le concierge d'une demande : nouvelle demande (par défaut) ou nouveau message du membre (`message`).
- * Destinataire : le concierge référent (formule Signature) ou le numéro commun Essentiel.
+ * Destinataire : le concierge attribué au membre, s'il a un numéro, sinon le numéro commun.
  */
 export async function notifyConcierge(req: ConciergeRequest, message?: string): Promise<NotifyResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -44,15 +44,13 @@ export async function notifyConcierge(req: ConciergeRequest, message?: string): 
   const essentielNumber = process.env["ESSENTIEL_CONCIERGE_WHATSAPP"];
   const token = process.env["WHATSAPP_API_TOKEN"];
   const phoneNumberId = process.env["WHATSAPP_PHONE_NUMBER_ID"];
-  const isSignature = profile.plan === "Signature";
-  // Signature : le concierge en charge d'abord, le numéro commun en repli (numéro absent, faux ou envoi refusé).
-  // Essentiel : le numéro commun.
-  const recipients = conciergeRecipients(isSignature ? profile.concierge_whatsapp : null, essentielNumber ?? null);
+  // Le concierge attribué d'abord, quelle que soit la formule ; le numéro commun en repli (numéro absent, faux ou envoi refusé).
+  const recipients = conciergeRecipients(profile.concierge_whatsapp, essentielNumber ?? null);
   if (recipients.length === 0) {
     console.warn("notification WhatsApp non envoyée : aucun numéro (concierge ni ESSENTIEL_CONCIERGE_WHATSAPP)");
     return { skipped: "missing_recipient" };
   }
-  if (isSignature && !profile.concierge_whatsapp) console.warn("[notify-concierge] membre Signature sans numéro de concierge : envoi au numéro commun", req.user_id);
+  if (profile.plan === "Signature" && !profile.concierge_whatsapp) console.warn("[notify-concierge] membre Signature sans numéro de concierge : envoi au numéro commun", req.user_id);
   if (!token) {
     console.warn("notification WhatsApp non envoyée : secret WHATSAPP_API_TOKEN manquant");
     return { skipped: "missing_WHATSAPP_API_TOKEN" };
