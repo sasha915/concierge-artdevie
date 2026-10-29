@@ -18,10 +18,7 @@ export const Route = createFileRoute("/_authenticated/admin/reponses-types")({
   head: () => ({ meta: [
     { title: "Réponses types — Équipe Art de Vie" },
     { name: "description", content: "Rédaction et classement des réponses types de l’équipe Art de Vie." },
-    { property: "og:title", content: "Réponses types — Équipe Art de Vie" },
-    { property: "og:description", content: "Rédaction et classement des réponses types de l’équipe Art de Vie." },
-    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
-  ] }),
+     ] }),
   component: Page,
 });
 

@@ -13,7 +13,7 @@ import { profileQuery } from "@/lib/adv-queries";
 import { PillAction } from "@/components/art-de-vie/v3";
 import { t } from "@/lib/i18n";
 
-export const Route = createFileRoute("/_authenticated/membership/informations")({ head: () => ({ meta: [{ title: t("Vos informations — Art de Vie") }, { name: "description", content: t("Gérez vos coordonnées et préférences.") }, { property: "og:title", content: t("Vos informations — Art de Vie") }, { property: "og:description", content: t("Gérez vos coordonnées et préférences.") }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
+export const Route = createFileRoute("/_authenticated/membership/informations")({ head: () => ({ meta: [{ title: t("Vos informations — Art de Vie") }, { name: "description", content: t("Gérez vos coordonnées et préférences.") }, ] }), component: Page });
 
 function Page() {
   const queryClient = useQueryClient();

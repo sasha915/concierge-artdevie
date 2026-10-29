@@ -9,7 +9,7 @@ import { t, tPair } from "@/lib/i18n";
 
 const cats = ["Toutes", "Restaurant", "Bien-être", "Voyage", "Culture"];
 
-export const Route = createFileRoute("/_authenticated/offres")({ head: () => ({ meta: [{ title: t("Offres privées — Art de Vie") }, { name: "description", content: t("Les offres de nos partenaires, réservées aux membres.") }, { property: "og:title", content: t("Offres privées — Art de Vie") }, { property: "og:description", content: t("Les offres de nos partenaires, réservées aux membres.") }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
+export const Route = createFileRoute("/_authenticated/offres")({ head: () => ({ meta: [{ title: t("Offres privées — Art de Vie") }, { name: "description", content: t("Les offres de nos partenaires, réservées aux membres.") }, ] }), component: Page });
 
 function Page() {
   const [active, setActive] = useState("Toutes");

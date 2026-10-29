@@ -14,10 +14,6 @@ export const Route = createFileRoute("/_authenticated/admin-connexion")({
     meta: [
       { title: "Accès équipe — Art de Vie" },
       { name: "description", content: "Espace réservé à l’équipe Art de Vie." },
-      { property: "og:title", content: "Accès équipe — Art de Vie" },
-      { property: "og:description", content: "Espace réservé à l’équipe Art de Vie." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
       { name: "robots", content: "noindex" },
     ],
   }),

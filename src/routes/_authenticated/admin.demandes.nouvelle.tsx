@@ -18,10 +18,6 @@ export const Route = createFileRoute("/_authenticated/admin/demandes/nouvelle")(
   head: () => ({ meta: [
     { title: "Demande pour un membre — Équipe Art de Vie" },
     { name: "description", content: "Créer une demande au nom d’un membre de la conciergerie." },
-    { property: "og:title", content: "Demande pour un membre — Équipe Art de Vie" },
-    { property: "og:description", content: "Créer une demande au nom d’un membre de la conciergerie." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary_large_image" },
   ] }),
   component: Page,
 });

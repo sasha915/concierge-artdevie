@@ -45,3 +45,20 @@ export function toCents(value: string): number {
 export function todayParis(now: Date = new Date()): string {
   return new Intl.DateTimeFormat("fr-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
 }
+
+/** Statuts posés sur une facture après encaissement : remboursement depuis Mollie, ou prélèvement contesté par la banque du membre. */
+export const ADJUSTED_INVOICE_STATUSES = ["Remboursée", "Remboursée en partie", "Contestée"] as const;
+
+/**
+ * Paiement encaissé puis remboursé ou contesté : statut de la facture et montant concerné.
+ * Une contestation l'emporte sur un remboursement. null si le paiement n'a ni l'un ni l'autre.
+ */
+export function adjustmentFor(p: { status: string; amount: { value: string }; amountRefunded?: { value: string } | undefined; amountChargedBack?: { value: string } | undefined }): { status: (typeof ADJUSTED_INVOICE_STATUSES)[number]; cents: number } | null {
+  if (p.status !== "paid") return null;
+  const total = toCents(p.amount.value);
+  const chargedBack = p.amountChargedBack ? toCents(p.amountChargedBack.value) : 0;
+  if (chargedBack > 0) return { status: "Contestée", cents: chargedBack };
+  const refunded = p.amountRefunded ? toCents(p.amountRefunded.value) : 0;
+  if (refunded <= 0) return null;
+  return { status: refunded >= total ? "Remboursée" : "Remboursée en partie", cents: refunded };
+}

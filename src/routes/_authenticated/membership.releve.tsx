@@ -19,10 +19,6 @@ export const Route = createFileRoute("/_authenticated/membership/releve")({
     meta: [
       { title: t("Mon relevé — Art de Vie") },
       { name: "description", content: t("Le relevé mensuel de vos prestations.") },
-      { property: "og:title", content: t("Mon relevé — Art de Vie") },
-      { property: "og:description", content: t("Le relevé mensuel de vos prestations.") },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Page,

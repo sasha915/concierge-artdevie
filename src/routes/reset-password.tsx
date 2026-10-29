@@ -9,7 +9,7 @@ import { t } from "@/lib/i18n";
 
 export const Route = createFileRoute("/reset-password")({
   ssr: false,
-  head: () => ({ meta: [{ title: t("Votre mot de passe — Art de Vie") }, { name: "description", content: t("Choisissez le mot de passe de votre espace membre.") }, { property: "og:title", content: t("Votre mot de passe — Art de Vie") }, { property: "og:description", content: t("Choisissez le mot de passe de votre espace membre.") }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
+  head: () => ({ meta: [{ title: t("Votre mot de passe — Art de Vie") }, { name: "description", content: t("Choisissez le mot de passe de votre espace membre.") }, ] }),
   component: Page,
 });
 

@@ -16,10 +16,6 @@ export const Route = createFileRoute("/_authenticated/membership/langue")({
     meta: [
       { title: t("Langue de l’application — Art de Vie") },
       { name: "description", content: t("Choisissez la langue de votre espace membre.") },
-      { property: "og:title", content: t("Langue de l’application — Art de Vie") },
-      { property: "og:description", content: t("Choisissez la langue de votre espace membre.") },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Page,

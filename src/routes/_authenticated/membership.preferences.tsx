@@ -19,10 +19,6 @@ export const Route = createFileRoute("/_authenticated/membership/preferences")({
     meta: [
       { title: t("Mes préférences — Art de Vie") },
       { name: "description", content: t("Vos goûts à table, en voyage et en déplacement, et les dates qui comptent pour vous.") },
-      { property: "og:title", content: t("Mes préférences — Art de Vie") },
-      { property: "og:description", content: t("Vos goûts à table, en voyage et en déplacement, et les dates qui comptent pour vous.") },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Page,

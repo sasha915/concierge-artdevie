@@ -19,10 +19,6 @@ export const Route = createFileRoute("/_authenticated/admin/")({
   head: () => ({ meta: [
     { title: "Tableau de bord — Équipe Art de Vie" },
     { name: "description", content: "Demandes à traiter et prochaines prestations de la conciergerie Art de Vie." },
-    { property: "og:title", content: "Tableau de bord — Équipe Art de Vie" },
-    { property: "og:description", content: "Demandes à traiter et prochaines prestations de la conciergerie Art de Vie." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary_large_image" },
   ] }),
   component: Page,
 });
@@ -228,7 +224,7 @@ function WatchBlock({ watch }: { watch: Watch }) {
         <WatchGroup title="Factures en échec de paiement" count={failed.length}>
           {failed.map((i) => <li key={i.id} className="border-b border-border last:border-0"><Link to="/admin/membres/$memberId" params={{ memberId: i.user_id }} className={watchLink}><WatchRow title={i.number} meta={`${i.member_name || "Membre"} · ${formatAmount(i.amount_cents)}`} signal={i.status} /></Link></li>)}
         </WatchGroup>
-        <WatchGroup title="Prélèvements rejetés" count={charges.length}>
+        <WatchGroup title="Paiements rejetés, remboursés ou contestés" count={charges.length}>
           {charges.map((c) => <li key={c.id} className="flex items-center gap-3 border-b border-border last:border-0">
             {c.user_id ? <Link to="/admin/membres/$memberId" params={{ memberId: c.user_id }} className={`${watchLink} min-w-0 flex-1`}><WatchRow title={c.member_name || "Membre"} meta={`${formatAmount(c.amount_cents)} · ${formatShortDate(c.created_at.slice(0, 10))}`} signal={c.status} /></Link>
               : <div className={`${watchLink} min-w-0 flex-1`}><WatchRow title="Membre inconnu" meta={formatAmount(c.amount_cents)} signal={c.status} /></div>}

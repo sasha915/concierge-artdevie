@@ -15,10 +15,6 @@ export const Route = createFileRoute("/_authenticated/admin/demandes/")({
   head: () => ({ meta: [
     { title: "Demandes — Équipe Art de Vie" },
     { name: "description", content: "Toutes les demandes des membres, classées par statut." },
-    { property: "og:title", content: "Demandes — Équipe Art de Vie" },
-    { property: "og:description", content: "Toutes les demandes des membres, classées par statut." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary_large_image" },
   ] }),
   component: Page,
 });

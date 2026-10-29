@@ -16,10 +16,6 @@ export const Route = createFileRoute("/_authenticated/membership/")({
     meta: [
       { title: t("Votre Membership — Art de Vie") },
       { name: "description", content: t("Votre carte et votre espace membre Art de Vie.") },
-      { property: "og:title", content: t("Votre Membership — Art de Vie") },
-      { property: "og:description", content: t("Votre carte et votre espace membre Art de Vie.") },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Page,

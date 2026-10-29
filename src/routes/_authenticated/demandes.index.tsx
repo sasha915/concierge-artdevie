@@ -12,7 +12,7 @@ import { DelegateRequestsList } from "@/components/art-de-vie/delegate";
 
 const filters = ["Toutes", "Nouvelle", "En cours", "Confirmée", "Terminée", "Annulée"];
 
-export const Route = createFileRoute("/_authenticated/demandes/")({ head: () => ({ meta: [{ title: t("Mes demandes — Art de Vie") }, { name: "description", content: t("Suivez toutes vos demandes de conciergerie.") }, { property: "og:title", content: t("Mes demandes — Art de Vie") }, { property: "og:description", content: t("Suivez toutes vos demandes de conciergerie.") }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
+export const Route = createFileRoute("/_authenticated/demandes/")({ head: () => ({ meta: [{ title: t("Mes demandes — Art de Vie") }, { name: "description", content: t("Suivez toutes vos demandes de conciergerie.") }, ] }), component: Page });
 
 function Page() {
   const { delegation } = useDelegation();

@@ -11,14 +11,14 @@ import { EmptyState, StatusBadge } from "@/components/art-de-vie/cards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatShortDate, formatMonth, imageFor, initials, requestPhoto } from "@/data/art-de-vie";
 import { memberDelegatesQuery, memberDetailQuery, memberParrainQuery, memberPaymentsQuery, memberPreferencesQuery, memberReviewsQuery } from "@/lib/admin-queries";
-import { approveDelegate, refuseDelegate, revokeDelegateTeam, getMemberStatement, saveMemberPreferences, setMemberLanguage, setMemberTimezone, sendMemberInvite, setMemberDisabled, updateMember, type MemberAnswers as Answers } from "@/lib/admin.functions";
+import { anonymizeMember, approveDelegate, exportMemberData, refuseDelegate, revokeDelegateTeam, getMemberStatement, saveMemberPreferences, setMemberLanguage, setMemberTimezone, sendMemberInvite, setMemberDisabled, updateMember, type MemberAnswers as Answers } from "@/lib/admin.functions";
 import { DEFAULT_TIMEZONE, TIMEZONES } from "@/lib/timezone";
 import { monthLabel, shiftMonth, WELCOME_STEPS } from "@/lib/member-rules";
 import { delegateStatusLabel } from "@/lib/delegate-rules";
 import { Textarea } from "@/components/ui/textarea";
 import { Field, PlanSelect } from "./admin.membres.index";
 
-export const Route = createFileRoute("/_authenticated/admin/membres/$memberId")({ head: () => ({ meta: [{ title: "Fiche membre — Art de Vie" }, { name: "description", content: "Détail d’un membre, ses demandes et ses factures." }, { property: "og:title", content: "Fiche membre — Art de Vie" }, { property: "og:description", content: "Détail d’un membre, ses demandes et ses factures." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
+export const Route = createFileRoute("/_authenticated/admin/membres/$memberId")({ head: () => ({ meta: [{ title: "Fiche membre — Art de Vie" }, { name: "description", content: "Détail d’un membre, ses demandes et ses factures." }, ] }), component: Page });
 
 function Page() {
   const { memberId } = Route.useParams();
@@ -134,6 +134,7 @@ function Page() {
       <LanguageField memberId={profile.id} language={(profile as { language?: string }).language === "en" ? "en" : "fr"} />
       <TimezoneField memberId={profile.id} timezone={(profile as { timezone?: string }).timezone ?? DEFAULT_TIMEZONE} />
       {isAdmin && <StatementButton memberId={profile.id} />}
+      {isAdmin && <PrivacyBlock memberId={profile.id} disabled={!!profile.disabled_at} name={profile.full_name || "ce membre"} />}
 
       {notice && <p className="mt-4 rounded-2xl bg-primary/10 p-4 text-xs leading-5 text-primary">{notice}</p>}
       {error && <p className="mt-4 rounded-2xl border border-primary/25 p-4 text-xs leading-5 text-primary">{error}</p>}
@@ -343,6 +344,53 @@ function MemberAnswers({ answers }: { answers: Answers }) {
           {hasDates && <div className="min-w-0"><dt className="eyebrow team-mention">Dates à retenir</dt><dd className="mt-1 whitespace-pre-line break-words">{answers.dates_membre}</dd></div>}
         </dl>}
     {answers.member_updated_at && <p className="mt-3 text-[12px] text-muted-foreground">Répondu le {formatShortDate(answers.member_updated_at.slice(0, 10))}</p>}
+  </div>;
+}
+
+/** RGPD (30 octobre) : export des données sur demande du membre ; anonymisation d'un compte désactivé. */
+function PrivacyBlock({ memberId, disabled, name }: { memberId: string; disabled: boolean; name: string }) {
+  const queryClient = useQueryClient();
+  const exportData = useServerFn(exportMemberData);
+  const anonymize = useServerFn(anonymizeMember);
+  const [busy, setBusy] = useState(false);
+
+  async function download() {
+    setBusy(true);
+    try {
+      const r = await exportData({ data: { id: memberId } });
+      if (!r.ok) { toast.error(r.reason); return; }
+      const url = URL.createObjectURL(new Blob([r.content], { type: "application/json" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = r.fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("L’export n’a pas pu être préparé.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function erase() {
+    if (!window.confirm(`Anonymiser ${name} ? Son nom, ses coordonnées, ses préférences, ses échanges, ses documents et ses proches seront effacés définitivement. Ses factures sont conservées, sans ses coordonnées.`)) return;
+    setBusy(true);
+    try {
+      const r = await anonymize({ data: { id: memberId } });
+      if (!r.ok) { toast.error(r.reason); return; }
+      toast.success("Le compte a été anonymisé.");
+      await queryClient.invalidateQueries({ queryKey: ["admin"] });
+    } catch {
+      toast.error("L’anonymisation a échoué.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return <div className="mt-4 flex flex-wrap items-center gap-2">
+    <span className="eyebrow team-mention">Données personnelles</span>
+    <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => void download()}>Exporter ses données</Button>
+    {disabled && <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => void erase()}>Anonymiser le compte</Button>}
   </div>;
 }
 

@@ -21,10 +21,6 @@ export const Route = createFileRoute("/_authenticated/membership/factures")({
     meta: [
       { title: t("Mes factures — Art de Vie") },
       { name: "description", content: t("Consultez votre formule et vos factures.") },
-      { property: "og:title", content: t("Mes factures — Art de Vie") },
-      { property: "og:description", content: t("Consultez votre formule et vos factures.") },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Page,
@@ -173,7 +169,8 @@ function Page() {
         ) : (
           <div className="mt-5 overflow-hidden rounded-card bg-panel px-5 lg:mx-4 lg:px-8">
             {list.map((i) => {
-              const unpaid = i.status !== "Payée";
+              // Remboursée : rien à régler ; contestée : le membre peut régler à nouveau.
+              const unpaid = ["En attente", "Échouée", "Expirée", "Contestée"].includes(i.status);
               return (
                 <div key={i.id} className="flex items-center gap-4 border-b border-primary/25 py-5 last:border-0">
                   <div className="min-w-0 flex-1">

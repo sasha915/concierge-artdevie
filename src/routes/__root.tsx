@@ -85,8 +85,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "author", content: "Art de Vie" },
       // Espace privé : jamais indexé par les moteurs (l'application reste « à venir » en public).
       { name: "robots", content: "noindex, nofollow" },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       {

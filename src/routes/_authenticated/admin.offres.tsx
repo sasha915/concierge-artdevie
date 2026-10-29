@@ -17,10 +17,6 @@ export const Route = createFileRoute("/_authenticated/admin/offres")({
   head: () => ({ meta: [
     { title: "Offres — Équipe Art de Vie" },
     { name: "description", content: "Créer, modifier, retirer et republier les offres réservées aux membres." },
-    { property: "og:title", content: "Offres — Équipe Art de Vie" },
-    { property: "og:description", content: "Créer, modifier, retirer et republier les offres réservées aux membres." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary_large_image" },
   ] }),
   component: Page,
 });

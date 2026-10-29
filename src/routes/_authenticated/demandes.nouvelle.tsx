@@ -61,10 +61,6 @@ export const Route = createFileRoute("/_authenticated/demandes/nouvelle")({
     meta: [
       { title: t("Nouvelle demande — Art de Vie") },
       { name: "description", content: t("Confiez une nouvelle demande à votre conciergerie.") },
-      { property: "og:title", content: t("Nouvelle demande — Art de Vie") },
-      { property: "og:description", content: t("Confiez une nouvelle demande à votre conciergerie.") },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Page,
@@ -98,6 +94,15 @@ function Page() {
   const [nextDate, setNextDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [stepError, setStepError] = useState<string | null>(null);
+
+  // Accessibilité : à chaque changement d'étape, le focus passe en haut de la nouvelle étape (lecteurs d'écran, clavier).
+  const firstStep = useRef(true);
+  useEffect(() => {
+    if (firstStep.current) { firstStep.current = false; return; }
+    window.scrollTo({ top: 0 });
+    const target = document.querySelector<HTMLElement>("main h1, main h2, h1, h2");
+    if (target) { target.setAttribute("tabindex", "-1"); target.focus({ preventScroll: true }); }
+  }, [step]);
 
   // « Renouveler cette demande » : catégorie, prestation, couverts et précisions repris, date laissée vide.
   const [renewed, setRenewed] = useState(false);
@@ -246,6 +251,7 @@ function Page() {
                   type="button"
                   variant="ghost"
                   onClick={() => setCategory(cat.name)}
+                  aria-pressed={category === cat.name}
                   className={cn(
                     "relative h-[188px] md:h-[260px] lg:h-[400px] overflow-hidden rounded-[18px] border-2 p-0 text-left text-foreground transition-transform active:scale-[0.98]",
                     category === cat.name ? "border-primary" : "border-transparent",
@@ -266,6 +272,7 @@ function Page() {
               type="button"
               variant="ghost"
               onClick={() => setCategory(surMesure.name)}
+              aria-pressed={category === surMesure.name}
               className={cn(
                 "relative mt-3 h-[120px] w-full overflow-hidden rounded-[18px] border-2 bg-primary-deep p-0 text-left text-foreground transition-transform active:scale-[0.98] md:mt-4 md:h-[150px] lg:h-[180px]",
                 category === surMesure.name ? "border-primary" : "border-transparent",

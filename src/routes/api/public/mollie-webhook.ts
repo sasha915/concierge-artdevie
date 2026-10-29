@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { mollie, mollieKey, statusLabel, webhookBase, type MolliePayment } from "@/lib/mollie.server";
-import { invoiceUpdateFor, subscriptionInterval, subscriptionStartDate, toCents, todayParis } from "@/lib/billing-webhook-rules";
+import { adjustmentFor, invoiceUpdateFor, subscriptionInterval, subscriptionStartDate, toCents, todayParis } from "@/lib/billing-webhook-rules";
 
 /**
  * Webhook Mollie (analyse du 23 octobre) :
@@ -56,6 +56,29 @@ export const Route = createFileRoute("/api/public/mollie-webhook")({
         const paidCents = toCents(payment.amount.value);
         const meta = (payment.metadata ?? {}) as { invoice_id?: string; user_id?: string; kind?: string; plan?: string };
 
+        // 0) Paiement encaissé puis remboursé (depuis Mollie) ou contesté (prélèvement SEPA rejeté par la banque) :
+        //    la facture change de statut et l'équipe est alertée (« À surveiller »).
+        const adjustment = adjustmentFor(payment);
+        if (adjustment) {
+          const { data: inv, error: invError } = await admin.from("invoices").select("id, user_id, status").eq("mollie_payment_id", payment.id).maybeSingle();
+          if (invError) return retry("facture illisible", invError);
+          if (inv) {
+            if (inv.status !== adjustment.status) {
+              const { error: updError } = await admin.from("invoices").update({ status: adjustment.status }).eq("id", inv.id);
+              if (updError) return retry("statut de facture non mis à jour", updError);
+            }
+            const { data: known } = await admin.from("payment_failures").select("status, amount_cents").eq("mollie_payment_id", payment.id).maybeSingle();
+            if (!known || known.status !== adjustment.status || known.amount_cents !== adjustment.cents) {
+              const { error: watchError } = await admin.from("payment_failures").upsert(
+                { user_id: inv.user_id, mollie_payment_id: payment.id, amount_cents: adjustment.cents, status: adjustment.status, resolved_at: null },
+                { onConflict: "mollie_payment_id" },
+              );
+              if (watchError) return retry("remboursement ou contestation non enregistré", watchError);
+            }
+            return done();
+          }
+        }
+
         // 1) Paiement ponctuel d'une facture existante.
         if (meta.invoice_id) {
           const { data: invoice, error } = await admin.from("invoices").select("id, status, mollie_payment_id, amount_cents").eq("id", meta.invoice_id).maybeSingle();
@@ -79,6 +102,17 @@ export const Route = createFileRoute("/api/public/mollie-webhook")({
         if (meta.kind === "mandate_first" && meta.user_id && payment.status === "paid" && payment.customerId) {
           const { data: plan, error: planError } = await admin.from("membership_plans").select("name, price_cents, period").eq("name", meta.plan ?? "").maybeSingle();
           if (planError || !plan) return retry("formule introuvable", planError ?? meta.plan);
+
+          // Membre désactivé entre-temps : aucun abonnement ; l'équipe est alertée pour rembourser ce premier paiement.
+          const { data: owner } = await admin.from("profiles").select("disabled_at").eq("id", meta.user_id).maybeSingle();
+          if (owner?.disabled_at) {
+            const { error: flagError } = await admin.from("payment_failures").upsert(
+              { user_id: meta.user_id, mollie_payment_id: payment.id, amount_cents: paidCents, status: "Payé, compte désactivé" },
+              { onConflict: "mollie_payment_id", ignoreDuplicates: true },
+            );
+            if (flagError) return retry("paiement d'un compte désactivé non signalé", flagError);
+            return done();
+          }
 
           // Réservation : un seul rappel crée l'abonnement, les suivants n'y touchent plus.
           const claim = `en_cours:${payment.id}`;
@@ -122,6 +156,12 @@ export const Route = createFileRoute("/api/public/mollie-webhook")({
               });
               const { error: saveError } = await admin.from("profiles").update({ mollie_subscription_id: sub.id }).eq("id", meta.user_id).eq("mollie_subscription_id", claim);
               if (saveError) console.error("[mollie-webhook] abonnement créé mais non enregistré", sub.id, saveError);
+              // Désactivation survenue pendant la création : l'abonnement est aussitôt arrêté.
+              const { data: after } = await admin.from("profiles").select("disabled_at").eq("id", meta.user_id).maybeSingle();
+              if (after?.disabled_at) {
+                await mollie(`/customers/${payment.customerId}/subscriptions/${sub.id}`, { method: "DELETE" }).catch((e: unknown) => console.error("[mollie-webhook] abonnement d'un compte désactivé non arrêté", sub.id, e));
+                await admin.from("profiles").update({ mollie_subscription_id: null }).eq("id", meta.user_id).eq("mollie_subscription_id", sub.id);
+              }
             } catch (err) {
               await admin.from("profiles").update({ mollie_subscription_id: null }).eq("id", meta.user_id).eq("mollie_subscription_id", claim);
               return retry("création de l'abonnement impossible", err);

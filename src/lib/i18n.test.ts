@@ -29,7 +29,7 @@ const dynamicKeys = [
   "Nouvelle", "En cours", "Confirmée", "Terminée", "Annulée",
   "Tables", "Séjours", "Transferts", "Soins", "Sur mesure",
   "Restaurant", "Bien-être", "Culture", "Voyage",
-  "Toutes", "Abonnement", "Prestations", "Payée", "En attente", "Échouée",
+  "Toutes", "Abonnement", "Prestations", "Payée", "En attente", "Échouée", "Remboursée", "Remboursée en partie", "Contestée",
   "Invitation envoyée", "Contacté", "Membre",
   "Accueil", "Demandes", "Offres", "Membership", "Historique",
   "Bonjour", "Bonsoir", "Bienvenue", "Bon retour", "Heureux de vous revoir", "Ravi de vous retrouver",

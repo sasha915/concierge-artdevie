@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { requestsQuery } from "@/lib/adv-queries";
 import { t } from "@/lib/i18n";
 
-export const Route = createFileRoute("/_authenticated/membership/historique")({ head: () => ({ meta: [{ title: t("Historique des demandes — Art de Vie") }, { name: "description", content: t("Retrouvez vos demandes passées.") }, { property: "og:title", content: t("Historique des demandes — Art de Vie") }, { property: "og:description", content: t("Retrouvez vos demandes passées.") }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
+export const Route = createFileRoute("/_authenticated/membership/historique")({ head: () => ({ meta: [{ title: t("Historique des demandes — Art de Vie") }, { name: "description", content: t("Retrouvez vos demandes passées.") }, ] }), component: Page });
 
 function Page() {
   const [active, setActive] = useState("Toutes");

@@ -16,7 +16,7 @@ import { PillAction } from "@/components/art-de-vie/v3";
 import { t } from "@/lib/i18n";
 import { LabeledField } from "@/components/art-de-vie/field";
 
-export const Route = createFileRoute("/_authenticated/membership/parrainer")({ head: () => ({ meta: [{ title: t("Parrainer un membre — Art de Vie") }, { name: "description", content: t("Recommandez une personne de votre entourage à la conciergerie Art de Vie.") }, { property: "og:title", content: t("Parrainer un membre — Art de Vie") }, { property: "og:description", content: t("Recommandez une personne de votre entourage à la conciergerie Art de Vie.") }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }), component: Page });
+export const Route = createFileRoute("/_authenticated/membership/parrainer")({ head: () => ({ meta: [{ title: t("Parrainer un membre — Art de Vie") }, { name: "description", content: t("Recommandez une personne de votre entourage à la conciergerie Art de Vie.") }, ] }), component: Page });
 
 function Page() {
   const queryClient = useQueryClient();
@@ -52,8 +52,8 @@ function Page() {
       <Field label={t("Nom de la personne")}><Input value={fullName} onChange={(e) => setFullName(e.target.value)} required maxLength={80}/></Field>
       <Field label={t("Adresse email")}><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required maxLength={160}/></Field>
       <Field label={t("Mot personnel (facultatif)")}><Textarea rows={4} maxLength={500} value={message} onChange={(e) => setMessage(e.target.value)} placeholder={t("Quelques mots à l’intention de notre équipe…")}/></Field>
-      {error && <p className="rounded-2xl bg-panel p-4 text-xs leading-5 text-primary">{error}</p>}
-      {sent && <p className="rounded-2xl bg-panel p-4 text-xs leading-5 text-primary">{t("Votre recommandation de {name} nous est transmise.", { name: sent })}</p>}
+      {error && <p role="alert" className="rounded-2xl bg-panel p-4 text-xs leading-5 text-primary">{error}</p>}
+      {sent && <p role="status" className="rounded-2xl bg-panel p-4 text-xs leading-5 text-primary">{t("Votre recommandation de {name} nous est transmise.", { name: sent })}</p>}
       <PillAction type="submit" className="w-full sm:max-w-sm" disabled={busy}>{busy ? t("Envoi en cours") : t("Transmettre la recommandation")}</PillAction>
     </div></form>
 

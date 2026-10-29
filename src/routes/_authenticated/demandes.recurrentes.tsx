@@ -30,10 +30,6 @@ export const Route = createFileRoute("/_authenticated/demandes/recurrentes")({
     meta: [
       { title: t("Mes demandes récurrentes — Art de Vie") },
       { name: "description", content: t("Vos demandes qui se renouvellent à intervalle régulier.") },
-      { property: "og:title", content: t("Mes demandes récurrentes — Art de Vie") },
-      { property: "og:description", content: t("Vos demandes qui se renouvellent à intervalle régulier.") },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Page,

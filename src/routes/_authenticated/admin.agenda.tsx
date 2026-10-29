@@ -16,10 +16,6 @@ export const Route = createFileRoute("/_authenticated/admin/agenda")({
     meta: [
       { title: "Agenda — Équipe Art de Vie" },
       { name: "description", content: "Les prestations datées et les échéances récurrentes de la conciergerie Art de Vie, au mois ou à la semaine." },
-      { property: "og:title", content: "Agenda — Équipe Art de Vie" },
-      { property: "og:description", content: "Les prestations datées et les échéances récurrentes de la conciergerie Art de Vie." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Page,

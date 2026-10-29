@@ -108,7 +108,7 @@ export const payInvoice = createServerFn({ method: "POST" })
       .eq("user_id", context.userId)
       .single();
     if (!invoice) return { ok: false as const, reason: "invoice_not_found" };
-    if (invoice.status === "Payée") return { ok: false as const, reason: "already_paid" };
+    if (invoice.status === "Payée" || invoice.status === "Remboursée" || invoice.status === "Remboursée en partie") return { ok: false as const, reason: "already_paid" };
     // Double clic ou retour sur la page : le lien déjà ouvert est repris.
     const previous = await previousPayment(invoice.mollie_payment_id);
     if (previous.checkout) return { ok: true as const, checkoutUrl: previous.checkout };

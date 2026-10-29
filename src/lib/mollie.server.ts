@@ -12,6 +12,8 @@ export type MolliePayment = {
   customerId?: string;
   subscriptionId?: string;
   mandateId?: string;
+  amountRefunded?: { value: string; currency: string };
+  amountChargedBack?: { value: string; currency: string };
   metadata?: Record<string, unknown>;
   _links?: { checkout?: { href: string } };
 };

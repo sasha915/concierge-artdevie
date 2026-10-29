@@ -19,10 +19,6 @@ export const Route = createFileRoute("/_authenticated/demandes/$requestId_/modif
     meta: [
       { title: t("Modifier ma demande — Art de Vie") },
       { name: "description", content: t("Demandez-nous une modification de votre demande.") },
-      { property: "og:title", content: t("Modifier ma demande — Art de Vie") },
-      { property: "og:description", content: t("Demandez-nous une modification de votre demande.") },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Page,

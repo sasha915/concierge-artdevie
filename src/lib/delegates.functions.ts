@@ -60,8 +60,8 @@ export const inviteDelegate = createServerFn({ method: "POST" })
       relation: data.relation || null,
     });
     if (error) {
-      // Adresse déjà invitée ailleurs : même réponse qu'une invitation enregistrée, rien n'est révélé.
-      if (error.code === "23505") return { ok: true as const };
+      // Seul cas de doublon possible : ce membre a déjà invité cette adresse (une adresse invitée ailleurs est acceptée).
+      if (error.code === "23505") return { ok: false as const, reason: "Vous avez déjà invité cette personne." };
       return { ok: false as const, reason: "L’invitation n’a pas pu être enregistrée." };
     }
     return { ok: true as const };

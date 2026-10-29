@@ -19,10 +19,6 @@ export const Route = createFileRoute("/_authenticated/demandes/$requestId_/propo
     meta: [
       { title: t("Votre conciergerie vous propose — Art de Vie") },
       { name: "description", content: t("Choisissez l’option qui vous convient.") },
-      { property: "og:title", content: t("Votre conciergerie vous propose — Art de Vie") },
-      { property: "og:description", content: t("Choisissez l’option qui vous convient.") },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Page,

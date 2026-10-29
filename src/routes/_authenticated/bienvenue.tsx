@@ -18,10 +18,6 @@ export const Route = createFileRoute("/_authenticated/bienvenue")({
     meta: [
       { title: t("Faisons connaissance — Art de Vie") },
       { name: "description", content: t("Quelques questions pour que notre maison réponde à vos goûts dès la première demande.") },
-      { property: "og:title", content: t("Faisons connaissance — Art de Vie") },
-      { property: "og:description", content: t("Quelques questions pour que notre maison réponde à vos goûts dès la première demande.") },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Page,

@@ -677,6 +677,11 @@ export const setReferralStatus = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), status: referralStatus }).parse(input))
   .handler(async ({ data, context }) => {
     const admin = await assertAdmin(context as Ctx);
+    // « Converti » suppose un membre créé et relié : il passe par « Convertir en membre ».
+    if (data.status === "Converti") {
+      const { data: row } = await admin.from("referrals").select("converted_member_id").eq("id", data.id).maybeSingle();
+      if (!row?.converted_member_id) return { ok: false as const, reason: "Pour marquer ce parrainage converti, créez le membre avec « Convertir en membre »." };
+    }
     const { error } = await admin.from("referrals").update({ status: data.status }).eq("id", data.id);
     if (error) return { ok: false as const, reason: "Le statut n’a pas pu être modifié." };
     return { ok: true as const };
@@ -1375,7 +1380,7 @@ export const getAgenda = createServerFn({ method: "GET" })
     }));
     const ruleList = (rules ?? []) as Array<any>;
     if (ruleList.length > 0) {
-      // Dernière demande de chaque série : sert de lien et donne le concierge habituel.
+      // Dernière demande de chaque série : donne le concierge habituel.
       const { data: lastRequests } = await admin.from("requests").select("id, recurring_id, concierge_id, scheduled_date, created_at").in("recurring_id", ruleList.map((r) => r.id)).order("created_at", { ascending: false });
       const latest = new Map<string, { id: string; concierge_id: string | null }>();
       for (const r of (lastRequests ?? []) as Array<{ id: string; recurring_id: string; concierge_id: string | null }>) if (!latest.has(r.recurring_id)) latest.set(r.recurring_id, r);
@@ -1386,7 +1391,7 @@ export const getAgenda = createServerFn({ method: "GET" })
         for (const date of occurrencesBetween({ ...rule, dates: rule.dates ?? [] }, from, data.to)) {
           items.push({
             key: `${rule.id}:${date}`, kind: "echeance", date, time: rule.scheduled_time ? String(rule.scheduled_time).slice(0, 5) : null,
-            title: rule.title, status: "À venir", member_id: rule.user_id, member_name: names.get(rule.user_id) ?? "", concierge_id: last?.concierge_id ?? null, request_id: last?.id ?? null,
+            title: rule.title, status: "À venir", member_id: rule.user_id, member_name: names.get(rule.user_id) ?? "", concierge_id: last?.concierge_id ?? null, request_id: null, // échéance pas encore créée : le lien ouvre la fiche du membre, pas la demande précédente
           });
         }
       }
@@ -1442,6 +1447,10 @@ export const resendProposal = createServerFn({ method: "POST" })
     const { admin } = await assertTeam(context as Ctx);
     const { data: proposal } = await admin.from("request_proposals").select("id, request_id, status").eq("id", data.id).maybeSingle();
     if (!proposal || proposal.status !== "en attente") return { ok: false as const, reason: "Aucune proposition en attente." };
+    // Pas de relance sur une demande close (terminée ou annulée).
+    const { data: parent } = await admin.from("requests").select("status").eq("id", proposal.request_id).maybeSingle();
+    const { isOpenStatus } = await import("./team-request-rules");
+    if (!parent || !isOpenStatus(parent.status)) return { ok: false as const, reason: "La demande est close : la proposition ne peut plus être renvoyée." };
     const { count } = await admin.from("request_proposal_options").select("id", { count: "exact", head: true }).eq("proposal_id", proposal.id);
     const n = count ?? 1;
     await logEvent(admin, { request_id: proposal.request_id, actor_id: (context as Ctx).userId, kind: "proposition renvoyée", detail: null });
@@ -1530,6 +1539,7 @@ export const approveDelegate = createServerFn({ method: "POST" })
       .maybeSingle();
     if (updateError || !updated) {
       if (createdNow && delegateId) await admin.auth.admin.deleteUser(delegateId);
+      if (updateError?.code === "23505") return { ok: false as const, reason: "Cette personne est déjà proche autorisé d’un autre membre : retirez d’abord cet accès, ou refusez l’invitation." };
       return { ok: false as const, reason: "L’accès n’a pas pu être activé." };
     }
     const origin = originOf();
@@ -1562,6 +1572,82 @@ export const revokeDelegateTeam = createServerFn({ method: "POST" })
     if (!row) return { ok: false as const, reason: "Ce proche est introuvable." };
     const { revokeDelegation } = await import("./delegates.server");
     return revokeDelegation(admin, row, (context as Ctx).userId);
+  });
+
+// ---- RGPD (30 octobre) : export et anonymisation d'un membre, réservés aux administrateurs ----
+
+/** Toutes les données d'un membre, en un fichier JSON remis au membre sur demande (droit d'accès et de portabilité). */
+export const exportMemberData = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { data: profile } = await admin.from("profiles").select("full_name, email, phone, plan, role_label, member_number, member_since, valid_until, language, created_at").eq("id", data.id).maybeSingle();
+    if (!profile) return { ok: false as const, reason: "Membre introuvable." };
+    const { data: requests } = await admin.from("requests").select("id, category, title, description, status, scheduled_date, scheduled_time, guests, created_at").eq("user_id", data.id).order("created_at");
+    const ids = ((requests ?? []) as Array<{ id: string }>).map((r) => r.id);
+    const inIds = (q: any) => (ids.length ? q.in("request_id", ids) : q.eq("request_id", "00000000-0000-0000-0000-000000000000"));
+    const [messages, files, changes, reviews, invoices, preferences, delegates, referrals, recurring] = await Promise.all([
+      inIds((admin as any).from("request_messages").select("request_id, author_role, body, created_at")).order("created_at"),
+      inIds((admin as any).from("request_files").select("request_id, name, mime, size, created_at").eq("visible_to_member", true)),
+      inIds((admin as any).from("request_changes").select("request_id, kind, body, status, created_at")),
+      (admin as any).from("request_reviews").select("request_id, rating, comment, created_at").eq("user_id", data.id),
+      (admin as any).from("invoices").select("number, kind, status, issued_on, amount_cents, service_cents, commission_cents").eq("user_id", data.id).order("issued_on"),
+      (admin as any).from("member_preferences").select("tables_choix, sejours_choix, transferts_choix, dates_membre, member_updated_at").eq("user_id", data.id).maybeSingle(),
+      (admin as any).from("member_delegates").select("full_name, email, relation, status, invited_at").eq("member_id", data.id),
+      (admin as any).from("referrals").select("full_name, email, message, status, created_at").eq("inviter_id", data.id),
+      (admin as any).from("recurring_requests").select("category, title, rhythm, start_date, dates, end_date, paused").eq("user_id", data.id),
+    ]);
+    console.info("[RGPD] export des données", data.id, "par", (context as Ctx).userId);
+    return {
+      ok: true as const,
+      fileName: `art-de-vie-donnees-${String(profile.member_number ?? data.id).replace(/[^A-Za-z0-9]+/g, "-")}.json`,
+      content: JSON.stringify({
+        exporte_le: new Date().toISOString(),
+        profil: profile,
+        preferences: preferences.data ?? null,
+        demandes: requests ?? [],
+        echanges: messages.data ?? [],
+        documents: files.data ?? [],
+        modifications_demandees: changes.data ?? [],
+        avis: reviews.data ?? [],
+        series_recurrentes: recurring.data ?? [],
+        factures: invoices.data ?? [],
+        proches: delegates.data ?? [],
+        recommandations: referrals.data ?? [],
+      }, null, 2),
+    };
+  });
+
+/**
+ * Droit à l'effacement : un membre désactivé est anonymisé (nom, coordonnées, préférences, échanges, documents, proches).
+ * Les factures restent, sans les coordonnées du membre (obligation comptable de conservation).
+ */
+export const anonymizeMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    if (data.id === (context as Ctx).userId) return { ok: false as const, reason: "Vous ne pouvez pas anonymiser votre propre compte." };
+    const ids = await teamIds(admin);
+    if (ids.includes(data.id)) return { ok: false as const, reason: "Ce compte appartient à l’équipe." };
+    const { data: profile } = await admin.from("profiles").select("disabled_at").eq("id", data.id).maybeSingle();
+    if (!profile) return { ok: false as const, reason: "Membre introuvable." };
+    if (!profile.disabled_at) return { ok: false as const, reason: "Désactivez d’abord le compte : son prélèvement est ainsi arrêté." };
+    // Documents déposés : supprimés du stockage avant l'effacement des lignes.
+    const { data: reqs } = await admin.from("requests").select("id").eq("user_id", data.id);
+    const reqIds = ((reqs ?? []) as Array<{ id: string }>).map((r) => r.id);
+    if (reqIds.length) {
+      const { data: files } = await (admin as any).from("request_files").select("path").in("request_id", reqIds);
+      const paths = ((files ?? []) as Array<{ path: string }>).map((f) => f.path);
+      if (paths.length) {
+        const { error: storageError } = await admin.storage.from("request-files").remove(paths);
+        if (storageError) return { ok: false as const, reason: "Les documents n’ont pas pu être supprimés ; rien n’a été effacé." };
+      }
+    }
+    const { error } = await (admin as any).rpc("anonymize_member", { _user_id: data.id });
+    if (error) return { ok: false as const, reason: "L’anonymisation a échoué ; rien n’a été effacé." };
+    return { ok: true as const };
   });
 
 // ---- Alertes WhatsApp non parties ----

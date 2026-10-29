@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { invoiceUpdateFor, subscriptionInterval, subscriptionStartDate, toCents, todayParis } from "./billing-webhook-rules";
+import { invoiceUpdateFor, subscriptionInterval, subscriptionStartDate, toCents, todayParis, adjustmentFor } from "./billing-webhook-rules";
 
 describe("webhook Mollie", () => {
   const invoice = { status: "En attente", mollie_payment_id: "tr_2", amount_cents: 149000 };
@@ -44,4 +44,13 @@ describe("destinataires WhatsApp", () => {
     expect(conciergeRecipients("+33123456789", "+33 1 23 45 67 89")).toEqual(["33123456789"]);
     expect(conciergeRecipients("", "")).toEqual([]);
   });
+});
+
+test("paiement remboursé ou contesté après encaissement", () => {
+  const paid = { status: "paid", amount: { value: "100.00" } };
+  expect(adjustmentFor(paid)).toBeNull();
+  expect(adjustmentFor({ ...paid, amountRefunded: { value: "100.00" } })).toEqual({ status: "Remboursée", cents: 10000 });
+  expect(adjustmentFor({ ...paid, amountRefunded: { value: "30.00" } })).toEqual({ status: "Remboursée en partie", cents: 3000 });
+  expect(adjustmentFor({ ...paid, amountRefunded: { value: "0.00" }, amountChargedBack: { value: "100.00" } })).toEqual({ status: "Contestée", cents: 10000 });
+  expect(adjustmentFor({ status: "failed", amount: { value: "100.00" }, amountRefunded: { value: "100.00" } })).toBeNull();
 });

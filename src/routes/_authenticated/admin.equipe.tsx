@@ -18,10 +18,6 @@ export const Route = createFileRoute("/_authenticated/admin/equipe")({
   head: () => ({ meta: [
     { title: "Équipe — Art de Vie" },
     { name: "description", content: "Comptes de l’équipe Art de Vie et répartition des rôles." },
-    { property: "og:title", content: "Équipe — Art de Vie" },
-    { property: "og:description", content: "Comptes de l’équipe Art de Vie et répartition des rôles." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary_large_image" },
   ] }),
   component: Page,
 });
