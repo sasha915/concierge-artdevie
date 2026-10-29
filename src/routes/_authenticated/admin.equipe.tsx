@@ -72,7 +72,7 @@ function Page() {
     try {
       const r = await invite({ data: form });
       if (!r.ok) { setNotice({ ok: false, text: r.reason }); return; }
-      setNotice({ ok: true, text: r.mailed ? `${form.fullName} a été invité ; l’email d’accès est parti.` : `${form.fullName} a été ajouté, mais l’email d’accès n’a pas pu être envoyé.` });
+      setNotice({ ok: true, text: `${form.fullName} a été ajouté. Il se connecte avec son compte Google ${form.email.toLowerCase()} : « Équipe Art de Vie : se connecter avec Google » sur la page de connexion.` });
       setForm({ fullName: "", email: "", role: "concierge" });
       await qc.invalidateQueries({ queryKey: ["admin"] });
     } catch { setNotice({ ok: false, text: "L’invitation a échoué." }); }
@@ -127,7 +127,7 @@ function Page() {
         <Title as="h2" italic="collègue." className="mt-3 text-[40px] leading-none">Inviter un </Title>
         <div className="mt-6 grid gap-5">
           <div><Label htmlFor="col-name" className="eyebrow text-muted-foreground">Nom complet</Label><Input id="col-name" className="mt-2" required maxLength={80} value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} /></div>
-          <div><Label htmlFor="col-email" className="eyebrow text-muted-foreground">Adresse email</Label><Input id="col-email" type="email" className="mt-2" required maxLength={160} value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} /></div>
+          <div><Label htmlFor="col-email" className="eyebrow text-muted-foreground">Adresse email</Label><Input id="col-email" type="email" className="mt-2" required maxLength={160} placeholder="prenom@artdevie.co" pattern=".+@artdevie\.co" title="Adresse professionnelle @artdevie.co" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} /></div>
           <div role="group" aria-labelledby="col-role-label"><p id="col-role-label" className="eyebrow text-muted-foreground">Rôle</p>
             <div className="mt-2 flex flex-wrap gap-2">{(["concierge", "admin"] as const).map((r) => <button key={r} type="button" aria-pressed={form.role === r} onClick={() => setForm((f) => ({ ...f, role: r as TeamRole }))} className={`${pill} ${form.role === r ? "bg-primary font-medium text-primary-foreground" : "border border-border hover:bg-primary/10"}`}>{ROLE_LABEL[r]}</button>)}</div></div>
         </div>

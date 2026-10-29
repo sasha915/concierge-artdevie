@@ -235,7 +235,7 @@ function WatchBlock({ watch }: { watch: Watch }) {
             <button type="button" onClick={() => void markResolved(c.id)} className="shrink-0 rounded-full border border-border px-3 py-1 text-[12px] hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Relancé</button>
           </li>)}
         </WatchGroup>
-        <WatchGroup title="Fiches Signature sans WhatsApp du concierge" count={noWhatsapp.length}>
+        <WatchGroup title="Concierges attribués sans WhatsApp" count={noWhatsapp.length}>
           {noWhatsapp.map((m) => <li key={m.id} className="border-b border-border last:border-0"><Link to="/admin/membres/$memberId" params={{ memberId: m.id }} className={watchLink}><WatchRow title={m.full_name || "Membre"} meta="Demandes envoyées au numéro commun" signal="À compléter" /></Link></li>)}
         </WatchGroup>
         <WatchGroup title="Proches à confirmer" count={delegates.length}>

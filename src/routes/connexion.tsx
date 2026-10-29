@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { imageFor } from "@/data/art-de-vie";
 import { supabase } from "@/integrations/supabase/client";
 import { t } from "@/lib/i18n";
-import { unlockAdmin } from "@/lib/admin-gate.functions";
+import { lovable } from "@/integrations/lovable";
+import { TEAM_EMAIL_DOMAIN } from "@/lib/team-auth-rules";
 
 let greetingInitialized = false;
 
@@ -57,16 +58,27 @@ function Page() {
       setError(t("Email ou mot de passe incorrect."));
       return;
     }
-    // Administrateur ou concierge : ses identifiants personnels ouvrent aussi l'espace équipe, sans seconde saisie.
+    // L'équipe se connecte uniquement avec son compte Google Workspace @artdevie.co.
     const { data: team } = await supabase.rpc("is_team", { _user_id: signedIn.user.id });
     if (team === true) {
-      const unlocked = await unlockAdmin({ data: { email, password } }).catch(() => null);
+      await supabase.auth.signOut();
       setBusy(false);
-      navigate({ to: unlocked?.ok ? "/admin" : "/admin-connexion", replace: true });
+      setError(t("Les comptes de l’équipe se connectent avec Google, avec leur adresse @artdevie.co."));
       return;
     }
     setBusy(false);
     navigate({ to: "/", replace: true });
+  }
+
+  /** Équipe : compte Google Workspace @artdevie.co uniquement ; l'espace équipe s'ouvre au retour. */
+  async function signInTeam() {
+    setError(null);
+    setNotice(null);
+    const r = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: `${window.location.origin}/admin-connexion`,
+      extraParams: { hd: TEAM_EMAIL_DOMAIN, prompt: "select_account" },
+    });
+    if (r.error) setError(t("La connexion avec Google n’a pas abouti. Réessayez."));
   }
 
   const [sending, setSending] = useState(false);
@@ -138,6 +150,12 @@ function Page() {
           {t("Pas encore membre ?")}
           <br />
           <span className="text-foreground">{t("Demander une invitation : 58 avenue de Wagram, 75017 Paris")}</span>
+        </p>
+        <p className="mx-2 mt-4 text-[13px] leading-5 text-muted-foreground md:mx-8 lg:mx-0">
+          {t("Équipe Art de Vie :")}{" "}
+          <button type="button" onClick={() => void signInTeam()} disabled={busy} className="text-foreground underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            {t("se connecter avec Google")}
+          </button>
         </p>
       </div>
     </main>

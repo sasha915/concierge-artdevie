@@ -47,6 +47,8 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
   }
 
   async function lockSession() {
+    // Après « Verrouiller », la page d'accès ne rouvre pas d'elle-même : une nouvelle connexion Google est demandée.
+    try { sessionStorage.setItem("adv-team-locked", "1"); } catch { /* stockage indisponible */ }
     await lock({});
     queryClient.removeQueries({ queryKey: ["admin"] });
     await navigate({ to: "/admin-connexion", replace: true });

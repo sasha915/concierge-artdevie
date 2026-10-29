@@ -85,11 +85,15 @@ async function memberSubscription(admin: any, memberId: string): Promise<{ custo
   return { customerId: p.mollie_customer_id as string, subscriptionId: sub };
 }
 
-/** Formule Signature : le numéro WhatsApp du concierge en charge est obligatoire (sinon ses demandes partiraient au numéro commun). */
-function signatureNeedsWhatsapp(v: { plan: string; conciergeWhatsapp?: string | undefined }, ctx: z.RefinementCtx) {
-  if (v.plan === "Signature" && (v.conciergeWhatsapp ?? "").replace(/[^0-9]/g, "").length < 8) {
-    ctx.addIssue({ code: "custom", path: ["conciergeWhatsapp"], message: "Le numéro WhatsApp du concierge est obligatoire pour la formule Signature." });
-  }
+/**
+ * Concierge attribué (décision du 29 octobre) : facultatif quelle que soit la formule, mais complet s'il est renseigné —
+ * un nom sans WhatsApp, ou l'inverse, est refusé. Sans concierge, le membre écrit à « votre conciergerie » (numéro commun).
+ */
+function signatureNeedsWhatsapp(v: { conciergeReferent?: string | undefined; conciergeWhatsapp?: string | undefined }, ctx: z.RefinementCtx) {
+  const hasName = (v.conciergeReferent ?? "").trim().length > 0;
+  const hasNumber = (v.conciergeWhatsapp ?? "").replace(/[^0-9]/g, "").length >= 8;
+  if (hasName && !hasNumber) ctx.addIssue({ code: "custom", path: ["conciergeWhatsapp"], message: "Indiquez le WhatsApp du concierge attribué, ou retirez son nom." });
+  if (!hasName && (v.conciergeWhatsapp ?? "").trim()) ctx.addIssue({ code: "custom", path: ["conciergeReferent"], message: "Indiquez le nom du concierge attribué, ou retirez son WhatsApp." });
 }
 
 const memberFields = {
@@ -464,7 +468,7 @@ export const getDashboard = createServerFn({ method: "GET" })
       fetchAll<{ id: string; user_id: string; title: string; category: string; status: string; concierge: string; scheduled_date: string | null; scheduled_time: string | null; created_at: string }>((from, to) =>
         admin.from("requests").select(cols).in("status", ["Nouvelle", "En cours", "Confirmée"]).order("created_at", { ascending: true }).order("id").range(from, to)),
       admin.from("requests").select(cols).order("created_at", { ascending: false }).limit(1),
-      fetchAll<{ id: string; full_name: string; disabled_at: string | null; valid_until: string | null; plan: string | null; concierge_whatsapp: string | null }>((from, to) => admin.from("profiles").select("id, full_name, disabled_at, valid_until, plan, concierge_whatsapp").order("id").range(from, to)),
+      fetchAll<{ id: string; full_name: string; disabled_at: string | null; valid_until: string | null; plan: string | null; concierge_whatsapp: string | null; concierge_referent: string | null }>((from, to) => admin.from("profiles").select("id, full_name, disabled_at, valid_until, plan, concierge_whatsapp, concierge_referent").order("id").range(from, to)),
     ]);
     const names = new Map(profiles.map((p) => [p.id, p.full_name]));
     const withName = (r: (typeof rows)[number]) => ({ ...r, member_name: names.get(r.user_id) ?? "" });
@@ -762,6 +766,9 @@ export const inviteColleague = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const admin = await assertAdmin(context as Ctx);
     const email = data.email.toLowerCase();
+    // L'équipe se connecte uniquement avec son compte Google Workspace professionnel.
+    const { isTeamEmail, TEAM_EMAIL_DOMAIN } = await import("./team-auth-rules");
+    if (!isTeamEmail(email)) return { ok: false as const, reason: `Invitez une adresse professionnelle @${TEAM_EMAIL_DOMAIN}.` };
     const { data: created, error } = await admin.auth.admin.createUser({
       email,
       email_confirm: true,
@@ -780,10 +787,8 @@ export const inviteColleague = createServerFn({ method: "POST" })
       await admin.auth.admin.deleteUser(id);
       return { ok: false as const, reason: "Le compte n’a pas pu être préparé ; rien n’a été créé." };
     }
-    const origin = originOf();
-    const { error: mailError } = await admin.auth.resetPasswordForEmail(email, origin ? { redirectTo: `${origin}/reset-password` } : {});
-    if (mailError) return { ok: true as const, id, mailed: false };
-    return { ok: true as const, id, mailed: true };
+    // Pas d'e-mail de mot de passe : le collègue se connecte avec Google (adresse @artdevie.co).
+    return { ok: true as const, id, mailed: false };
   });
 
 // ---------- Offres (administrateurs) ----------
@@ -954,10 +959,10 @@ export const createRequestInvoice = createServerFn({ method: "POST" })
 
 // ---- Lot 4.3 : « À surveiller », préférences du membre ----
 
-async function dashboardWatch(admin: any, role: TeamRole, rows: Array<{ id: string; title: string; status: string; created_at: string; member_name: string; user_id: string }>, teamIdList: string[], names: Map<string, string>, members: Array<{ id: string; full_name: string; valid_until: string | null; disabled_at: string | null; plan?: string | null; concierge_whatsapp?: string | null }>) {
-  // Fiches Signature sans numéro de concierge : leurs demandes partent au numéro commun.
+async function dashboardWatch(admin: any, role: TeamRole, rows: Array<{ id: string; title: string; status: string; created_at: string; member_name: string; user_id: string }>, teamIdList: string[], names: Map<string, string>, members: Array<{ id: string; full_name: string; valid_until: string | null; disabled_at: string | null; plan?: string | null; concierge_whatsapp?: string | null; concierge_referent?: string | null }>) {
+  // Fiches dont le concierge attribué n'a pas de WhatsApp (saisies avant la règle du 29 octobre) : à compléter.
   const signatureWithoutWhatsapp = members
-    .filter((m) => !m.disabled_at && !teamIdList.includes(m.id) && m.plan === "Signature" && (m.concierge_whatsapp ?? "").replace(/[^0-9]/g, "").length < 8)
+    .filter((m) => !m.disabled_at && !teamIdList.includes(m.id) && (m.concierge_referent ?? "").trim().length > 0 && (m.concierge_whatsapp ?? "").replace(/[^0-9]/g, "").length < 8)
     .map((m) => ({ id: m.id, full_name: m.full_name }));
   const { isStaleRequest, isRenewalDue, waitingLabel, notificationFailureLabel, FAILED_INVOICE_STATUSES } = await import("./watch-rules");
   const staleRequests = rows.filter((r) => isStaleRequest(r)).map((r) => ({ id: r.id, title: r.title, member_name: r.member_name, waiting: waitingLabel(r.created_at) }));

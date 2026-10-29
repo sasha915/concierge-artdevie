@@ -108,7 +108,7 @@ function Page() {
           <Field label="Formule"><PlanSelect value={form.plan} onChange={(v) => set("plan", v)} /></Field>
           <Field label="Rôle affiché"><Input value={form.roleLabel} onChange={(e) => set("roleLabel", e.target.value)} maxLength={60} /></Field>
           <Field label="Concierge attribué"><Input value={form.conciergeReferent} onChange={(e) => set("conciergeReferent", e.target.value)} maxLength={60} /></Field>
-          <Field label={form.plan === "Signature" ? "WhatsApp du concierge (obligatoire en Signature)" : "WhatsApp du concierge"}><Input type="tel" value={form.conciergeWhatsapp} onChange={(e) => set("conciergeWhatsapp", e.target.value)} required={form.plan === "Signature"} pattern={form.plan === "Signature" ? "[+0-9 ().-]{8,30}" : undefined} maxLength={30} /></Field>
+          <Field label="WhatsApp du concierge attribué"><Input type="tel" value={form.conciergeWhatsapp} onChange={(e) => set("conciergeWhatsapp", e.target.value)} required={form.conciergeReferent.trim().length > 0} pattern="[+0-9 ().-]{8,30}" maxLength={30} /></Field>
         </div>
         <Button type="submit" variant="primary" size="lg" className="mt-5 w-full lg:w-auto" disabled={busy}>{busy ? "Enregistrement…" : "Enregistrer"}</Button>
       </form>}
