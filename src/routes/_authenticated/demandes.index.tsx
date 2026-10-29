@@ -27,16 +27,16 @@ function MemberPage() {
   const ordered = orderForDisplay(requests, todayInParis());
   const list = active === "Toutes" ? ordered : ordered.filter((r) => r.status === active);
   return <AppShell immersive>
-    <div className="lg:hidden"><ListHeader eyebrow="Demandes" title="Mes " italic="demandes." introduction="Suivez l’avancement de chaque demande en temps réel."><Filters values={filters} active={active} onChange={setActive} dark /></ListHeader></div>
-    <div className="hidden lg:block"><ListHeader desktop action={<NewRequestButton />} eyebrow="Demandes" title="Mes " italic="demandes." introduction="Suivez l’avancement de chaque demande en temps réel."><Filters values={filters} active={active} onChange={setActive} dark desktop /></ListHeader></div>
-    {isLoading ? <div className="mt-3 grid gap-3 lg:mt-5 lg:grid-cols-12 lg:gap-4"><Skeleton className="h-[400px] rounded-card bg-panel lg:col-span-7 lg:h-[600px]" /><Skeleton className="h-[180px] rounded-card bg-panel lg:col-span-5 lg:h-[600px]" /></div> : <>
+    <div className="md:hidden"><ListHeader eyebrow="Demandes" title="Mes " italic="demandes." introduction="Suivez l’avancement de chaque demande en temps réel."><Filters values={filters} active={active} onChange={setActive} dark /></ListHeader></div>
+    <div className="hidden md:block"><ListHeader desktop action={<NewRequestButton />} eyebrow="Demandes" title="Mes " italic="demandes." introduction="Suivez l’avancement de chaque demande en temps réel."><Filters values={filters} active={active} onChange={setActive} dark desktop /></ListHeader></div>
+    {isLoading ? <div className="mt-3 grid gap-3 md:mt-5 md:gap-4 lg:grid-cols-12"><Skeleton className="h-[400px] rounded-card bg-panel md:h-[460px] lg:col-span-7 lg:h-[600px]" /><Skeleton className="h-[180px] rounded-card bg-panel lg:col-span-5 lg:h-[600px]" /></div> : <>
       {/* Mobile (maquette V4) : grande carte puis cartes empilées. */}
-      <div className="mt-3 grid gap-3 lg:hidden">{list.map((r, index) => <RequestCard key={r.id} item={r} featured={index === 0 && isActiveRequest(r)} />)}</div>
+      <div className="mt-3 grid gap-3 md:hidden">{list.map((r, index) => <RequestCard key={r.id} item={r} featured={index === 0 && isActiveRequest(r)} />)}</div>
       {/* Ordinateur (maquette V4) : grande carte à gauche, les autres demandes en lignes dans un panneau à droite. */}
       {list.length > 0 && (() => {
         const featured = list[0] && isActiveRequest(list[0]) ? list[0] : null;
         const rest = featured ? list.slice(1) : list;
-        return <div className="mt-5 hidden lg:flex lg:flex-wrap lg:items-stretch lg:gap-4">
+        return <div className="mt-5 hidden md:flex md:flex-wrap md:items-stretch md:gap-4">
           {featured && <div className="min-w-0 flex-[7_1_520px]"><RequestCard item={featured} featured desktop /></div>}
           {rest.length > 0 && <div className={`min-w-0 rounded-[28px] bg-panel px-6 py-2.5 ${featured ? "flex-[5_1_340px] self-start" : "flex-1"}`}>{rest.map((r) => <RequestRow key={r.id} item={r} />)}</div>}
         </div>;

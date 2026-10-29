@@ -220,7 +220,7 @@ function Page() {
               {tPair("Que pouvons-nous", "organiser ?")[0]}
               <br />
             </Title>
-            <div className="mt-6 grid grid-cols-2 gap-3 lg:mt-0 lg:grid-cols-4 lg:gap-4">
+            <div className="mt-6 grid grid-cols-2 gap-3 md:gap-4 lg:mt-0 lg:grid-cols-4">
               {cats.map((cat) => (
                 <Button
                   key={cat.name}
@@ -228,7 +228,7 @@ function Page() {
                   variant="ghost"
                   onClick={() => setCategory(cat.name)}
                   className={cn(
-                    "relative h-[188px] lg:h-[400px] overflow-hidden rounded-[18px] border-2 p-0 text-left text-foreground transition-transform active:scale-[0.98]",
+                    "relative h-[188px] md:h-[260px] lg:h-[400px] overflow-hidden rounded-[18px] border-2 p-0 text-left text-foreground transition-transform active:scale-[0.98]",
                     category === cat.name ? "border-primary" : "border-transparent",
                   )}
                 >
@@ -237,7 +237,7 @@ function Page() {
                     {category === cat.name && <Check className="size-4" />}
                   </span>
                   <span className="absolute inset-x-4 bottom-4 whitespace-normal">
-                    <strong className="block text-[20px] font-normal lg:text-[40px]">{t(cat.name)}</strong>
+                    <strong className="block text-[20px] font-normal md:text-[30px] lg:text-[40px]">{t(cat.name)}</strong>
                     <small className="mt-1 block text-[11px] leading-4">{t(cat.note)}</small>
                   </span>
                 </Button>
@@ -248,7 +248,7 @@ function Page() {
               variant="ghost"
               onClick={() => setCategory(surMesure.name)}
               className={cn(
-                "relative mt-3 h-[120px] w-full overflow-hidden rounded-[18px] border-2 bg-primary-deep p-0 text-left text-foreground transition-transform active:scale-[0.98] lg:mt-4 lg:h-[180px]",
+                "relative mt-3 h-[120px] w-full overflow-hidden rounded-[18px] border-2 bg-primary-deep p-0 text-left text-foreground transition-transform active:scale-[0.98] md:mt-4 md:h-[150px] lg:h-[180px]",
                 category === surMesure.name ? "border-primary" : "border-transparent",
               )}
             >
@@ -260,7 +260,7 @@ function Page() {
                 {category === surMesure.name && <Check className="size-4" />}
               </span>
               <span className="absolute inset-x-5 bottom-4 whitespace-normal">
-                <strong className="block text-[20px] font-normal lg:text-[32px]">
+                <strong className="block text-[20px] font-normal md:text-[30px] lg:text-[32px]">
                   {tPair("Sur", "mesure")[0]}{" "}<span className="font-display italic">{tPair("Sur", "mesure")[1]}</span>
                 </strong>
                 <small className="mt-1 block text-[11px] leading-4">{t(surMesure.note)}</small>

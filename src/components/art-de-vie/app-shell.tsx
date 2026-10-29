@@ -32,7 +32,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label={t("Navigation principale")}
-      className={`fixed bottom-[max(16px,env(safe-area-inset-bottom))] left-1/2 z-50 grid h-16 w-[calc(100%-28px)] max-w-[500px] -translate-x-1/2 ${delegation ? "grid-cols-3" : "grid-cols-5"} items-center justify-items-center rounded-full border border-foreground/22 bg-primary-deep/86 px-2 text-foreground shadow-nav backdrop-blur-[18px] lg:hidden`}
+      className={`fixed bottom-[max(16px,env(safe-area-inset-bottom))] left-1/2 z-50 grid h-16 w-[calc(100%-28px)] max-w-[500px] -translate-x-1/2 ${delegation ? "grid-cols-3" : "grid-cols-5"} items-center justify-items-center rounded-full border border-foreground/22 bg-primary-deep/86 px-2 text-foreground shadow-nav backdrop-blur-[18px] md:flex md:w-auto md:max-w-none md:gap-1 lg:hidden`}
     >
       {items.map(({ to, label, Icon }, index) => {
         const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
@@ -42,14 +42,16 @@ export function BottomNav() {
             to={to}
             aria-label={to === "/demandes" && unread.length > 0 ? t("{label}, nouveautés", { label: t(label) }) : t(label)}
             aria-current={active ? "page" : undefined}
-            className={`relative flex size-12 items-center justify-center rounded-full transition-colors active:scale-95 ${delegation ? (index === 1 ? "col-start-3" : "") : index > 1 ? (index === 2 ? "col-start-4" : "col-start-5") : ""} ${active ? "bg-foreground/16" : "hover:bg-foreground/10"}`}
+            className={`relative flex size-12 items-center justify-center rounded-full transition-colors active:scale-95 md:w-auto md:gap-2 md:pl-4 md:pr-5 md:text-[15px] ${active ? "md:font-medium" : ""} ${delegation ? (index === 1 ? "col-start-3" : "") : index > 1 ? (index === 2 ? "col-start-4" : "col-start-5") : ""} ${active ? "bg-foreground/16" : "hover:bg-foreground/10"}`}
           >
             <Icon filled={active} aria-hidden="true" />
+            {/* Tablette : libellé à côté de l'icône. */}
+            <span aria-hidden="true" className="hidden whitespace-nowrap md:inline">{to === "/demandes" ? t("Mes demandes") : t(label)}</span>
             {to === "/demandes" && unread.length > 0 && <span aria-hidden="true" className="absolute right-2.5 top-2.5 size-2 rounded-full bg-foreground" />}
           </Link>
         );
       })}
-      <Button asChild variant="light" size="icon" className={`${delegation ? "col-start-2" : "col-start-3"} row-start-1 size-12`} title={t("Nouvelle demande")}>
+      <Button asChild variant="light" size="icon" className={`${delegation ? "col-start-2" : "col-start-3"} row-start-1 size-12 md:hidden`} title={t("Nouvelle demande")}>
         <Link to="/demandes/nouvelle" search={{ offer: undefined }} aria-label={t("Nouvelle demande")}>
           <Plus className="size-6" />
         </Link>
@@ -67,7 +69,7 @@ export function AppShell({
   nav?: boolean;
   immersive?: boolean;
 }) {
-  const baseMain = `appear mx-auto min-h-screen min-w-0 max-w-[1120px] ${immersive ? "px-3 pt-3" : "px-5 pt-6"} sm:px-8 lg:max-w-[1440px] lg:px-4 lg:pb-16 lg:pt-4`;
+  const baseMain = `appear mx-auto min-h-screen min-w-0 max-w-[1120px] ${immersive ? "px-3 pt-3" : "px-5 pt-6"} sm:px-8 md:px-5 lg:max-w-[1440px] lg:px-4 lg:pb-16 lg:pt-4`;
   return (
     <>
       <main className={`${baseMain} ${nav ? "pb-28 lg:pb-10" : "pb-10"}`}>
@@ -96,13 +98,24 @@ export function TopBar({ title, action }: { title?: string; action?: ReactNode }
         <div className="min-w-0">
           {title ? <span className="text-sm">{title}</span> : <Logo inverse className="h-[23px] w-auto max-w-full" />}
         </div>
-        {action ?? account ?? (
-          <Button asChild variant="light" size="icon" className="size-11 font-medium">
-            <Link to="/membership" aria-label={t("Votre Membership")}>
-              {initials(profile?.full_name ?? "")}
-            </Link>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Tablette : « Nouvelle demande » dans la barre du haut, le « + » de la barre du bas disparaît. */}
+          {!action && (
+            <Button asChild variant="light" className="hidden h-11 gap-2 px-5 text-[15px] md:inline-flex">
+              <Link to="/demandes/nouvelle" search={{ offer: undefined }}>
+                <Plus className="size-4" aria-hidden="true" />
+                {t("Nouvelle demande")}
+              </Link>
+            </Button>
+          )}
+          {action ?? account ?? (
+            <Button asChild variant="light" size="icon" className="size-11 font-medium">
+              <Link to="/membership" aria-label={t("Votre Membership")}>
+                {initials(profile?.full_name ?? "")}
+              </Link>
+            </Button>
+          )}
+        </div>
       </header>
       <nav
         aria-label={t("Navigation desktop")}
@@ -203,23 +216,23 @@ export function ListHeader({
   const [head, tail] = tPair(title, italic);
   return (
     <section
-      className={`relative isolate overflow-hidden rounded-[28px] bg-panel p-[14px] pb-[22px] text-foreground ${desktop ? "lg:overflow-visible lg:rounded-none lg:bg-transparent lg:p-0" : ""}`}
+      className={`relative isolate overflow-hidden rounded-[28px] bg-panel p-[14px] pb-[22px] text-foreground ${desktop ? "md:overflow-visible md:rounded-none md:bg-transparent md:p-0" : ""}`}
     >
-      <Logo inverse className={`pointer-events-none absolute -right-[18%] top-[36%] -z-10 w-[112%] max-w-none opacity-5 ${desktop ? "lg:hidden" : ""}`} />
+      <Logo inverse className={`pointer-events-none absolute -right-[18%] top-[36%] -z-10 w-[112%] max-w-none opacity-5 ${desktop ? "md:hidden" : ""}`} />
       <TopBar />
-      <div className={`px-1.5 pt-[34px] ${desktop ? "lg:px-8 lg:pt-14" : ""}`}>
+      <div className={`px-1.5 pt-[34px] ${desktop ? "md:px-3 md:pt-11 lg:px-8 lg:pt-14" : ""}`}>
         <p className="eyebrow mb-3.5 text-muted-foreground">{t(eyebrow)}</p>
-        <Title italic={tail} className={`text-[46px] leading-[0.98] ${desktop ? "lg:text-[clamp(56px,6vw,96px)]" : ""}`}>
+        <Title italic={tail} className={`text-[46px] leading-[0.98] ${desktop ? "md:text-[72px] lg:text-[clamp(56px,6vw,96px)]" : ""}`}>
           {head}
         </Title>
-        <div className={desktop ? "lg:mt-5 lg:flex lg:flex-wrap lg:items-end lg:justify-between lg:gap-6" : undefined}>
-          <p className={`mt-[22px] border-t border-foreground/24 pt-[18px] text-[15px] leading-[23px] text-muted-foreground ${desktop ? "lg:mt-0 lg:max-w-[620px] lg:border-0 lg:pt-0 lg:text-[18px] lg:leading-7" : ""}`}>
+        <div className={desktop ? "md:mt-5 md:flex md:flex-wrap md:items-end md:justify-between md:gap-6" : undefined}>
+          <p className={`mt-[22px] border-t border-foreground/24 pt-[18px] text-[15px] leading-[23px] text-muted-foreground ${desktop ? "md:mt-0 md:max-w-[620px] md:border-0 md:pt-0 md:text-[18px] md:leading-7" : ""}`}>
             {t(introduction)}
           </p>
-          {action && <div className={desktop ? "hidden lg:block" : "hidden"}>{action}</div>}
+          {action && <div className={desktop ? "hidden md:block" : "hidden"}>{action}</div>}
         </div>
       </div>
-      {children && <div className={`-mx-[14px] mt-5 px-5 ${desktop ? "lg:mx-0 lg:mt-7 lg:px-8" : ""}`}>{children}</div>}
+      {children && <div className={`-mx-[14px] mt-5 px-5 ${desktop ? "md:mx-0 md:mt-7 md:px-3 lg:px-8" : ""}`}>{children}</div>}
     </section>
   );
 }

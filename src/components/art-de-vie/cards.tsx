@@ -58,7 +58,7 @@ export function RequestCard({
         params={{ requestId: item.id }}
         className={cn(
           "relative block h-[400px] overflow-hidden rounded-card text-foreground transition-transform active:scale-[0.99] lg:h-[430px]",
-          desktop && "lg:h-full lg:min-h-[600px]",
+          desktop && "md:h-[460px] lg:h-full lg:min-h-[600px]",
         )}
       >
         <Photo
@@ -68,23 +68,23 @@ export function RequestCard({
           className="absolute inset-0 h-full w-full"
         />
         {/* Maquette V4 : marges de 12 px, panneau verre 16/18 px, titre 30 px sur une ligne. */}
-        <div className={cn("absolute inset-x-3 top-3 flex items-start justify-between gap-3", desktop && "lg:inset-x-4 lg:top-4")}>
-          <span className={cn("dark-glass inline-flex h-[30px] items-center whitespace-nowrap rounded-full px-3 text-[11px] font-semibold uppercase tracking-[0.13em]", desktop && "lg:h-[34px] lg:px-3.5 lg:text-[12px]")}>
-            <span className={desktop ? "lg:hidden" : undefined}>( {t(item.category)} )</span>
-            {desktop && <span className="hidden lg:inline">{t(item.category)}</span>}
+        <div className={cn("absolute inset-x-3 top-3 flex items-start justify-between gap-3", desktop && "md:inset-x-4 md:top-4")}>
+          <span className={cn("dark-glass inline-flex h-[30px] items-center whitespace-nowrap rounded-full px-3 text-[11px] font-semibold uppercase tracking-[0.13em]", desktop && "md:h-[34px] md:px-3.5 md:text-[12px]")}>
+            <span className={desktop ? "md:hidden" : undefined}>( {t(item.category)} )</span>
+            {desktop && <span className="hidden md:inline">{t(item.category)}</span>}
           </span>
           <span className="flex shrink-0 items-center gap-2">{isNew && <NewMark onPhoto />}<StatusBadge status={item.status} onPhoto /></span>
         </div>
         <div
           className={cn(
             "dark-glass absolute inset-x-3 bottom-3 rounded-[20px] px-[18px] pb-[18px] pt-4",
-            desktop && "lg:inset-x-6 lg:bottom-6 lg:max-w-[520px] lg:p-6",
+            desktop && "md:inset-x-6 md:bottom-6 md:max-w-[520px] md:p-6",
           )}
         >
           <div className="flex items-center justify-between gap-3">
             <p className="text-[13px] text-muted-foreground">{formatRequestDate(item)}</p>
           </div>
-          <h2 className={cn("mt-2 text-[30px] leading-[1.06] tracking-[-0.04em]", desktop && "lg:text-[40px]")}>{item.title}</h2>
+          <h2 className={cn("mt-2 text-[30px] leading-[1.06] tracking-[-0.04em]", desktop && "md:text-[38px] lg:text-[40px]")}>{item.title}</h2>
           <div className="mt-4">
             <StatusTimeline status={item.status} dark />
           </div>
@@ -273,15 +273,15 @@ export function EditorialOfferCard({ offer, variant }: { offer: Offer; variant: 
       <Link
         to="/demandes/nouvelle"
         search={search}
-        className="block rounded-[28px] bg-primary p-3 text-primary-foreground transition-transform active:scale-[0.99] lg:grid lg:h-[440px] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-6 lg:p-4"
+        className="block rounded-[28px] bg-primary p-3 text-primary-foreground transition-transform active:scale-[0.99] md:grid md:h-[320px] md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-6 md:p-4 lg:h-[440px]"
       >
         <Photo
           src={offerImage(offer)}
           alt={offer.title}
           category={offer.category}
-          className="h-[244px] rounded-[18px] lg:h-full lg:min-h-0"
+          className="h-[244px] rounded-[18px] md:h-full md:min-h-0"
         />
-        <div className="px-3 pb-2 pt-6 lg:flex lg:min-w-0 lg:flex-col lg:justify-center lg:px-0 lg:py-6">
+        <div className="px-3 pb-2 pt-6 md:flex md:min-w-0 md:flex-col md:justify-center md:px-0 md:py-4 lg:py-6">
           <span className="eyebrow text-ink-soft">
             {t(offer.category)} · {offer.promo}
           </span>
@@ -302,7 +302,7 @@ export function EditorialOfferCard({ offer, variant }: { offer: Offer; variant: 
       search={search}
       className={cn(
         "relative block overflow-hidden rounded-card text-foreground transition-transform active:scale-[0.99]",
-        variant === "hero" ? "h-[412px] lg:h-[520px]" : "h-[268px] lg:h-full lg:min-h-[440px]",
+        variant === "hero" ? "h-[412px] md:h-[460px] lg:h-[520px]" : "h-[268px] md:h-[320px] lg:h-full lg:min-h-[440px]",
         "rounded-[24px] bg-panel lg:rounded-[28px]",
       )}
     >
@@ -355,7 +355,7 @@ export function Filters({
     <div
       className={cn(
         "no-scrollbar flex min-w-0 gap-2 overflow-x-auto pb-1",
-        desktop && "lg:flex-wrap lg:overflow-visible lg:pb-0",
+        desktop && "md:flex-wrap md:overflow-visible md:pb-0",
       )}
     >
       {values.map((value) => (

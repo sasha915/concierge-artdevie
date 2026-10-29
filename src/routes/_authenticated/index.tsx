@@ -69,15 +69,15 @@ function CurrentRequest({ item }: { item: RequestItem }) {
     <Link
       to="/demandes/$requestId"
       params={{ requestId: item.id }}
-      className="block h-full rounded-[24px] bg-primary p-[18px] text-primary-foreground transition-transform active:scale-[0.98] lg:flex lg:flex-col lg:rounded-[28px] lg:p-3"
+      className="block h-full rounded-[24px] bg-primary p-[18px] text-primary-foreground transition-transform active:scale-[0.98] md:flex md:gap-3 md:rounded-[28px] md:p-3 lg:flex-col lg:gap-0"
     >
-      <Photo src={requestPhoto(item)} alt={item.title} category={item.category} className="hidden lg:block lg:h-[250px] lg:rounded-[20px]" />
-      <span className="block lg:mt-auto lg:px-3 lg:pb-1 lg:pt-5">
+      <Photo src={requestPhoto(item)} alt={item.title} category={item.category} className="hidden md:block md:min-h-[260px] md:w-[300px] md:shrink-0 md:rounded-[18px] lg:h-[250px] lg:min-h-0 lg:w-auto lg:rounded-[20px]" />
+      <span className="block md:min-w-0 md:flex-1 md:self-center md:px-2 md:py-2 lg:mt-auto lg:flex-none lg:self-auto lg:px-3 lg:pb-1 lg:pt-5">
         <span className="flex items-center justify-between gap-3">
           <span className="eyebrow text-ink-soft">{t("Demande en cours")}</span>
           <span className="inline-flex h-[26px] items-center rounded-full bg-primary-foreground px-[11px] text-[12px] font-medium text-primary">{t(item.status)}</span>
         </span>
-        <span className="mt-3.5 block text-[28px] leading-[1.08] tracking-[-0.04em] lg:mt-4 lg:text-[32px]">{item.title}</span>
+        <span className="mt-3.5 block text-[28px] leading-[1.08] tracking-[-0.04em] md:mt-4 md:text-[32px]">{item.title}</span>
         <span className="mt-1.5 block text-[14px] leading-5 text-ink-soft">
           {formatDate(item.scheduled_date)}
           {item.scheduled_time ? ` · ${formatTime(item.scheduled_time)}` : ""}
@@ -106,14 +106,14 @@ function MiniMember({ profile }: { profile: Profile | null | undefined }) {
   );
 }
 
-const tile = "flex min-h-[156px] min-w-0 flex-col justify-between gap-3 rounded-[24px] p-[14px] pl-[18px] transition-transform active:scale-[0.98] lg:min-h-[216px] lg:rounded-[28px] lg:p-6";
+const tile = "flex min-h-[156px] min-w-0 flex-col justify-between gap-3 rounded-[24px] p-[14px] pl-[18px] transition-transform active:scale-[0.98] md:min-h-[176px] md:p-5 lg:min-h-[216px] lg:rounded-[28px] lg:p-6";
 
 /** Offre en vedette : carte photo (mobile, carrousel). */
 function HomeOffer({ offer }: { offer: Offer }) {
   return (
     <Link
       to="/offres"
-      className="relative flex h-[300px] w-[236px] shrink-0 flex-col justify-between overflow-hidden rounded-[24px] bg-panel p-3 pb-[18px] text-foreground transition-transform active:scale-[0.98]"
+      className="relative flex h-[300px] w-[236px] shrink-0 flex-col md:w-auto justify-between overflow-hidden rounded-[24px] bg-panel p-3 pb-[18px] text-foreground transition-transform active:scale-[0.98]"
     >
       <Photo src={offerImage(offer)} alt={offer.title} category={offer.category} className="absolute inset-0 h-full" />
       <span className="relative flex">
@@ -175,36 +175,36 @@ function MemberHome() {
 
   return (
     <AppShell immersive>
-      <div className="hidden lg:mb-5 lg:block">
+      <div className="hidden md:mb-4 md:block lg:mb-5">
         <TopBar />
       </div>
       {/* Une colonne bornée à l'écran sur mobile : le carrousel d'offres défile au lieu d'élargir la page. */}
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-12 lg:gap-4">
+      <div className="grid grid-cols-1 gap-3 md:gap-4 lg:grid-cols-12">
         {/* Héros */}
-        <section className={`relative flex min-h-[476px] flex-col justify-between overflow-hidden rounded-[28px] bg-panel p-[14px] pb-[18px] text-foreground lg:min-h-[540px] lg:p-9 ${nextRequest ? "lg:col-span-8" : "lg:col-span-12"}`}>
+        <section className={`relative flex min-h-[476px] flex-col justify-between overflow-hidden rounded-[28px] bg-panel p-[14px] pb-[18px] text-foreground md:min-h-[520px] md:p-8 lg:min-h-[540px] lg:p-9 ${nextRequest ? "lg:col-span-8" : "lg:col-span-12"}`}>
           <Photo src={vendome.url} alt={t("La place Vendôme à Paris")} hero eager className="absolute inset-0 h-full w-full" />
-          <div className="relative lg:hidden">
+          <div className="relative md:hidden">
             <TopBar />
           </div>
-          <div className="relative hidden items-start justify-between gap-4 lg:flex">
+          <div className="relative hidden items-start justify-between gap-4 md:flex">
             <p className="eyebrow text-muted-foreground">{today}</p>
             <span className="rounded-full border border-foreground/24 px-4 py-2 text-[14px]">{hello}</span>
           </div>
-          <div className="relative px-1.5 lg:px-0">
-            <p className="eyebrow mb-3.5 text-muted-foreground lg:hidden">{hello}</p>
-            <Title as="h1" italic={heroTitle[1]} className="text-[46px] leading-none lg:max-w-[820px] lg:text-[clamp(56px,6vw,92px)] lg:leading-[0.98]">
+          <div className="relative px-1.5 md:px-0">
+            <p className="eyebrow mb-3.5 text-muted-foreground md:hidden">{hello}</p>
+            <Title as="h1" italic={heroTitle[1]} className="text-[46px] leading-none md:text-[72px] md:leading-[0.96] lg:max-w-[820px] lg:text-[clamp(56px,6vw,92px)] lg:leading-[0.98]">
               {heroTitle[0]}{" "}
             </Title>
-            <p className="mt-6 hidden max-w-[520px] text-[18px] leading-7 text-foreground/90 lg:block">
+            <p className="mt-6 hidden max-w-[520px] text-[18px] leading-7 text-foreground/90 md:block">
               {t("Suivez vos demandes et vos privilèges, ou contactez votre concierge en un geste.")}
             </p>
-            <div className="mt-[22px] lg:mt-7 lg:flex lg:flex-wrap lg:gap-3">
-              <PillAction asChild light plus className="w-full lg:w-auto">
+            <div className="mt-[22px] md:mt-7 md:flex md:flex-wrap md:gap-3">
+              <PillAction asChild light plus className="w-full md:w-auto">
                 <Link to="/demandes/nouvelle" search={{ offer: undefined }}>
                   {t("Nouvelle demande")}
                 </Link>
               </PillAction>
-              <Link to="/demandes" className="hidden h-[52px] items-center rounded-full border border-foreground/24 px-6 text-[15px] font-medium transition-colors hover:bg-foreground/10 lg:inline-flex">
+              <Link to="/demandes" className="hidden h-[52px] items-center rounded-full border border-foreground/24 px-6 text-[15px] font-medium transition-colors hover:bg-foreground/10 md:inline-flex">
                 {t("Mes demandes")}
               </Link>
             </div>
@@ -221,7 +221,7 @@ function MemberHome() {
         ) : null}
 
         {/* Tuiles */}
-        <section aria-label={t("Votre activité")} className="grid grid-cols-2 gap-3 lg:col-span-12 lg:grid-cols-4 lg:gap-4">
+        <section aria-label={t("Votre activité")} className="grid grid-cols-2 gap-3 md:gap-4 lg:col-span-12 lg:grid-cols-4">
           <Link to="/demandes" className={`${tile} bg-panel text-foreground`}>
             <span className="flex justify-end"><Ring /></span>
             <span>
@@ -268,16 +268,16 @@ function MemberHome() {
         </section>
 
         {/* Mobile : offres en carrousel */}
-        <section className="mt-6 min-w-0 lg:hidden">
+        <section className="mt-6 min-w-0 md:order-last md:mt-4 lg:hidden">
           <div className="flex items-end justify-between gap-3 px-2 pb-4">
-            <Title as="h2" italic={offersTitle[1]} className="text-[34px] leading-[1.04] text-primary">
+            <Title as="h2" italic={offersTitle[1]} className="text-[34px] leading-[1.04] text-primary md:text-[44px]">
               {offersTitle[0]}{" "}
             </Title>
             <Link to="/offres" aria-label={t("Toutes les offres")} className="rounded-full">
               <Ring diagonal={false} className="size-11" />
             </Link>
           </div>
-          <div className="no-scrollbar -mx-3 flex gap-3 overflow-x-auto px-3 pb-1">
+          <div className="no-scrollbar -mx-3 flex gap-3 overflow-x-auto px-3 pb-1 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0 md:[&>*:nth-child(n+4)]:hidden">
             {offersPending
               ? [0, 1].map((i) => <Skeleton key={i} className="h-[300px] w-[236px] shrink-0 rounded-[24px] bg-panel" />)
               : offers.map((o) => <HomeOffer key={o.id} offer={o} />)}
@@ -286,7 +286,7 @@ function MemberHome() {
         </section>
 
         {/* Ordinateur : dernières demandes et offres en vedette */}
-        <section className="hidden lg:col-span-7 lg:block lg:rounded-[28px] lg:bg-panel lg:p-7">
+        <section className="hidden md:block md:rounded-[28px] md:bg-panel md:p-6 lg:col-span-7 lg:p-7">
           <p className="eyebrow text-muted-foreground">{t("Demandes récentes")}</p>
           <div className="mt-4 flex items-end justify-between gap-4">
             <Title as="h2" italic={latestTitle[1]} className="text-[clamp(34px,3.2vw,52px)]">{latestTitle[0]}{" "}</Title>

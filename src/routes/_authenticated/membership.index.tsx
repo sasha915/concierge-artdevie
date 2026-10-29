@@ -93,7 +93,7 @@ function Page() {
   );
 
   const tiles = (
-    <div className="grid grid-cols-2 gap-3 lg:gap-4">
+    <div className="grid grid-cols-2 gap-3 md:gap-4">
       <AccountTile to="/membership/informations" label={t("Vos informations")} icon={<CircleUserRound className="size-[18px]" />} />
       <AccountTile to="/membership/factures" label={t("Mes factures")} icon={<FileText className="size-[18px]" />} tone="glass" />
       <AccountTile to="/membership/historique" label={t("Historique des demandes")} icon={<History className="size-[18px]" />} tone="glass" />
@@ -109,12 +109,12 @@ function Page() {
 
   return (
     <AppShell immersive>
-      <div className="hidden lg:mb-10 lg:block">
+      <div className="hidden md:mb-4 md:block lg:mb-10">
         <TopBar />
       </div>
 
       {/* Mobile */}
-      <div className="lg:hidden">
+      <div className="md:hidden">
         <section className="relative isolate flex h-[372px] flex-col justify-between overflow-hidden rounded-[28px] bg-panel p-[14px] pb-24 text-foreground">
           <Photo src={imageFor("entree-de-nuit")} alt={t("Entrée Art de Vie de nuit")} hero eager className="absolute inset-0 -z-10 h-full w-full" />
           <TopBar />
@@ -135,6 +135,29 @@ function Page() {
         </section>
         <div className="mt-3">{quote}</div>
         <div className="mt-3">{footer}</div>
+      </div>
+
+      {/* Tablette : carte et citation côte à côte, puis les accès du compte. */}
+      <div className="hidden md:block lg:hidden">
+        <header className="px-3 pt-7">
+          <p className="eyebrow text-muted-foreground">{t("Membership")}</p>
+          <Title italic={tail} className="mt-4 text-[72px] leading-[0.98]">{head}{" "}</Title>
+          <p className="mt-5 max-w-[560px] text-[18px] leading-7 text-muted-foreground">
+            {t("Votre carte personnelle ouvre l’accès à votre espace et aux attentions réservées par notre maison.")}
+          </p>
+        </header>
+        <div className="mt-7 grid grid-cols-2 items-start gap-4">
+          <MemberCard profile={profile} />
+          <div className="space-y-4">
+            {quote}
+            {writeButton}
+          </div>
+        </div>
+        <section className="mt-9">
+          <h2 className="eyebrow mx-3 mb-4 text-muted-foreground">{t("Votre compte")}</h2>
+          {tiles}
+        </section>
+        <div className="mt-5">{footer}</div>
       </div>
 
       {/* Ordinateur */}

@@ -72,12 +72,12 @@ function MemberPage({ requestId }: { requestId: string }) {
     );
   return (
     <AppShell nav={false}>
-      <div className="hidden lg:mb-5 lg:block">
+      <div className="hidden md:mb-4 md:block lg:mb-5">
         <TopBar />
       </div>
-      <div className="mx-auto max-w-[760px] lg:grid lg:max-w-none lg:grid-cols-12 lg:items-start lg:gap-4">
+      <div className="mx-auto max-w-[760px] md:max-w-none lg:grid lg:max-w-none lg:grid-cols-12 lg:items-start lg:gap-4">
         <div className="min-w-0 lg:col-span-8">
-        <section className="relative -mx-2 -mt-3 h-[452px] overflow-hidden rounded-[28px] bg-panel text-foreground sm:mx-0 sm:mt-0 lg:h-[340px]">
+        <section className="relative -mx-2 -mt-3 h-[452px] overflow-hidden rounded-[28px] bg-panel text-foreground sm:mx-0 sm:mt-0 md:h-[420px] lg:h-[340px]">
           <Photo
             src={requestPhoto(item)}
             alt={item.title}
@@ -86,12 +86,12 @@ function MemberPage({ requestId }: { requestId: string }) {
             className="absolute inset-0 h-full w-full"
           />
           <div className="absolute inset-x-4 top-4 flex items-center justify-between lg:inset-x-5 lg:top-5">
-            <Button asChild variant="ghost" size="icon" className="dark-glass text-foreground hover:bg-primary-deep/70 lg:hidden">
+            <Button asChild variant="ghost" size="icon" className="dark-glass text-foreground hover:bg-primary-deep/70 md:hidden">
               <Link to="/demandes" aria-label={t("Retour")}>
                 <ChevronLeft />
               </Link>
             </Button>
-            <Link to="/demandes" className="dark-glass hidden h-10 items-center gap-2 rounded-full px-4 text-[14px] lg:inline-flex">
+            <Link to="/demandes" className="dark-glass hidden h-11 items-center gap-2 rounded-full px-4 text-[15px] md:inline-flex lg:h-10 lg:text-[14px]">
               <ChevronLeft className="size-4" />
               {t("Mes demandes")}
             </Link>
@@ -99,8 +99,8 @@ function MemberPage({ requestId }: { requestId: string }) {
               {t(item.category)}
             </span>
           </div>
-          <div className="absolute inset-x-5 bottom-5 lg:inset-x-6 lg:bottom-6">
-            <h1 className="v3-heading max-w-[620px] text-[43px] leading-[1.02] lg:text-[clamp(48px,4.6vw,68px)]">{item.title.split(" ").slice(0, -1).join(" ")}{" "}<em className="font-display font-normal">{item.title.split(" ").at(-1)}</em></h1>
+          <div className="absolute inset-x-5 bottom-5 md:inset-x-7 md:bottom-7 lg:inset-x-6 lg:bottom-6">
+            <h1 className="v3-heading max-w-[620px] text-[43px] leading-[1.02] md:text-[64px] lg:text-[clamp(48px,4.6vw,68px)]">{item.title.split(" ").slice(0, -1).join(" ")}{" "}<em className="font-display font-normal">{item.title.split(" ").at(-1)}</em></h1>
             <p className="mt-3 text-[15px] text-muted-foreground lg:text-[16px]">
               {formatDate(item.scheduled_date)}
               {item.scheduled_time ? ` · ${formatTime(item.scheduled_time)}` : ""}
