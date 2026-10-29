@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLayoutEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { profileQuery } from "@/lib/adv-queries";
+import { isAdminQuery } from "@/lib/admin-queries";
 import { setLang } from "@/lib/i18n";
 import { DEFAULT_TIMEZONE, setTimeZone } from "@/lib/timezone";
 import { isDelegatePathAllowed } from "@/lib/delegate-rules";
@@ -38,6 +39,10 @@ function Authenticated() {
   useLayoutEffect(() => {
     setTimeZone(tz);
   }, [tz]);
+
+  // Un compte de l'équipe n'a pas d'espace membre : toute page membre le renvoie vers l'espace équipe.
+  const { data: isTeam } = useQuery({ ...isAdminQuery, enabled: !team });
+  if (!team && isTeam === true) return <Navigate to="/admin" replace />;
 
   // L'interface équipe a sa propre garde (rôle + verrou) : la règle des proches ne s'y applique pas.
   if (!team && isSuccess && profile === null) {

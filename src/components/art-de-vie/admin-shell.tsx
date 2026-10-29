@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Lock, LogOut, Menu, Plus, X } from "lucide-react";
+import { Lock, LogOut, Menu, Plus, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Logo } from "@/components/art-de-vie/app-shell";
 import { supabase } from "@/integrations/supabase/client";
@@ -104,7 +104,6 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
               </div>
               <div className="mt-2.5 flex flex-wrap gap-2 border-t border-border px-1.5 pb-1 pt-3">
                 <Button type="button" variant="outline" onClick={lockSession} className="h-11 gap-2 rounded-full px-4"><Lock className="size-4" />Verrouiller</Button>
-                <Link to="/membership" onClick={() => setMenuOpen(false)} className={`${pill} border border-border hover:bg-primary/10`}><ArrowLeft className="size-4 shrink-0" />Retour à l’espace membre</Link>
                 <Button type="button" variant="outline" onClick={signOut} className="h-11 gap-2 rounded-full px-4"><LogOut className="size-4" />Se déconnecter</Button>
               </div>
             </nav>
@@ -121,7 +120,8 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
           })}
           <Link to="/admin/demandes/nouvelle" className={`${pill} bg-primary font-medium text-primary-foreground hover:bg-primary/90`}><Plus className="size-4" />Demande</Link>
           {/* Maquette V4 : les initiales mènent à l'espace membre. */}
-          <Link to="/membership" aria-label="Retour à l’espace membre" title="Retour à l’espace membre" className="inline-flex size-11 items-center justify-center rounded-full bg-primary text-[13px] font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{initials(profile?.full_name ?? "")}</Link>
+          {/* Initiales du compte connecté : simple repère, l'équipe n'a pas d'espace membre. */}
+          <span title={profile?.full_name ? `Connecté : ${profile.full_name}` : undefined} aria-label={profile?.full_name ? `Connecté : ${profile.full_name}` : undefined} className="inline-flex size-11 items-center justify-center rounded-full bg-primary text-[13px] font-semibold text-primary-foreground">{initials(profile?.full_name ?? "")}</span>
           <Button type="button" variant="outline" size="icon" title="Verrouiller l’espace équipe" aria-label="Verrouiller l’espace équipe" onClick={lockSession} className="size-11 rounded-full"><Lock className="size-4" /></Button>
           <Button type="button" variant="outline" size="icon" title="Se déconnecter" aria-label="Se déconnecter" onClick={signOut} className="size-11 rounded-full"><LogOut className="size-4" /></Button>
         </nav>
