@@ -106,7 +106,8 @@ function Page() {
       <div className="grid min-w-0 content-start gap-4 lg:col-span-7">
         <section className="team-panel rounded-[28px] p-6">
           <div className="flex flex-wrap items-center gap-2"><span className="eyebrow rounded-full border border-border px-3 py-1 text-[10px]">{r.category}</span><TeamStatus status={r.status} /></div>
-          <h1 className="mt-4 break-words text-[clamp(32px,4vw,52px)] leading-[1.02]">{r.title}</h1>
+          <h1 className="v3-heading mt-4 break-words text-[clamp(32px,4vw,52px)] leading-[1.02]">{r.title}</h1>
+          <p className="mt-3 text-[14px] text-muted-foreground">Reçue le {formatDate(r.created_at.slice(0, 10))}{r.scheduled_date ? ` · souhaitée le ${formatDate(r.scheduled_date)}` : ""}</p>
           {r.delegate_name && <p className="mt-3 inline-flex rounded-full border border-border px-3 py-1 text-[12px]">Demandée par {r.delegate_name}, proche du membre</p>}
           <p className="eyebrow team-mention mt-6">Précisions du membre</p>
           <p className="mt-3 whitespace-pre-line rounded-[18px] bg-foreground p-4 text-[15px] leading-6 text-background">{r.description || "Aucune précision complémentaire n’a été indiquée."}</p>
@@ -161,7 +162,7 @@ function Page() {
                 <p className="mt-2 whitespace-pre-line break-words text-[15px] leading-6">{n.body}</p>
               </li>)}</ol>}
           <label htmlFor="team-note" className="sr-only">Nouvelle note interne</label>
-          <Textarea id="team-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={4000} rows={3} placeholder="Ajouter une note pour l’équipe…" className="mt-4 min-h-[96px]" />
+          <Textarea id="team-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={4000} rows={3} placeholder="Ajouter une note…" className="mt-4 min-h-[96px]" />
           <div className="mt-4 flex justify-end">
             <Button type="button" variant="outline" disabled={busy || !note.trim()} onClick={() => run(async () => { const res = await addNote({ data: { requestId: r.id, body: note } }); if (res.ok) setNote(""); return res; }, "Note ajoutée.")} className="h-11 rounded-full px-5">Ajouter la note</Button>
           </div>
@@ -171,16 +172,20 @@ function Page() {
       <div className="grid min-w-0 content-start gap-4 lg:col-span-5">
         <section className="team-panel rounded-[28px] p-6">
           <h2 className="eyebrow team-mention">Statut</h2>
-          <div role="group" aria-label="Statut de la demande" className="mt-4 flex flex-wrap gap-2">
-            {STATUSES.map((s) => {
+          {/* Maquette V4 : sélecteur segmenté ; l'annulation reste un bouton distinct. */}
+          <div role="group" aria-label="Statut de la demande" className="team-glass mt-4 flex flex-wrap gap-1 rounded-[28px] p-1 sm:rounded-full">
+            {STATUSES.filter((s) => s !== "Annulée").map((s) => {
               const active = s === r.status;
               const allowed = canTransition(r.status, s);
               return <button key={s} type="button" disabled={busy || !allowed} title={allowed ? undefined : `Passage impossible depuis « ${r.status} »`} aria-pressed={active} onClick={() => changeStatus(s)}
-                className={`h-11 rounded-full px-4 text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 ${active ? "bg-primary text-primary-foreground" : s === "Annulée" ? "border border-dashed border-border hover:bg-primary/10" : "border border-border hover:bg-primary/10"}`}>
-                {s === "Annulée" ? "Annuler la demande" : s}
+                className={`h-11 flex-1 whitespace-nowrap rounded-full px-3 text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 ${active ? "bg-primary text-primary-foreground disabled:opacity-100" : "hover:bg-primary/10"}`}>
+                {s}
               </button>;
             })}
           </div>
+          {r.status === "Annulée"
+            ? <p className="mt-3 inline-flex rounded-full border border-dashed border-border px-3 py-1 text-[12px] team-mention">Demande annulée</p>
+            : <button type="button" disabled={busy || !canTransition(r.status, "Annulée")} title={canTransition(r.status, "Annulée") ? undefined : `Passage impossible depuis « ${r.status} »`} onClick={() => changeStatus("Annulée")} className="mt-3 h-11 rounded-full border border-dashed border-border px-4 text-[14px] font-medium transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60">Annuler la demande</button>}
         </section>
 
         <section className="team-panel rounded-[28px] p-6">
@@ -300,10 +305,10 @@ function ChangeBanner({ requestId, busy, run }: { requestId: string; busy: boole
   const pending = changes.find((c) => c.status === "en attente");
   if (!pending) return null;
   return <section aria-label="Demande de modification" className="mt-4 rounded-[28px] bg-foreground p-6 text-background">
-    <p className="eyebrow">Demande de modification · {stamp(pending.created_at)}</p>
+    <p className="eyebrow">Modification demandée par le membre · {stamp(pending.created_at)}</p>
     <p className="mt-3 text-[22px] leading-tight">{pending.label}</p>
     {pending.body && <p className="mt-2 whitespace-pre-line text-[15px] leading-6">{pending.body}</p>}
-    <p className="mt-3 text-[13px] opacity-80">Accepter ne modifie rien automatiquement : mettez ensuite la demande à jour vous-même.</p>
+    <p className="mt-3 text-[13px] opacity-80">La demande reste inchangée tant que vous n’avez pas tranché. Accepter ne modifie rien automatiquement : mettez-la ensuite à jour vous-même.</p>
     <div className="mt-4 flex flex-wrap gap-2">
       <button type="button" disabled={busy} onClick={() => run(() => decide({ data: { id: pending.id, decision: "acceptée" } }), "Modification acceptée. Le membre est prévenu.")} className="h-11 rounded-full bg-background px-5 text-[14px] font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60">Accepter</button>
       <button type="button" disabled={busy} onClick={() => run(() => decide({ data: { id: pending.id, decision: "refusée" } }), "Modification refusée. Le membre est prévenu.")} className="h-11 rounded-full border border-background/40 px-5 text-[14px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60">Refuser</button>
@@ -412,7 +417,7 @@ function ProposalBlock({ requestId, cancelled, busy, run }: { requestId: string;
   return <section aria-labelledby="proposal-title" className="team-panel rounded-[28px] p-6">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h2 id="proposal-title" className="eyebrow team-mention">Proposition au membre</h2>
-      {latest && <span className={`rounded-full px-3 py-1 text-[11px] ${latest.status === "en attente" ? "border border-dashed border-border" : latest.status === "acceptée" ? "bg-primary text-primary-foreground" : "border border-border"}`}>{latest.status === "en attente" ? "En attente de réponse" : latest.status === "acceptée" ? "Option choisie" : "Aucune ne convient"}</span>}
+      {latest && <span className={`rounded-full px-3 py-1 text-[11px] ${latest.status === "en attente" ? "border border-dashed border-border" : latest.status === "acceptée" ? "bg-primary text-primary-foreground" : "border border-border"}`}>{latest.status === "en attente" ? "En attente de sa réponse" : latest.status === "acceptée" ? "Option choisie" : "Aucune ne convient"}</span>}
     </div>
     {latest && !drafting && <>
       <ol className="mt-4 grid gap-2">{latest.options.map((o) => <li key={o.id} className={`rounded-2xl p-4 ${o.chosen ? "bg-foreground text-background" : "border border-border"}`}>

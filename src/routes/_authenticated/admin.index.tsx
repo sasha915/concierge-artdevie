@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Plus } from "lucide-react";
+import vendome from "@/assets/v3/place-vendome.jpg.asset.json";
 import { AdminShell, TeamStatus } from "@/components/art-de-vie/admin-shell";
 import { Title } from "@/components/art-de-vie/v3";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,11 +35,17 @@ function elapsed(iso: string) {
   return `il y a ${Math.round(h / 24)} jours`;
 }
 
-function Stat({ value, label }: { value: number; label: string }) {
-  return <div className="team-panel flex min-h-[200px] flex-col justify-end rounded-card p-6">
-    <p className="font-display text-[72px] leading-none">{value}</p>
-    <p className="mt-2 text-[14px] text-muted-foreground">{label}</p>
-  </div>;
+function Stat({ value, label, to }: { value: number; label: string; to: "/admin/demandes" | "/admin/membres" }) {
+  return <Link to={to} className="team-panel flex min-h-[200px] flex-col justify-between rounded-[24px] p-6 transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+    <span className="flex justify-end"><span className="flex size-10 items-center justify-center rounded-full border border-border"><ArrowUpRight className="size-4" /></span></span>
+    <span><span className="block font-display text-[72px] leading-none">{value}</span><span className="mt-2 block text-[14px] text-muted-foreground">{label}</span></span>
+  </Link>;
+}
+
+function Count({ value, label }: { value: number; label: string }) {
+  return <Link to="/admin/demandes" className="flex items-baseline gap-2.5 rounded-[20px] border border-foreground/24 bg-background/55 px-5 py-3 backdrop-blur-[18px] transition-colors hover:bg-background/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+    <span className="font-display text-[36px] leading-10">{value}</span><span className="text-[15px] text-muted-foreground">{label}</span>
+  </Link>;
 }
 
 function Page() {
@@ -70,29 +77,47 @@ function Page() {
     }
   }
 
+  const plural = (n: number, one: string, many: string) => (n > 1 ? many : one);
   return <AdminShell>
-    <p className="eyebrow team-mention">{today || "Tableau de bord"}</p>
-    <Title italic={`${firstName || "à vous"}.`} className="mt-3 text-primary lg:text-[clamp(52px,6vw,88px)]">{greeting}, </Title>
-    {data && <p className="mt-4 flex flex-wrap gap-2 text-[14px]" aria-label="À traiter aujourd’hui">
-      <span className="team-mention self-center">À traiter aujourd’hui :</span>
-      <span className="rounded-full border border-primary px-3 py-1">{data.byStatus.nouvelle} nouvelle{data.byStatus.nouvelle > 1 ? "s" : ""}</span>
-      <span className="rounded-full bg-primary/18 px-3 py-1">{data.byStatus.enCours} en cours</span>
-      <span className="rounded-full bg-[var(--team-confirmed)] px-3 py-1 text-primary-foreground">{data.byStatus.confirmee} confirmée{data.byStatus.confirmee > 1 ? "s" : ""}</span>
-    </p>}
+    <h1 className="sr-only">Tableau de bord</h1>
+    {isLoading || !data ? <div className="grid gap-4 lg:grid-cols-12"><Skeleton className="h-[460px] rounded-[28px] bg-primary/10 lg:col-span-8" /><Skeleton className="h-[460px] rounded-[28px] bg-primary/10 lg:col-span-4" /></div> : <>
+      <div className="grid min-w-0 gap-4 lg:grid-cols-12">
+        {/* Maquette V4 : en-tête photo « À traiter aujourd'hui. » et compteurs cliquables. */}
+        <section className="relative isolate flex min-h-[420px] flex-col justify-between gap-8 overflow-hidden rounded-[28px] bg-[var(--team-panel)] p-6 lg:col-span-8 lg:min-h-[460px] lg:p-9">
+          <img src={vendome.url} alt="" className="absolute inset-0 -z-20 size-full object-cover object-[center_62%]" />
+          <span aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(rgba(36,28,51,0.55)_0%,rgba(36,28,51,0.30)_38%,rgba(36,28,51,0.95)_100%)]" />
+          <div className="flex items-center justify-between gap-4">
+            <p className="eyebrow text-muted-foreground">{today || "Aujourd’hui"}</p>
+            <span className="rounded-full border border-foreground/24 bg-background/55 px-4 py-1.5 text-[14px] backdrop-blur-[14px]">{greeting}{firstName ? ` ${firstName}` : ""}</span>
+          </div>
+          <div>
+            <Title as="h2" italic="aujourd’hui." className="text-[56px] leading-[0.96] text-primary lg:text-[clamp(56px,6vw,96px)]">À traiter<br /></Title>
+            <div className="mt-7 flex flex-wrap gap-2.5">
+              <Count value={data.byStatus.nouvelle} label={plural(data.byStatus.nouvelle, "nouvelle", "nouvelles")} />
+              <Count value={data.byStatus.enCours} label="en cours" />
+              <Count value={data.byStatus.confirmee} label={plural(data.byStatus.confirmee, "confirmée", "confirmées")} />
+            </div>
+          </div>
+        </section>
+        <section className="flex min-h-[260px] flex-col justify-between rounded-[28px] bg-primary p-6 text-primary-foreground lg:col-span-4">
+          <p className="eyebrow text-primary-foreground/75">Dernière demande reçue</p>
+          {data.lastRequest ? <div>
+            <span className="inline-flex rounded-full border border-primary-foreground/60 px-3 py-1 text-[11px] font-medium">{data.lastRequest.status}</span>
+            <Link to="/admin/demandes/$requestId" params={{ requestId: data.lastRequest.id }} className="mt-4 block text-[32px] leading-[1.08] tracking-[-0.04em] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{data.lastRequest.title}</Link>
+            <p className="mt-2 text-[15px] opacity-80">{data.lastRequest.member_name ? `${data.lastRequest.member_name} · ` : ""}{elapsed(data.lastRequest.created_at)}</p>
+            {data.lastRequest.status === "Nouvelle" && <button type="button" disabled={busy === data.lastRequest.id} onClick={() => void takeCharge(data.lastRequest!.id)} className="mt-6 inline-flex h-[52px] items-center gap-3 rounded-full bg-primary-foreground pl-6 pr-2 text-[15px] font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60">Prendre en charge<span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground"><ArrowUpRight className="size-4" /></span></button>}
+          </div> : <p className="text-[15px] opacity-80">Aucune demande reçue pour le moment.</p>}
+        </section>
+      </div>
 
-    {isLoading || !data ? <div className="mt-8 grid gap-4 lg:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-[200px] rounded-card bg-primary/10" />)}</div> : <>
-      <section aria-label="Chiffres" className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat value={data.openCount} label={data.openCount > 1 ? "demandes ouvertes" : "demande ouverte"} />
-        <Stat value={data.unassignedCount} label={data.unassignedCount > 1 ? "demandes à attribuer" : "demande à attribuer"} />
-        <Stat value={data.activeMembers} label={data.activeMembers > 1 ? "membres actifs" : "membre actif"} />
-        <div className="team-glass flex min-h-[200px] flex-col justify-end rounded-card p-6">
-          <p className="eyebrow team-mention">Dernière demande reçue</p>
-          {data.lastRequest ? <>
-            <p className="mt-3 text-[24px] leading-tight">{data.lastRequest.title}</p>
-            <p className="mt-2 text-[14px] text-muted-foreground">{data.lastRequest.member_name ? `${data.lastRequest.member_name} · ` : ""}{elapsed(data.lastRequest.created_at)}</p>
-            {data.lastRequest.status === "Nouvelle" && <button type="button" disabled={busy === data.lastRequest.id} onClick={() => void takeCharge(data.lastRequest!.id)} className="mt-4 inline-flex h-11 w-fit items-center rounded-full bg-primary px-5 text-[14px] font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60">Prendre en charge</button>}
-          </> : <p className="mt-3 text-[14px] text-muted-foreground">Aucune demande reçue pour le moment.</p>}
-        </div>
+      <section aria-label="Chiffres" className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat to="/admin/demandes" value={data.openCount} label={plural(data.openCount, "demande ouverte", "demandes ouvertes")} />
+        <Stat to="/admin/demandes" value={data.unassignedCount} label={plural(data.unassignedCount, "demande à attribuer", "demandes à attribuer")} />
+        <Stat to="/admin/membres" value={data.activeMembers} label={plural(data.activeMembers, "membre actif", "membres actifs")} />
+        <Link to="/admin/demandes/nouvelle" className="flex min-h-[200px] flex-col justify-between rounded-[24px] border border-dashed border-foreground/24 p-6 transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <span className="flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground"><Plus className="size-6" /></span>
+          <span><span className="eyebrow team-mention block">Demande pour un membre</span><span className="mt-2 block text-[24px] leading-tight">Nouvelle demande</span></span>
+        </Link>
       </section>
 
       <WatchBlock watch={data.watch} />
@@ -101,14 +126,10 @@ function Page() {
         Paiements Mollie : {data.mollieMode === "live" ? "mode réel, les paiements sont encaissés." : data.mollieMode === "test" ? "mode test, aucun paiement n’est encaissé. À passer en mode réel avant l’ouverture aux membres." : "non configurés."}
       </p>}
 
-      <Link to="/admin/demandes/nouvelle" className="team-glass mt-6 flex items-center justify-between gap-4 rounded-[28px] p-6 transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        <span className="min-w-0"><span className="eyebrow team-mention block">Demande pour un membre</span><span className="mt-2 block text-[24px] leading-tight">Créer une demande au nom d’un membre</span></span>
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"><ArrowUpRight className="size-4" /></span>
-      </Link>
 
       <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-12">
         <section className="team-panel min-w-0 rounded-[28px] p-6 lg:col-span-7">
-          <h2 className="eyebrow team-mention">À traiter</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="eyebrow team-mention">À traiter</h2><Link to="/admin/demandes" className="inline-flex h-11 items-center gap-2 rounded-full border border-border px-4 text-[13px] transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Toutes les demandes<ArrowUpRight className="size-4" /></Link></div>
           {data.toProcess.length === 0 ? <p className="mt-6 text-[14px] text-muted-foreground">Aucune nouvelle demande en attente.</p>
             : <ul className="mt-4">{data.toProcess.map((r) => <li key={r.id} className="flex items-center gap-3 border-b border-border last:border-0">
                 <Link to="/admin/demandes/$requestId" params={{ requestId: r.id }} className="flex min-w-0 flex-1 items-center gap-4 rounded-2xl py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -126,7 +147,7 @@ function Page() {
         <section className="team-glass min-w-0 rounded-[28px] p-6 lg:col-span-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="eyebrow team-mention">Prochaines prestations</h2>
-            <Link to="/admin/agenda" className="inline-flex h-11 items-center gap-2 rounded-full border border-border px-4 text-[13px] transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Voir l’agenda<ArrowUpRight className="size-4" /></Link>
+            <Link to="/admin/agenda" className="inline-flex h-11 items-center gap-2 rounded-full border border-border px-4 text-[13px] transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Agenda<ArrowUpRight className="size-4" /></Link>
           </div>
           {data.upcoming.length === 0 ? <p className="mt-6 text-[14px] text-muted-foreground">Aucune prestation datée à venir.</p>
             : <ul className="mt-4">{data.upcoming.map((r) => {
@@ -134,7 +155,7 @@ function Page() {
                 return <li key={r.id} className="border-b border-border last:border-0">
                   <Link to="/admin/demandes/$requestId" params={{ requestId: r.id }} className="flex items-center gap-4 rounded-2xl py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     <div className="w-12 shrink-0 text-center"><p className="font-display text-[30px] leading-none">{d.getDate()}</p><p className="mt-1 text-[11px] team-mention">{d.toLocaleDateString("fr-FR", { month: "short" })}</p></div>
-                    <div className="min-w-0 flex-1"><p className="truncate text-[18px]">{r.title}</p><p className="mt-1 text-[13px] text-muted-foreground">{r.member_name}{r.scheduled_time ? ` · ${r.scheduled_time}` : ""}</p></div>
+                    <div className="min-w-0 flex-1"><p className="truncate text-[18px]">{r.title}</p><p className="mt-1 text-[13px] text-muted-foreground">{r.member_name}{r.scheduled_time ? ` · ${r.scheduled_time.slice(0, 5).replace(":", " h ")}` : ""}</p></div>
                     <TeamStatus status={r.status} />
                   </Link>
                 </li>;

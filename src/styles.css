@@ -318,6 +318,13 @@
   background: var(--background);
   color: var(--foreground);
 }
+/* Titres de l'équipe : interlettrage de la maquette V4 (−0,045 em, mot en italique à −0,02 em). */
+.team-theme .v3-heading {
+  letter-spacing: -0.045em;
+}
+.team-theme .v3-heading em {
+  letter-spacing: -0.02em;
+}
 .team-theme .team-glass {
   background: var(--card);
   border: 1px solid var(--border);
@@ -330,6 +337,22 @@
 }
 .team-theme input {
   border: 1px solid var(--border);
+  color: var(--foreground);
+}
+/* Bloc beige de l'interface équipe (formulaires de création, maquette V4) : palette inversée. */
+.team-theme .team-beige {
+  --background: oklch(0.944 0.013 102);
+  --foreground: oklch(0.39 0.093 300.5);
+  --card: oklch(0.39 0.093 300.5 / 0.07);
+  --card-foreground: oklch(0.39 0.093 300.5);
+  --primary: oklch(0.39 0.093 300.5);
+  --primary-foreground: oklch(0.944 0.013 102);
+  --muted-foreground: oklch(0.405 0.077 298.9);
+  --color-muted-foreground: oklch(0.405 0.077 298.9);
+  --border: oklch(0.39 0.093 300.5 / 0.25);
+  --input: oklch(0.39 0.093 300.5 / 0.06);
+  --ring: oklch(0.39 0.093 300.5);
+  background: var(--background);
   color: var(--foreground);
 }
 /* Aperçu membre dans l'interface équipe : rétablit les couleurs de l'espace membre. */

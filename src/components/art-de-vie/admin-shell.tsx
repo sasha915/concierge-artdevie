@@ -21,7 +21,7 @@ const teamNav = [
   { to: "/admin/equipe", label: "Équipe", exact: false, adminOnly: true },
 ] as const;
 
-const pill = "inline-flex h-11 items-center gap-2 rounded-full px-4 text-[14px] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+const pill = "inline-flex h-11 items-center gap-2 rounded-full px-3.5 text-[14px] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 export function AdminShell({ children }: { children: ReactNode; title?: string }) {
   const navigate = useNavigate();
@@ -57,7 +57,7 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
   const countFor = (to: string) => (to === "/admin/demandes" ? newRequests : to === "/admin/parrainages" ? pendingReferrals : 0);
   const total = newRequests + pendingReferrals;
 
-  // Tablette et mobile (< 1024 px) : barre compacte et menu en panneau.
+  // Sous 1280 px : barre compacte et menu en panneau (la barre complète tient sur une ligne au-delà).
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   useEffect(() => { setMenuOpen(false); }, [pathname]);
@@ -73,7 +73,7 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
   return (
     <div className="team-theme min-h-screen">
       <div className="relative z-40 px-4 pt-4">
-        <div className="lg:hidden">
+        <div className="xl:hidden">
           <div className="team-glass flex items-center justify-between gap-2 rounded-full py-2 pl-4 pr-2 backdrop-blur-[18px]">
             <div className="flex min-w-0 items-center gap-2">
               <Link to="/admin" aria-label="Art de Vie, tableau de bord" className="flex shrink-0 items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -108,18 +108,18 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
             </nav>
           )}
         </div>
-        <nav aria-label="Navigation équipe" className="team-glass mx-auto hidden w-fit max-w-full flex-wrap items-center justify-center gap-1 rounded-full px-3 py-2 backdrop-blur-[18px] lg:flex">
+        <nav aria-label="Navigation de l’équipe" className="team-glass mx-auto hidden w-fit max-w-full flex-wrap items-center justify-center gap-1 rounded-full px-3 py-2 backdrop-blur-[18px] xl:flex">
           <Link to="/admin" className="mr-1 flex items-center gap-2 rounded-full px-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <Logo inverse className="h-[22px] w-auto" />
           </Link>
-          <span className="eyebrow mr-2 rounded-full border border-border px-3 py-1 text-[10px]">Équipe</span>
+          <span className="mr-2 rounded-full border border-border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">Équipe</span>
           {items.map(({ to, label, exact }) => {
             const active = isActive(to, exact);
             return <Link key={to} to={to} aria-current={active ? "page" : undefined} className={`${pill} ${active ? "bg-primary font-medium text-primary-foreground" : "hover:bg-primary/10"}`}>{label}{to === "/admin/parrainages" && pendingReferrals > 0 && <span className={active ? "inline-flex min-w-5 items-center justify-center rounded-full bg-primary-foreground px-1.5 text-[11px] font-semibold text-primary" : badge}>{pendingReferrals}</span>}{to === "/admin/demandes" && newRequests > 0 && <span className={badge} aria-label={`${newRequests} nouvelle${newRequests > 1 ? "s" : ""}`}>{newRequests}</span>}</Link>;
           })}
           <Link to="/admin/demandes/nouvelle" className={`${pill} bg-primary font-medium text-primary-foreground hover:bg-primary/90`}><Plus className="size-4" />Demande</Link>
-          <Link to="/membership" className={`${pill} min-w-0 hover:bg-primary/10`}><ArrowLeft className="size-4 shrink-0" />Retour à l’espace membre</Link>
-          <span title={profile?.full_name ?? ""} aria-label={profile?.full_name ? `Connecté : ${profile.full_name}` : undefined} className="inline-flex size-11 items-center justify-center rounded-full bg-primary text-[13px] font-semibold text-primary-foreground">{initials(profile?.full_name ?? "")}</span>
+          {/* Maquette V4 : les initiales mènent à l'espace membre. */}
+          <Link to="/membership" aria-label="Retour à l’espace membre" title="Retour à l’espace membre" className="inline-flex size-11 items-center justify-center rounded-full bg-primary text-[13px] font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{initials(profile?.full_name ?? "")}</Link>
           <Button type="button" variant="outline" size="icon" title="Verrouiller l’espace équipe" aria-label="Verrouiller l’espace équipe" onClick={lockSession} className="size-11 rounded-full"><Lock className="size-4" /></Button>
           <Button type="button" variant="outline" size="icon" title="Se déconnecter" aria-label="Se déconnecter" onClick={signOut} className="size-11 rounded-full"><LogOut className="size-4" /></Button>
         </nav>

@@ -71,6 +71,7 @@ function Page() {
 
   async function toggleDisabled() {
     if (!profile) return;
+    if (!profile.disabled_at && !window.confirm("Désactiver ce membre ? Son prélèvement automatique sera arrêté et il ne pourra plus se connecter.")) return;
     setError(null); setNotice(null);
     const r = await toggle({ data: { id: profile.id, disabled: !profile.disabled_at } });
     if (!r.ok) { setError(r.reason); return; }
@@ -80,14 +81,16 @@ function Page() {
 
   return <AdminShell>
     <header className="mb-7 flex items-center gap-4">
-      <Button asChild variant="icon" size="icon" aria-label="Retour"><Link to="/admin/membres"><ChevronLeft /></Link></Button>
-      {isLoading ? <Skeleton className="h-12 min-w-0 flex-1 rounded-[16px] bg-primary/10"/> : <h1 className="v3-heading min-w-0 flex-1 truncate text-[38px] text-primary lg:text-[46px]">{profile?.full_name || "Membre introuvable"}</h1>}
+      <Link to="/admin/membres" className="inline-flex h-11 items-center gap-2 rounded-full border border-border px-4 text-[14px] hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ChevronLeft className="size-4" />Membres</Link>
+      {isLoading && <Skeleton className="h-12 min-w-0 flex-1 rounded-[16px] bg-primary/10"/>}
+      {!isLoading && !profile && <h1 className="v3-heading min-w-0 flex-1 truncate text-[38px] text-primary">Membre introuvable</h1>}
     </header>
 
     {!profile && !isLoading ? <EmptyState>Ce membre est introuvable.</EmptyState> : null}
 
     {profile && <>
-      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+      {/* Maquette V4 : carte, informations et préférences à gauche (7/12) ; en-tête et suivi à droite (5/12). */}
       <aside className="min-w-0">
         <section aria-label="Carte du membre" className="team-panel rounded-card border border-gold p-6">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4"><span className="font-display text-xl">Art de Vie</span><span className="grid size-11 shrink-0 place-items-center rounded-full border border-border text-sm">{initials(profile.full_name)}</span></div>
@@ -108,14 +111,18 @@ function Page() {
         </div>
         <Button type="submit" variant="primary" size="lg" className="mt-5 w-full lg:w-auto" disabled={busy}>{busy ? "Enregistrement…" : "Enregistrer"}</Button>
       </form>}
+      <PreferencesBlock memberId={profile.id} />
       </aside>
-      <div className="min-w-0">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="order-first min-w-0 lg:order-none lg:col-start-2 lg:row-start-1">
+      <p className="eyebrow team-mention">Membre</p>
+      <h1 className="v3-heading mt-3 break-words text-[44px] leading-[1.02] text-primary lg:text-[clamp(44px,4vw,64px)]">{profile.full_name || "Membre"}</h1>
+      <p className="mt-3 text-[14px] text-muted-foreground">{profile.email || "—"} · membre depuis {formatMonth(profile.member_since)}</p>
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         <span className={profile.disabled_at ? "rounded-full border border-primary/25 px-3 py-1 text-[10px] font-semibold text-muted-foreground" : "rounded-full bg-primary/10 px-3 py-1 text-[10px] font-semibold text-primary"}>{profile.disabled_at ? "Désactivé" : "Actif"}</span>
         <span className="text-[12px] text-muted-foreground">{profile.plan} · {profile.member_number}</span>
       </div>
       {parrain && <p className="mt-3 text-[13px] text-muted-foreground">Parrainé par <Link to="/admin/membres/$memberId" params={{ memberId: parrain.id }} className="underline underline-offset-2 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{parrain.full_name}</Link></p>}
-      <dl className="mt-4 grid min-w-0 gap-3 text-sm"><div><dt className="eyebrow team-mention">Adresse email</dt><dd className="mt-1 break-all">{profile.email || "—"}</dd></div>{profile.phone && <div><dt className="eyebrow team-mention">Téléphone</dt><dd className="mt-1">{profile.phone}</dd></div>}</dl>
+      {profile.phone && <dl className="mt-4 grid min-w-0 gap-3 text-sm"><div><dt className="eyebrow team-mention">Téléphone</dt><dd className="mt-1">{profile.phone}</dd></div></dl>}
       {isAdmin && <div className="mt-4 flex flex-wrap gap-2">
         <Button variant="soft" size="sm" onClick={sendInvite}><Mail />Envoyer l’invitation</Button>
         <Button variant="outline" size="sm" onClick={toggleDisabled}>{profile.disabled_at ? <UserPlus /> : <UserMinus />}{profile.disabled_at ? "Réactiver" : "Désactiver"}</Button>
@@ -127,7 +134,6 @@ function Page() {
       {notice && <p className="mt-4 rounded-2xl bg-primary/10 p-4 text-xs leading-5 text-primary">{notice}</p>}
       {error && <p className="mt-4 rounded-2xl border border-primary/25 p-4 text-xs leading-5 text-primary">{error}</p>}
 
-      <PreferencesBlock memberId={profile.id} />
       <ReviewsBlock memberId={profile.id} />
       <DelegatesBlock memberId={profile.id} isAdmin={isAdmin} />
 
@@ -136,14 +142,14 @@ function Page() {
           <h2 className="eyebrow text-primary-light">Ses demandes</h2>
           {(data?.requests ?? []).length === 0 ? <p className="mt-3 rounded-card bg-card p-5 text-[13px] text-muted-foreground">Aucune demande.</p>
             : <div className="mt-3">
-                {(data?.requests ?? []).map((r) => <div key={r.id} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-4 last:border-0">
+                {(data?.requests ?? []).map((r) => <Link key={r.id} to="/admin/demandes/$requestId" params={{ requestId: r.id }} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border-b border-border py-4 transition-colors last:border-0 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                   <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 items-center gap-3">{requestPhoto(r) && <img src={requestPhoto(r)} alt="" className="h-16 w-12 shrink-0 rounded-lg object-cover" />}<p className="min-w-0 break-words text-[18px] text-primary">{r.title}</p></div>
                     <p className="mt-1 text-[12px] text-muted-foreground">{r.category} · {formatShortDate(r.scheduled_date)}</p>
                     {r.description ? <p className="mt-1 text-[12px] leading-5 text-muted-foreground line-clamp-2">{r.description}</p> : null}
                   </div>
                   <TeamStatus status={r.status} />
-                </div>)}
+                </Link>)}
               </div>}
         </section>
         {isAdmin && <section className="team-panel min-w-0 rounded-card p-5">
@@ -188,7 +194,7 @@ function Page() {
 }
 
 const PREFERENCE_FIELDS = [
-  { key: "tables", label: "À table" },
+  { key: "tables", label: "Tables" },
   { key: "sejours", label: "Séjours" },
   { key: "transferts", label: "Transferts" },
   { key: "dates_cles", label: "Dates clés" },

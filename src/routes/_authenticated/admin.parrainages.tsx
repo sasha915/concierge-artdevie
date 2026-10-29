@@ -93,7 +93,7 @@ function Page() {
         <section className="team-panel rounded-[28px] p-6 lg:sticky lg:top-6">
           <h2 className="eyebrow team-mention">Suivi</h2>
           <dl className="mt-4 divide-y divide-border border-y border-border">
-            <div className="flex items-baseline justify-between gap-3 py-4"><dt className="text-[14px] text-muted-foreground">Reçus</dt><dd className="font-display text-[40px] leading-none">{counts.recu}</dd></div>
+            <div className="flex items-baseline justify-between gap-3 py-4"><dt className="text-[14px] text-muted-foreground">Reçus, à contacter</dt><dd className="font-display text-[40px] leading-none">{counts.recu}</dd></div>
             <div className="flex items-baseline justify-between gap-3 py-4"><dt className="text-[14px] text-muted-foreground">Contactés</dt><dd className="font-display text-[40px] leading-none">{counts.contacte}</dd></div>
             <div className="flex items-baseline justify-between gap-3 py-4"><dt className="text-[14px] text-muted-foreground">Convertis</dt><dd className="font-display text-[40px] leading-none">{counts.converti}</dd></div>
           </dl>

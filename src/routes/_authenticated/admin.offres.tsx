@@ -2,7 +2,6 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Plus } from "lucide-react";
 import { AdminShell } from "@/components/art-de-vie/admin-shell";
 import { Title } from "@/components/art-de-vie/v3";
 import { Button } from "@/components/ui/button";
@@ -27,7 +26,6 @@ export const Route = createFileRoute("/_authenticated/admin/offres")({
 });
 
 const empty: OfferInput = { title: "", partner: "", category: "Restaurant", place: "", promo: "", validity: "", image_url: null };
-const select = "h-12 w-full rounded-2xl border border-border bg-card px-4 text-[15px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 function Page() {
   const qc = useQueryClient();
@@ -56,36 +54,41 @@ function Page() {
         <Title italic="offres." className="mt-3 text-primary lg:text-[clamp(52px,6vw,88px)]">Les </Title>
         <p className="mt-2 text-[13px] text-muted-foreground">Privilèges proposés aux membres, publiés ou retirés.</p>
       </div>
-      {editing === null && <Button type="button" variant="primary" size="lg" onClick={() => { setEditing("new"); setNotice(null); }}><Plus />Nouvelle offre</Button>}
     </header>
 
     {notice && <p role="status" className={`mb-5 rounded-2xl p-4 text-xs leading-5 text-primary ${notice.ok ? "bg-primary/10" : "border border-primary/25"}`}>{notice.text}</p>}
 
-    {editing !== null && <OfferForm key={editing === "new" ? "new" : editing.id} offer={editing === "new" ? null : editing}
-      onDone={async (text) => { setEditing(null); setNotice({ ok: true, text }); await qc.invalidateQueries({ queryKey: ["admin", "offers"] }); await qc.invalidateQueries({ queryKey: ["offers"] }); }}
-      onCancel={() => setEditing(null)} />}
-
-    {isLoading ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"><Skeleton className="h-72 rounded-[28px] bg-primary/10" /><Skeleton className="h-72 rounded-[28px] bg-primary/10" /></div>
+    {/* Maquette V4 : liste à gauche, formulaire permanent en colonne beige à droite. */}
+    <div className="grid min-w-0 gap-6 lg:grid-cols-12">
+    <div className="min-w-0 lg:col-span-8">
+    {isLoading ? <div className="grid gap-4 sm:grid-cols-2"><Skeleton className="h-72 rounded-[24px] bg-primary/10" /><Skeleton className="h-72 rounded-[28px] bg-primary/10" /></div>
       : offers.length === 0 ? <p className="team-panel rounded-[28px] p-6 text-[14px] text-muted-foreground">Aucune offre pour le moment.</p>
-      : <ul className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      : <ul className="grid min-w-0 gap-4 sm:grid-cols-2">
         {offers.map((o) => {
           const src = o.preview_url ?? imageFor(o.image_key);
-          return <li key={o.id} className={`team-panel flex min-w-0 flex-col overflow-hidden rounded-[28px] ${o.published ? "" : "opacity-70"}`}>
+          return <li key={o.id} className={`team-panel flex min-w-0 flex-col overflow-hidden rounded-[24px] ${o.published ? "" : "opacity-70"}`}>
             <div className="relative h-44 bg-primary-deep">{src ? <img src={src} alt="" className="h-full w-full object-cover" /> : <span className="flex h-full items-center justify-center font-display text-2xl italic text-primary-foreground">{o.category}</span>}
-              <span className={`absolute left-3 top-3 rounded-full px-3 py-1 text-[11px] font-medium ${o.published ? "bg-primary text-primary-foreground" : "border border-dashed border-border bg-card team-mention"}`}>{o.published ? "Publiée" : "Retirée"}</span></div>
+              <span className={`absolute left-3 top-3 rounded-full px-3 py-1 text-[11px] font-medium ${o.published ? "bg-primary text-primary-foreground" : "border border-dashed border-foreground/40 bg-background/80 text-foreground"}`}>{o.published ? "Publiée" : "Retirée"}</span></div>
             <div className="flex flex-1 flex-col p-5">
-              <p className="eyebrow team-mention">{o.category}</p>
+              <p className="eyebrow team-mention">{o.promo}</p>
               <h2 className="mt-2 text-[20px] text-primary">{o.title}</h2>
               <p className="mt-1 text-[13px] text-muted-foreground">{o.partner} · {o.place}</p>
-              <p className="mt-1 text-[13px] text-muted-foreground">{o.promo} · {o.validity}</p>
+              <p className="mt-1 text-[13px] text-muted-foreground">{o.category} · {o.validity}</p>
               <div className="mt-auto flex flex-wrap gap-2 pt-4">
-                <Button type="button" variant="outline" size="sm" onClick={() => { setEditing(o); setNotice(null); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Modifier</Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => { setEditing(o); setNotice(null); document.getElementById("offre-form")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>Modifier</Button>
                 <Button type="button" variant="outline" size="sm" disabled={busy === o.id} onClick={() => toggle(o)}>{o.published ? "Retirer" : "Republier"}</Button>
               </div>
             </div>
           </li>;
         })}
       </ul>}
+    </div>
+    <div className="min-w-0 lg:col-span-4">
+      <OfferForm key={editing === null || editing === "new" ? "new" : editing.id} offer={editing === null || editing === "new" ? null : editing}
+        onDone={async (text) => { setEditing(null); setNotice({ ok: true, text }); await qc.invalidateQueries({ queryKey: ["admin", "offers"] }); await qc.invalidateQueries({ queryKey: ["offers"] }); }}
+        onCancel={() => setEditing(null)} />
+    </div>
+    </div>
   </AdminShell>;
 }
 
@@ -129,26 +132,26 @@ function OfferForm({ offer, onDone, onCancel }: { offer: AdminOffer | null; onDo
 
   const field = (id: keyof OfferInput, label: string, max = 120) => <div><Label htmlFor={`of-${id}`} className="eyebrow text-muted-foreground">{label}</Label><Input id={`of-${id}`} className="mt-2" required maxLength={max} value={(form[id] as string) ?? ""} onChange={set(id)} /></div>;
 
-  return <form onSubmit={submit} className="team-panel mb-6 grid min-w-0 gap-6 rounded-[28px] p-5 sm:p-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-    <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-      <h2 className="eyebrow team-mention sm:col-span-2">{offer ? "Modifier l’offre" : "Créer une offre"}</h2>
-      {field("title", "Titre")}
-      {field("partner", "Partenaire")}
-      <div><Label htmlFor="of-category" className="eyebrow text-muted-foreground">Catégorie</Label>
-        <select id="of-category" className={`${select} mt-2`} value={form.category} onChange={set("category")}>{OFFER_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}</select></div>
-      {field("place", "Lieu")}
-      {field("promo", "Avantage", 80)}
-      {field("validity", "Validité", 80)}
-      {error && <p role="alert" className="text-[13px] text-destructive sm:col-span-2">{error}</p>}
-      <div className="flex flex-wrap gap-2 sm:col-span-2">
-        <Button type="submit" variant="primary" size="lg" disabled={busy}>{offer ? "Enregistrer" : "Créer l’offre"}</Button>
-        <Button type="button" variant="outline" size="lg" onClick={onCancel}>Annuler</Button>
-      </div>
-    </div>
+  return <form id="offre-form" onSubmit={submit} className="team-beige grid min-w-0 gap-4 rounded-[28px] p-6 lg:sticky lg:top-6">
+    <p className="eyebrow">{offer ? "Modifier l’offre" : "Nouvelle offre"}</p>
+    <Title as="h2" italic="offre." className="text-[40px] leading-none">{offer ? "Modifier l’" : "Créer une "}</Title>
+    {field("title", "Titre")}
+    {field("partner", "Partenaire")}
+    <div role="group" aria-labelledby="of-category-label"><p id="of-category-label" className="eyebrow text-muted-foreground">Catégorie</p>
+      <div className="mt-2 flex flex-wrap gap-2">{OFFER_CATEGORIES.map((c) => <button key={c} type="button" aria-pressed={form.category === c} onClick={() => setForm((f) => ({ ...f, category: c }))} className={`h-10 rounded-full px-4 text-[13px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${form.category === c ? "bg-primary text-primary-foreground" : "border border-border hover:bg-primary/10"}`}>{c}</button>)}</div></div>
+    {field("place", "Lieu")}
+    {field("promo", "Avantage", 80)}
+    {field("validity", "Validité", 80)}
     <div className="min-w-0">
-      <Label htmlFor="of-photo" className="eyebrow text-muted-foreground">Photo (JPEG, PNG ou WebP, 5 Mo au plus)</Label>
-      <div className="mt-2 h-56 overflow-hidden rounded-[20px] bg-primary-deep">{preview ? <img src={preview} alt="Aperçu de la photo" className="h-full w-full object-cover" /> : <span className="flex h-full items-center justify-center font-display text-2xl italic text-primary-foreground">{form.category}</span>}</div>
-      <input id="of-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={pick} disabled={busy} className="mt-3 block w-full text-[13px] file:mr-3 file:h-11 file:rounded-full file:border file:border-border file:bg-card file:px-4 file:text-primary" />
+      <p className="eyebrow text-muted-foreground">Photo</p>
+      {preview && <div className="mt-2 h-40 overflow-hidden rounded-[18px]"><img src={preview} alt="Aperçu de la photo" className="h-full w-full object-cover" /></div>}
+      <label htmlFor="of-photo" className="mt-2 flex min-h-11 cursor-pointer items-center justify-center rounded-full border border-dashed border-border px-4 text-[14px] font-medium hover:bg-primary/10 focus-within:ring-2 focus-within:ring-ring">{preview ? "Changer la photo" : "Ajouter une photo"}<input id="of-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={pick} disabled={busy} className="sr-only" /></label>
+      <p className="mt-1.5 text-[12px] text-muted-foreground">JPEG, PNG ou WebP, 5 Mo au plus.</p>
+    </div>
+    {error && <p role="alert" className="text-[13px] text-destructive">{error}</p>}
+    <div className="grid gap-2">
+      <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>{offer ? "Enregistrer" : "Publier l’offre"}</Button>
+      {offer && <Button type="button" variant="outline" size="lg" className="w-full" onClick={onCancel}>Annuler</Button>}
     </div>
   </form>;
 }

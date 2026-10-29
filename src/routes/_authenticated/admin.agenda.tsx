@@ -26,6 +26,7 @@ export const Route = createFileRoute("/_authenticated/admin/agenda")({
 });
 
 const WEEKDAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+const WEEKDAYS_SHORT = ["Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam.", "Dim."];
 const LEGEND = ["Nouvelle", "En cours", "Confirmée", "Terminée"];
 const MAX_IN_CELL = 3;
 
@@ -136,7 +137,7 @@ function Page() {
           {/* 1024 px et plus : grille */}
           <section aria-label={heading} className="team-panel mt-6 hidden rounded-[28px] p-4 lg:block">
             <div className="grid grid-cols-7 gap-2">
-              {WEEKDAYS.map((d, i) => <p key={d} className="eyebrow team-mention px-2 pb-2 text-[10px]">{view === "semaine" ? `${d} ${label(days[i] ?? first, { day: "numeric" })}` : d}</p>)}
+              {WEEKDAYS.map((d, i) => <p key={d} className="eyebrow team-mention px-2 pb-2 text-[10px]">{view === "semaine" ? `${d} ${label(days[i] ?? first, { day: "numeric" })}` : <abbr title={d} className="no-underline">{WEEKDAYS_SHORT[i]}</abbr>}</p>)}
               {(view === "mois" ? weeks.flat() : days).map((d) => {
                 const items = byDay.get(d) ?? [];
                 const outside = view === "mois" && !d.startsWith(month.slice(0, 7));

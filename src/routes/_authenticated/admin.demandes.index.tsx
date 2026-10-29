@@ -23,7 +23,13 @@ export const Route = createFileRoute("/_authenticated/admin/demandes/")({
   component: Page,
 });
 
-const STATUSES: RequestStatus[] = ["Nouvelle", "En cours", "Confirmée", "Terminée", "Annulée"];
+const STATUSES: RequestStatus[] = ["Nouvelle", "En cours", "Confirmée", "Terminée"];
+const EMPTY: Record<string, string> = {
+  "Nouvelle": "Aucune nouvelle demande.",
+  "En cours": "Aucune demande en cours.",
+  "Confirmée": "Aucune demande confirmée.",
+  "Terminée": "Aucune demande terminée pour le moment.",
+};
 const control = "h-11 rounded-full border border-border bg-card px-4 text-[14px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 function Page() {
@@ -56,50 +62,66 @@ function Page() {
       <label className="relative min-w-0 flex-1 basis-full sm:basis-[280px]">
         <span className="sr-only">Rechercher par membre ou par titre</span>
         <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher un membre ou une demande…" className={`${control} w-full pl-10 placeholder:text-muted-foreground`} />
+        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher une demande…" className={`${control} w-full pl-10 placeholder:text-muted-foreground`} />
       </label>
       <div className="flex basis-full flex-wrap gap-2" role="group" aria-label="Filtrer les attributions">
         <Button type="button" variant="ghost" aria-pressed={mine} disabled={!userId} onClick={() => setMine((v) => !v)} className={`h-9 text-[13px] ${mine ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" : "border border-border text-muted-foreground"}`}>Mes demandes</Button>
         <Button type="button" variant="ghost" aria-pressed={unassigned} onClick={() => setUnassigned((v) => !v)} className={`h-9 text-[13px] ${unassigned ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" : "border border-border text-muted-foreground"}`}>À attribuer</Button>
       </div>
       <div className="no-scrollbar flex w-full min-w-0 gap-2 overflow-x-auto sm:flex-wrap" role="group" aria-label="Filtrer par catégorie">
-        {["", ...categories].map((c) => <button key={c || "all"} type="button" onClick={() => setCategory(c)} aria-pressed={category === c} className={`h-9 shrink-0 rounded-full px-4 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${category === c ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground hover:text-foreground"}`}>{c || "Toutes catégories"}</button>)}
+        {["", ...categories].map((c) => <button key={c || "all"} type="button" onClick={() => setCategory(c)} aria-pressed={category === c} className={`h-9 shrink-0 rounded-full px-4 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${category === c ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground hover:text-foreground"}`}>{c || "Toutes"}</button>)}
       </div>
       <div className="no-scrollbar flex w-full min-w-0 gap-2 overflow-x-auto sm:flex-wrap" role="group" aria-label="Filtrer par concierge">
         {["", ...concierges].map((c) => <button key={c || "all"} type="button" onClick={() => setConcierge(c)} aria-pressed={concierge === c} className={`h-9 shrink-0 rounded-full px-4 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${concierge === c ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground hover:text-foreground"}`}>{c || "Tous les concierges"}</button>)}
       </div>
     </div>
 
-    {!isLoading && view === "liste" ? <ListView items={list} /> : isLoading ? <div className="mt-6 grid gap-4 lg:grid-cols-5">{STATUSES.map((s) => <Skeleton key={s} className="h-[320px] rounded-[28px] bg-primary/10" />)}</div>
-      : <div className="mt-6 grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    {!isLoading && view === "liste" ? <ListView items={list} /> : isLoading ? <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">{STATUSES.map((s) => <Skeleton key={s} className="h-[320px] rounded-[24px] bg-primary/10" />)}</div>
+      : <>
+      <div className="mt-6 grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {STATUSES.map((status) => {
           const items = list.filter((r) => r.status === status);
-          const muted = status === "Annulée";
-          return <section key={status} aria-label={`${status} : ${items.length}`} className={`team-panel min-w-0 rounded-[28px] p-4 ${muted ? "opacity-70" : ""}`}>
+          return <section key={status} aria-label={`${status} : ${items.length}`} className="team-panel min-w-0 rounded-[24px] p-4">
             <header className="flex items-center justify-between gap-2 px-1">
-              <h2 className="flex items-center gap-2 text-[18px]">{status}<span className="inline-flex size-6 items-center justify-center rounded-full border border-border text-[12px]">{items.length}</span></h2>
+              <h2 className="flex items-center gap-2 text-[18px]">{status}<span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-primary px-1.5 text-[12px] font-semibold text-primary-foreground">{items.length}</span></h2>
               <TeamStatus status={status} />
             </header>
-            {muted && items.length > 0 && !showCancelled ? <div className="mt-4 rounded-2xl border border-dashed border-border p-4 text-[13px] text-muted-foreground">
-                <p>{items.length} demande{items.length > 1 ? "s" : ""} annulée{items.length > 1 ? "s" : ""} · {items.slice(0, 2).map((r) => r.title).join(", ")}{items.length > 2 ? "…" : ""}</p>
-                <button type="button" onClick={() => setShowCancelled(true)} className="mt-2 underline underline-offset-4 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Afficher</button>
-              </div>
-            : items.length === 0 ? <p className="mt-4 rounded-2xl border border-dashed border-border p-5 text-center text-[13px] text-muted-foreground">Aucune demande.</p>
-              : <ul className="mt-4 grid gap-3">{items.map((r) => <li key={r.id}>
-                  <Link to="/admin/demandes/$requestId" params={{ requestId: r.id }} className="block rounded-2xl bg-primary-deep/60 p-4 transition-colors hover:bg-primary-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                    <div className="flex flex-wrap items-center justify-between gap-2"><p className="eyebrow team-mention text-[10px]">{r.category}</p>{isStaleRequest(r) && <span className="rounded-full border border-dashed border-border px-2 py-0.5 text-[11px]">Sans prise en charge · {waitingLabel(r.created_at)}</span>}{r.pending_change && <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] text-primary-foreground">Modification demandée</span>}</div>
-                    <p className="mt-2 break-words text-[19px] leading-tight">{r.title}</p>
-                    <p className="mt-2 text-[13px] text-muted-foreground">{r.member_name || "Membre"}</p>
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-[12px]">
-                      <span className="text-muted-foreground">{r.scheduled_date ? formatShortDate(r.scheduled_date) : "Date à définir"}{r.scheduled_time ? ` · ${r.scheduled_time.slice(0, 5).replace(":", " h ")}` : ""}</span>
-                      <span className="rounded-full border border-border px-2 py-0.5">{r.concierge}</span>
-                    </div>
-                  </Link>
-                </li>)}</ul>}
+            {items.length === 0 ? <p className="mt-4 rounded-[18px] border border-dashed border-border p-5 text-center text-[13px] text-muted-foreground">{EMPTY[status]}</p>
+              : <ul className="mt-4 grid gap-3">{items.map((r) => <li key={r.id}><RequestCard r={r} /></li>)}</ul>}
           </section>;
         })}
-      </div>}
+      </div>
+      <CancelledBar items={list.filter((r) => r.status === "Annulée")} open={showCancelled} onToggle={() => setShowCancelled((v) => !v)} />
+      </>}
   </AdminShell>;
+}
+
+type BoardItem = ListItem & { title: string; scheduled_time?: string | null };
+
+/** Carte d'une colonne : fond de page (#241C33) pour se détacher du panneau, rayon 18 px. */
+function RequestCard({ r }: { r: BoardItem }) {
+  return <Link to="/admin/demandes/$requestId" params={{ requestId: r.id }} className="block rounded-[18px] bg-background p-4 transition-colors hover:bg-background/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+    <div className="flex flex-wrap items-center justify-between gap-2"><p className="eyebrow team-mention text-[10px]">{r.category}</p>{isStaleRequest(r) && <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">Sans prise en charge · {waitingLabel(r.created_at)}</span>}{r.pending_change && <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] text-primary-foreground">Modification demandée</span>}</div>
+    <p className="mt-2 break-words text-[19px] leading-tight">{r.title}</p>
+    <p className="mt-2 text-[13px] text-muted-foreground">{r.member_name || "Membre"}</p>
+    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-[12px]">
+      <span className="text-muted-foreground">{r.scheduled_date ? formatShortDate(r.scheduled_date) : "Date à définir"}{r.scheduled_time ? ` · ${r.scheduled_time.slice(0, 5).replace(":", " h ")}` : ""}</span>
+      <span className="rounded-full border border-border px-2 py-0.5">{r.concierge}</span>
+    </div>
+  </Link>;
+}
+
+/** Demandes annulées : barre de verre repliée sous les colonnes. */
+function CancelledBar({ items, open, onToggle }: { items: BoardItem[]; open: boolean; onToggle: () => void }) {
+  return <section aria-label={`Annulée : ${items.length}`} className="team-glass mt-4 rounded-[24px] px-5 py-4">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <h2 className="flex items-center gap-2 text-[16px] text-muted-foreground">Annulée<span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-dashed border-border px-1.5 text-[12px]">{items.length}</span></h2>
+      {items.length > 0 && <button type="button" aria-expanded={open} onClick={onToggle} className="inline-flex h-11 items-center rounded-full border border-border px-4 text-[13px] hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{open ? "Masquer" : "Afficher"}</button>}
+    </div>
+    {items.length === 0 ? <p className="mt-2 text-[13px] text-muted-foreground">Aucune demande annulée.</p>
+      : !open ? <p className="mt-2 text-[13px] text-muted-foreground">{items.slice(0, 3).map((r) => r.title).join(" · ")}{items.length > 3 ? "…" : ""}</p>
+      : <ul className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">{items.map((r) => <li key={r.id} className="opacity-80"><RequestCard r={r} /></li>)}</ul>}
+  </section>;
 }
 
 type ListItem = Parameters<typeof matchesRequestFilters>[0] & { id: string; title: string; status: string; category: string; member_name?: string; scheduled_date: string | null; concierge: string; created_at: string; pending_change?: boolean };
