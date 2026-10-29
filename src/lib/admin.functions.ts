@@ -172,11 +172,11 @@ export const updateMember = createServerFn({ method: "POST" })
         const { data: plan } = await admin.from("membership_plans").select("name, price_cents, period").eq("name", data.plan).maybeSingle();
         if (!plan) return { ok: false as const, reason: "Le tarif de cette formule est introuvable." };
         try {
-          const { mollie } = await import("./mollie.server");
+          const { mollie, webhookBase } = await import("./mollie.server");
           const { subscriptionInterval } = await import("./billing-webhook-rules");
           await mollie(`/customers/${sub.customerId}/subscriptions/${sub.subscriptionId}`, {
             method: "PATCH",
-            body: JSON.stringify({ amount: { currency: "EUR", value: (plan.price_cents / 100).toFixed(2) }, interval: subscriptionInterval(plan.period), description: `Art de Vie — Formule ${plan.name}` }),
+            body: JSON.stringify({ amount: { currency: "EUR", value: (plan.price_cents / 100).toFixed(2) }, interval: subscriptionInterval(plan.period), description: `Art de Vie — Formule ${plan.name}`, webhookUrl: `${webhookBase(getRequest())}/api/public/mollie-webhook` }),
           });
         } catch (err) {
           console.error("[updateMember] abonnement Mollie non ajusté", err);

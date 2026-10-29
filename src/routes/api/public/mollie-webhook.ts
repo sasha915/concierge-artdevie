@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { mollie, mollieKey, statusLabel, type MolliePayment } from "@/lib/mollie.server";
+import { mollie, mollieKey, statusLabel, webhookBase, type MolliePayment } from "@/lib/mollie.server";
 import { invoiceUpdateFor, subscriptionInterval, subscriptionStartDate, toCents, todayParis } from "@/lib/billing-webhook-rules";
 
 /**
@@ -103,6 +103,11 @@ export const Route = createFileRoute("/api/public/mollie-webhook")({
               // Un abonnement déjà créé chez Mollie pour ce membre est retenu au lieu d'en créer un second.
               const existing = await mollie<{ _embedded?: { subscriptions?: Array<{ id: string; status: string; metadata?: { user_id?: string } }> } }>(`/customers/${payment.customerId}/subscriptions?limit=50`);
               const found = (existing._embedded?.subscriptions ?? []).find((s) => s.metadata?.user_id === meta.user_id && (s.status === "active" || s.status === "pending"));
+              // Sans adresse de rappel, Mollie ne prévient pas l'application des échéances mensuelles (payées ou rejetées).
+              const webhookUrl = `${webhookBase(request)}/api/public/mollie-webhook`;
+              if (found) {
+                await mollie(`/customers/${payment.customerId}/subscriptions/${found.id}`, { method: "PATCH", body: JSON.stringify({ webhookUrl }) });
+              }
               const sub = found ?? await mollie<{ id: string }>(`/customers/${payment.customerId}/subscriptions`, {
                 method: "POST",
                 headers: { "Idempotency-Key": `adv-sub-${payment.id}` },
@@ -111,6 +116,7 @@ export const Route = createFileRoute("/api/public/mollie-webhook")({
                   interval: subscriptionInterval(plan.period),
                   startDate: subscriptionStartDate(todayParis(), plan.period),
                   description: `Art de Vie — Formule ${plan.name}`,
+                  webhookUrl,
                   metadata: { user_id: meta.user_id, kind: "subscription_charge" },
                 }),
               });
