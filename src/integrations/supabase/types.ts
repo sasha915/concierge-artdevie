@@ -14,16 +14,40 @@ export type Database = {
   }
   public: {
     Tables: {
-      payment_failures: {
-        Row: { amount_cents: number; created_at: string; id: string; mollie_payment_id: string; resolved_at: string | null; status: string; user_id: string | null }
-        Insert: { amount_cents: number; created_at?: string; id?: string; mollie_payment_id: string; resolved_at?: string | null; status: string; user_id?: string | null }
-        Update: { amount_cents?: number; created_at?: string; id?: string; mollie_payment_id?: string; resolved_at?: string | null; status?: string; user_id?: string | null }
+      admin_gate_attempts: {
+        Row: {
+          created_at: string
+          id: number
+          succeeded: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          succeeded: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          succeeded?: boolean
+          user_id?: string
+        }
         Relationships: []
       }
-      admin_gate_attempts: {
-        Row: { created_at: string; id: number; succeeded: boolean; user_id: string }
-        Insert: { created_at?: string; id?: never; succeeded: boolean; user_id: string }
-        Update: { created_at?: string; id?: never; succeeded?: boolean; user_id?: string }
+      invoice_counter: {
+        Row: {
+          id: number
+          last: number
+        }
+        Insert: {
+          id?: number
+          last?: number
+        }
+        Update: {
+          id?: number
+          last?: number
+        }
         Relationships: []
       }
       invoices: {
@@ -82,75 +106,6 @@ export type Database = {
           },
         ]
       }
-      member_notifications: {
-        Row: {
-          body: string
-          created_at: string
-          id: string
-          kind: string
-          read_at: string | null
-          request_id: string | null
-          user_id: string
-        }
-        Insert: {
-          body: string
-          created_at?: string
-          id?: string
-          kind: string
-          read_at?: string | null
-          request_id?: string | null
-          user_id: string
-        }
-        Update: {
-          body?: string
-          created_at?: string
-          id?: string
-          kind?: string
-          read_at?: string | null
-          request_id?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "member_notifications_request_id_fkey"
-            columns: ["request_id"]
-            isOneToOne: false
-            referencedRelation: "requests"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      membership_plans: {
-        Row: {
-          min_commitment_months: number | null
-          name: string
-          period: string
-          price_cents: number
-          updated_at: string
-        }
-        Insert: {
-          min_commitment_months?: number | null
-          name: string
-          period: string
-          price_cents: number
-          updated_at?: string
-        }
-        Update: {
-          min_commitment_months?: number | null
-          name?: string
-          period?: string
-          price_cents?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
       member_delegates: {
         Row: {
           decided_at: string | null
@@ -204,48 +159,93 @@ export type Database = {
           },
         ]
       }
+      member_notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          kind: string
+          read_at: string | null
+          request_id: string | null
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          kind: string
+          read_at?: string | null
+          request_id?: string | null
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          read_at?: string | null
+          request_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_notifications_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_preferences: {
         Row: {
-          tables_choix: string[]
-          sejours_choix: string[]
-          transferts_choix: string[]
-          dates_membre: string
-          member_updated_at: string | null
           calendrier: string
           dates_cles: string
+          dates_membre: string
+          member_updated_at: string | null
           sejours: string
+          sejours_choix: string[]
           tables: string
+          tables_choix: string[]
           transferts: string
+          transferts_choix: string[]
           updated_at: string
           updated_by: string | null
           user_id: string
         }
         Insert: {
-          tables_choix?: string[]
-          sejours_choix?: string[]
-          transferts_choix?: string[]
-          dates_membre?: string
-          member_updated_at?: string | null
           calendrier?: string
           dates_cles?: string
+          dates_membre?: string
+          member_updated_at?: string | null
           sejours?: string
+          sejours_choix?: string[]
           tables?: string
+          tables_choix?: string[]
           transferts?: string
+          transferts_choix?: string[]
           updated_at?: string
           updated_by?: string | null
           user_id: string
         }
         Update: {
-          tables_choix?: string[]
-          sejours_choix?: string[]
-          transferts_choix?: string[]
-          dates_membre?: string
-          member_updated_at?: string | null
           calendrier?: string
           dates_cles?: string
+          dates_membre?: string
+          member_updated_at?: string | null
           sejours?: string
+          sejours_choix?: string[]
           tables?: string
+          tables_choix?: string[]
           transferts?: string
+          transferts_choix?: string[]
           updated_at?: string
           updated_by?: string | null
           user_id?: string
@@ -259,6 +259,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      membership_plans: {
+        Row: {
+          min_commitment_months: number | null
+          name: string
+          period: string
+          price_cents: number
+          updated_at: string
+        }
+        Insert: {
+          min_commitment_months?: number | null
+          name: string
+          period: string
+          price_cents: number
+          updated_at?: string
+        }
+        Update: {
+          min_commitment_months?: number | null
+          name?: string
+          period?: string
+          price_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       offers: {
         Row: {
@@ -308,10 +332,46 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_failures: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          id: string
+          mollie_payment_id: string
+          resolved_at: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          id?: string
+          mollie_payment_id: string
+          resolved_at?: string | null
+          status: string
+          user_id?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          id?: string
+          mollie_payment_id?: string
+          resolved_at?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_failures_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
-          language: string
-          onboarded_at: string | null
           concierge_referent: string | null
           concierge_whatsapp: string | null
           created_at: string
@@ -319,6 +379,7 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          language: string
           member_number: string
           member_since: string
           mollie_customer_id: string | null
@@ -326,14 +387,13 @@ export type Database = {
           notify_messages: boolean
           notify_offers: boolean
           notify_requests: boolean
+          onboarded_at: string | null
           phone: string | null
           plan: string
           role_label: string
           valid_until: string
         }
         Insert: {
-          language?: string
-          onboarded_at?: string | null
           concierge_referent?: string | null
           concierge_whatsapp?: string | null
           created_at?: string
@@ -341,6 +401,7 @@ export type Database = {
           email?: string | null
           full_name?: string
           id: string
+          language?: string
           member_number?: string
           member_since?: string
           mollie_customer_id?: string | null
@@ -348,14 +409,13 @@ export type Database = {
           notify_messages?: boolean
           notify_offers?: boolean
           notify_requests?: boolean
+          onboarded_at?: string | null
           phone?: string | null
           plan?: string
           role_label?: string
           valid_until?: string
         }
         Update: {
-          language?: string
-          onboarded_at?: string | null
           concierge_referent?: string | null
           concierge_whatsapp?: string | null
           created_at?: string
@@ -363,6 +423,7 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
+          language?: string
           member_number?: string
           member_since?: string
           mollie_customer_id?: string | null
@@ -370,6 +431,7 @@ export type Database = {
           notify_messages?: boolean
           notify_offers?: boolean
           notify_requests?: boolean
+          onboarded_at?: string | null
           phone?: string | null
           plan?: string
           role_label?: string
@@ -798,12 +860,12 @@ export type Database = {
           concierge: string
           concierge_id: string | null
           created_at: string
+          delegate_record: string | null
           description: string
           guests: number | null
           id: string
           image_key: string
           recurring_id: string | null
-          delegate_record: string | null
           scheduled_date: string | null
           scheduled_time: string | null
           status: Database["public"]["Enums"]["request_status"]
@@ -818,12 +880,12 @@ export type Database = {
           concierge?: string
           concierge_id?: string | null
           created_at?: string
+          delegate_record?: string | null
           description?: string
           guests?: number | null
           id?: string
           image_key?: string
           recurring_id?: string | null
-          delegate_record?: string | null
           scheduled_date?: string | null
           scheduled_time?: string | null
           status?: Database["public"]["Enums"]["request_status"]
@@ -838,12 +900,12 @@ export type Database = {
           concierge?: string
           concierge_id?: string | null
           created_at?: string
+          delegate_record?: string | null
           description?: string
           guests?: number | null
           id?: string
           image_key?: string
           recurring_id?: string | null
-          delegate_record?: string | null
           scheduled_date?: string | null
           scheduled_time?: string | null
           status?: Database["public"]["Enums"]["request_status"]
@@ -895,6 +957,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_invoice: {
+        Args: {
+          _amount_cents: number
+          _commission_cents?: number
+          _commission_rate?: number
+          _kind: string
+          _mollie_payment_id?: string
+          _request_id?: string
+          _service_cents?: number
+          _status: string
+          _user_id: string
+        }
+        Returns: {
+          id: string
+          number: string
+        }[]
+      }
+      generate_recurring_requests: {
+        Args: { _today?: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -902,27 +985,22 @@ export type Database = {
         }
         Returns: boolean
       }
-      generate_recurring_requests: { Args: { _today?: string }; Returns: number }
-      create_invoice: {
-        Args: {
-          _user_id: string
-          _kind: string
-          _status: string
-          _amount_cents: number
-          _request_id?: string | null
-          _service_cents?: number | null
-          _commission_cents?: number | null
-          _commission_rate?: number | null
-          _mollie_payment_id?: string | null
-        }
-        Returns: { id: string; number: string }[]
-      }
       is_member: { Args: { _user_id: string }; Returns: boolean }
-      notify_webhook_secret: { Args: never; Returns: string }
-      team_member_counts: { Args: never; Returns: { user_id: string; requests_count: number; invoices_count: number }[] }
       is_team: { Args: { _user_id: string }; Returns: boolean }
-      mark_request_notifications_read: { Args: { _request_id: string }; Returns: undefined }
+      mark_request_notifications_read: {
+        Args: { _request_id: string }
+        Returns: undefined
+      }
       next_invoice_number: { Args: never; Returns: string }
+      notify_webhook_secret: { Args: never; Returns: string }
+      team_member_counts: {
+        Args: never
+        Returns: {
+          invoices_count: number
+          requests_count: number
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "member" | "concierge"
