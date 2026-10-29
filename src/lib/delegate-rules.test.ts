@@ -46,7 +46,11 @@ import { trustedOrigin, DEFAULT_APP_ORIGIN } from "./app-origin";
 describe("adresse de l'application", () => {
   test("seuls nos domaines sont retenus", () => {
     expect(trustedOrigin("https://app.artdevie.co")).toBe("https://app.artdevie.co");
-    expect(trustedOrigin("https://id-preview--x.lovable.app")).toBe("https://id-preview--x.lovable.app");
+    expect(trustedOrigin("https://id-preview--41b1075b-2b17-4a5b-8120-aca5edc05f47.lovable.app")).toBe("https://id-preview--41b1075b-2b17-4a5b-8120-aca5edc05f47.lovable.app");
+    expect(trustedOrigin("https://project--41b1075b-2b17-4a5b-8120-aca5edc05f47-dev.lovable.app")).toBe("https://project--41b1075b-2b17-4a5b-8120-aca5edc05f47-dev.lovable.app");
+    expect(trustedOrigin("https://id-preview--autre-projet.lovable.app")).toBe(DEFAULT_APP_ORIGIN);
+    expect(trustedOrigin("https://boutique.artdevie.co")).toBe(DEFAULT_APP_ORIGIN);
+    expect(DEFAULT_APP_ORIGIN).toBe("https://app.artdevie.co");
     expect(trustedOrigin("https://artdevie.co.evil.com")).toBe(DEFAULT_APP_ORIGIN);
     expect(trustedOrigin("https://evil.com")).toBe(DEFAULT_APP_ORIGIN);
     expect(trustedOrigin(null)).toBe(DEFAULT_APP_ORIGIN);
