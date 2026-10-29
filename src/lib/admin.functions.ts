@@ -837,7 +837,7 @@ export const inviteColleague = createServerFn({ method: "POST" })
       return rejoinTeam(admin, email, data.fullName, data.role);
     }
     const id = created.user.id;
-    const { error: profileError } = await admin.from("profiles").update({ full_name: data.fullName, role_label: "Équipe Art de Vie", concierge_referent: null, concierge_whatsapp: null }).eq("id", id);
+    const { error: profileError } = await admin.from("profiles").update({ full_name: data.fullName, role_label: "Équipe Art de Vie", plan: null, concierge_referent: null, concierge_whatsapp: null } as never).eq("id", id);
     const { error: roleError } = profileError ? { error: profileError } : await admin.from("user_roles").insert({ user_id: id, role: data.role });
     if (roleError) {
       await admin.auth.admin.deleteUser(id);
@@ -869,7 +869,7 @@ async function rejoinTeam(admin: any, email: string, fullName: string, role: Tea
   const { error: authError } = await admin.auth.admin.updateUserById(id, { ban_duration: "none", app_metadata: { account_kind: "equipe" }, user_metadata: { full_name: fullName } });
   if (authError) return { ok: false as const, reason: "Le compte n’a pas pu être réactivé." };
   // Profil créé par le déclencheur s'il manquait (connexion Google antérieure à l'invitation), puis remis en état.
-  const { error: profileError } = await admin.from("profiles").update({ full_name: fullName, role_label: "Équipe Art de Vie", concierge_referent: null, concierge_whatsapp: null, disabled_at: null }).eq("id", id);
+  const { error: profileError } = await admin.from("profiles").update({ full_name: fullName, role_label: "Équipe Art de Vie", plan: null, concierge_referent: null, concierge_whatsapp: null, disabled_at: null }).eq("id", id);
   if (profileError) return { ok: false as const, reason: "Le compte n’a pas pu être préparé." };
   const { error: roleError } = await admin.from("user_roles").upsert({ user_id: id, role }, { onConflict: "user_id,role", ignoreDuplicates: true });
   if (roleError) return { ok: false as const, reason: "Le rôle n’a pas pu être attribué." };
