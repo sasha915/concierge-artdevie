@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatDate, formatShortDate, initials, type RequestStatus } from "@/data/art-de-vie";
 import { requestDetailQuery, teamNamesQuery, requestEventsQuery, replyTemplatesQuery, requestBillingQuery, requestMessagesAdminQuery, requestFilesQuery, requestChangesQuery, requestReviewQuery, requestProposalsQuery } from "@/lib/admin-queries";
 import { eurosInput, invoiceBreakdown, parseEuros, ratePercent } from "@/lib/billing-rules";
-import { canTransition, insertReply, requestHistory } from "@/lib/team-request-rules";
+import { canInvoice, canTransition, insertReply, isOpenStatus, requestHistory } from "@/lib/team-request-rules";
 import { decideRequestChange, getRequestFileUrl, resendProposal, sendProposal, setRequestFileVisibility, uploadRequestFile, withdrawProposal } from "@/lib/admin.functions";
 import { FILE_TYPES, fileProblem, fileSizeLabel } from "@/lib/request-actions-rules";
 import { addRequestNote, createRequestInvoice, listRequestNotes, setRequestAmount, sendTeamMessage, setRequestConcierge, updateRequestStatus } from "@/lib/admin.functions";
@@ -143,7 +143,7 @@ function Page() {
           </div>
         </section>
 
-        <ProposalBlock requestId={r.id} cancelled={r.status === "Annulée"} busy={busy} run={run} />
+        <ProposalBlock requestId={r.id} cancelled={r.status === "Annulée"} closed={!isOpenStatus(r.status)} busy={busy} run={run} />
 
         <FilesBlock requestId={r.id} busy={busy} run={run} />
 
@@ -195,7 +195,7 @@ function Page() {
           </select>
         </section>
 
-        <BillingBlock requestId={r.id} cancelled={r.status === "Annulée"} isAdmin={teamRole === "admin"} busy={busy} run={run} />
+        <BillingBlock requestId={r.id} cancelled={r.status === "Annulée"} invoiceable={canInvoice(r.status)} isAdmin={teamRole === "admin"} busy={busy} run={run} />
 
         {m && <section className="team-glass rounded-[28px] p-6">
           <div className="flex items-start justify-between gap-3">
@@ -231,7 +231,7 @@ function Info({ label, value }: { label: string; value: string }) {
   return <div className="rounded-2xl border border-border p-4"><dt className="eyebrow team-mention text-[10px]">{label}</dt><dd className="mt-3 text-[20px] leading-tight">{value}</dd></div>;
 }
 
-function BillingBlock({ requestId, cancelled, isAdmin, busy, run }: { requestId: string; cancelled: boolean; isAdmin: boolean; busy: boolean; run: (action: () => Promise<{ ok: boolean; reason?: string }>, success: string) => Promise<void> }) {
+function BillingBlock({ requestId, cancelled, invoiceable, isAdmin, busy, run }: { requestId: string; cancelled: boolean; invoiceable: boolean; isAdmin: boolean; busy: boolean; run: (action: () => Promise<{ ok: boolean; reason?: string }>, success: string) => Promise<void> }) {
   const { data: billing, isLoading, isError } = useQuery(requestBillingQuery(requestId));
   const saveAmount = useServerFn(setRequestAmount);
   const createInvoice = useServerFn(createRequestInvoice);
@@ -243,7 +243,7 @@ function BillingBlock({ requestId, cancelled, isAdmin, busy, run }: { requestId:
   if (isError || !billing) return <section className="team-panel rounded-[28px] p-6"><h2 className="eyebrow team-mention">Montant et commission</h2><p role="alert" className="mt-4 text-[13px] text-muted-foreground">Le montant n’a pas pu être chargé.</p></section>;
 
   const typed = parseEuros(value);
-  const preview = typed !== null ? invoiceBreakdown(typed, billing.plan) : billing.breakdown;
+  const preview = !billing.plan ? null : typed !== null ? invoiceBreakdown(typed, billing.plan) : billing.breakdown;
   const dirty = value.trim() !== eurosInput(billing.amount_cents);
   const locked = billing.invoiced;
 
@@ -274,7 +274,7 @@ function BillingBlock({ requestId, cancelled, isAdmin, busy, run }: { requestId:
     {invalid && <p id="request-amount-error" role="alert" className="mt-2 text-[13px]">Montant invalide : indiquez des euros, avec deux décimales au plus.</p>}
     <dl className="mt-5 divide-y divide-border border-y border-border text-[14px]">
       <div className="flex justify-between gap-4 py-3"><dt className="text-muted-foreground">Prestation</dt><dd>{preview ? formatAmount(preview.service_cents) : "—"}</dd></div>
-      <div className="flex justify-between gap-4 py-3"><dt className="text-muted-foreground">Formule du membre</dt><dd>{billing.plan}</dd></div>
+      <div className="flex justify-between gap-4 py-3"><dt className="text-muted-foreground">Formule du membre</dt><dd>{billing.plan ?? "Inconnue : corrigez la fiche avant de facturer"}</dd></div>
       <div className="flex justify-between gap-4 py-3"><dt className="text-muted-foreground">Commission{preview ? ` (${ratePercent(preview.commission_rate)})` : ""}</dt><dd>{preview ? formatAmount(preview.commission_cents) : "—"}</dd></div>
       <div className="flex justify-between gap-4 py-3"><dt className="font-medium">Total à facturer</dt><dd className="font-display text-[24px] leading-none">{preview ? formatAmount(preview.total_cents) : "—"}</dd></div>
     </dl>
@@ -284,7 +284,7 @@ function BillingBlock({ requestId, cancelled, isAdmin, busy, run }: { requestId:
         ? <p className="mt-4 rounded-2xl border border-border px-4 py-3 text-[13px]">Facture {billing.invoice.number} · {formatShortDate(billing.invoice.issued_on)} · {billing.invoice.status}</p>
         : <p className="mt-4 text-[13px] text-muted-foreground">Cette demande est facturée.</p>
     ) : isAdmin ? (
-      <Button type="button" disabled={busy || cancelled || !billing.breakdown || dirty} onClick={invoice} className="mt-4 h-11 w-full rounded-full px-5">Créer la facture</Button>
+      <Button type="button" disabled={busy || cancelled || !invoiceable || !billing.breakdown || dirty} title={invoiceable ? undefined : "Une demande se facture une fois confirmée ou terminée."} onClick={invoice} className="mt-4 h-11 w-full rounded-full px-5">Créer la facture</Button>
     ) : (
       <p className="mt-4 text-[13px] text-muted-foreground">La facture est créée par un administrateur.</p>
     )}
@@ -304,7 +304,7 @@ function ChangeBanner({ requestId, busy, run }: { requestId: string; busy: boole
     <p className="eyebrow">Modification demandée par le membre · {stamp(pending.created_at)}</p>
     <p className="mt-3 text-[22px] leading-tight">{pending.label}</p>
     {pending.body && <p className="mt-2 whitespace-pre-line text-[15px] leading-6">{pending.body}</p>}
-    <p className="mt-3 text-[13px] opacity-80">La demande reste inchangée tant que vous n’avez pas tranché. Accepter ne modifie rien automatiquement : mettez-la ensuite à jour vous-même.</p>
+    <p className="mt-3 text-[13px] opacity-80">La demande reste inchangée tant que vous n’avez pas tranché. Accepter une annulation annule la demande ; pour les autres modifications, mettez-la ensuite à jour vous-même.</p>
     <div className="mt-4 flex flex-wrap gap-2">
       <button type="button" disabled={busy} onClick={() => run(() => decide({ data: { id: pending.id, decision: "acceptée" } }), "Modification acceptée. Le membre est prévenu.")} className="h-11 rounded-full bg-background px-5 text-[14px] font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60">Accepter</button>
       <button type="button" disabled={busy} onClick={() => run(() => decide({ data: { id: pending.id, decision: "refusée" } }), "Modification refusée. Le membre est prévenu.")} className="h-11 rounded-full border border-background/40 px-5 text-[14px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60">Refuser</button>
@@ -318,7 +318,8 @@ function FilesBlock({ requestId, busy, run }: { requestId: string; busy: boolean
   const upload = useServerFn(uploadRequestFile);
   const setVisibility = useServerFn(setRequestFileVisibility);
   const fileUrl = useServerFn(getRequestFileUrl);
-  const [visible, setVisible] = useState(false);
+  // Un document joint depuis l'échange avec le membre lui est destiné : visible par défaut (case à décocher pour un document interne).
+  const [visible, setVisible] = useState(true);
   const [problem, setProblem] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -379,7 +380,7 @@ type DraftOption = { label: string; detail: string; estimate: string };
 const emptyOption: DraftOption = { label: "", detail: "", estimate: "" };
 
 /** Lot 6.1 — proposition au membre : options, envoi, état de la réponse. */
-function ProposalBlock({ requestId, cancelled, busy, run }: { requestId: string; cancelled: boolean; busy: boolean; run: Run }) {
+function ProposalBlock({ requestId, cancelled, closed, busy, run }: { requestId: string; cancelled: boolean; closed: boolean; busy: boolean; run: Run }) {
   const { data: proposals = [], isLoading } = useQuery(requestProposalsQuery(requestId));
   const send = useServerFn(sendProposal);
   const withdraw = useServerFn(withdrawProposal);
@@ -426,7 +427,7 @@ function ProposalBlock({ requestId, cancelled, busy, run }: { requestId: string;
       <Button type="button" variant="soft" disabled={busy} className="h-11 rounded-full px-5" onClick={() => void run(() => resend({ data: { id: pending.id } }), "Proposition renvoyée au membre.")}>Renvoyer la proposition</Button>
       <Button type="button" variant="outline" disabled={busy} className="h-11 rounded-full px-5" onClick={() => { if (window.confirm("Retirer cette proposition ? Le membre ne la verra plus.")) void run(() => withdraw({ data: { id: pending.id } }), "Proposition retirée."); }}>Retirer la proposition</Button>
     </div>}
-    {!pending && !cancelled && !drafting && <Button type="button" variant="outline" className="mt-4 h-11 rounded-full px-5" onClick={() => setDrafting(true)}>{latest ? "Nouvelle proposition" : "Préparer une proposition"}</Button>}
+    {!pending && !cancelled && !closed && !drafting && <Button type="button" variant="outline" className="mt-4 h-11 rounded-full px-5" onClick={() => setDrafting(true)}>{latest ? "Nouvelle proposition" : "Préparer une proposition"}</Button>}
     {drafting && <div className="mt-4 grid gap-3">
       {options.map((o, i) => <fieldset key={i} className="grid gap-2 rounded-2xl border border-border p-4">
         <legend className="px-1 text-[12px] text-muted-foreground">Option {i + 1}</legend>

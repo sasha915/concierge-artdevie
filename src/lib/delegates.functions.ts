@@ -200,6 +200,8 @@ export const createDelegateRequest = createServerFn({ method: "POST" })
     scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
     scheduledTime: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal("")),
     guests: z.number().int().min(1).max(500).nullable().optional(),
+    // Identifiant fixé par le navigateur : un nouvel essai après une coupure réseau ne crée pas de doublon.
+    draftId: z.string().uuid().optional(),
   }).parse(input))
   .handler(async ({ data, context }) => {
     const ctx = context as Ctx;
@@ -211,7 +213,12 @@ export const createDelegateRequest = createServerFn({ method: "POST" })
     if (issue === "date_passee") return { ok: false as const, reason: "La date souhaitée est déjà passée." };
     if (issue === "heure_passee") return { ok: false as const, reason: "L’heure souhaitée est déjà passée." };
     if (issue === "couverts_invalides") return { ok: false as const, reason: "Indiquez un nombre de personnes entre 1 et 500." };
+    if (data.draftId) {
+      const { data: existing } = await admin.from("requests").select("id").eq("id", data.draftId).eq("user_id", delegation.memberId).maybeSingle();
+      if (existing) return { ok: true as const, id: existing.id as string };
+    }
     const { data: row, error } = await admin.from("requests").insert({
+      ...(data.draftId ? { id: data.draftId } : {}),
       user_id: delegation.memberId,
       delegate_record: delegation.id,
       category: data.category,
@@ -224,8 +231,12 @@ export const createDelegateRequest = createServerFn({ method: "POST" })
       guests: data.guests ?? null,
       image_key: REQUEST_IMAGE[data.category] ?? "entree-de-nuit",
     }).select("id, title").single();
+    if (error?.code === "23505" && data.draftId) return { ok: true as const, id: data.draftId };
     if (error || !row) return { ok: false as const, reason: "L’envoi a échoué. Réessayez dans un instant." };
     await admin.from("request_events").insert({ request_id: row.id, actor_id: ctx.userId, kind: "reçue", detail: `Demandée par ${delegation.fullName}, proche du membre` });
+    // Alerte WhatsApp à la conciergerie, comme pour une demande du membre (le déclencheur ne couvre que les insertions du membre).
+    const { error: alertError } = await (admin as any).rpc("post_concierge_notification", { _request_id: row.id });
+    if (alertError) console.error("[createDelegateRequest] alerte WhatsApp non déclenchée", alertError.message);
 
     // Le membre est prévenu de chaque demande faite en son nom.
     try {

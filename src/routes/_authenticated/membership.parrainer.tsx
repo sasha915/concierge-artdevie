@@ -1,3 +1,5 @@
+import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/art-de-vie/cards";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -21,7 +23,7 @@ export const Route = createFileRoute("/_authenticated/membership/parrainer")({ h
 function Page() {
   const queryClient = useQueryClient();
   const invite = useServerFn(sendReferralInvite);
-  const { data: referrals = [] } = useQuery(referralsQuery);
+  const { data: referrals = [], isLoading, isError, refetch } = useQuery(referralsQuery);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -59,7 +61,11 @@ function Page() {
 
     <section className="mt-5 lg:mx-4 lg:mt-16">
       <h2 className="eyebrow text-muted-foreground">{t("Vos recommandations")}</h2>
-      {referrals.length === 0 ? (
+      {isLoading ? (
+        <Skeleton className="mt-3 h-24 rounded-card bg-panel" />
+      ) : isError ? (
+        <div className="mt-3"><ErrorState onRetry={() => void refetch()} /></div>
+      ) : referrals.length === 0 ? (
         <p className="mt-3 rounded-card bg-panel p-5 text-[13px] text-muted-foreground">{t("Vous n’avez pas encore recommandé de personne.")}</p>
       ) : (
         <div className="mt-3 overflow-hidden rounded-card bg-panel px-5">

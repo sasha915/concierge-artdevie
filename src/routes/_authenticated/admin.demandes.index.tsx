@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Plus, Search } from "lucide-react";
-import { AdminShell, TeamStatus } from "@/components/art-de-vie/admin-shell";
+import { AdminShell, TeamStatus, TeamLoadError } from "@/components/art-de-vie/admin-shell";
 import { Title } from "@/components/art-de-vie/v3";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ const EMPTY: Record<string, string> = {
 const control = "h-11 rounded-full border border-border bg-card px-4 text-[14px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 function Page() {
-  const { data = [], isLoading } = useQuery(allRequestsQuery);
+  const { data = [], isLoading, isError, refetch } = useQuery(allRequestsQuery);
   const { data: userId = null } = useQuery(teamSelfQuery);
   const [mine, setMine] = useState(false);
   const [unassigned, setUnassigned] = useState(false);
@@ -72,7 +72,7 @@ function Page() {
       </div>
     </div>
 
-    {!isLoading && view === "liste" ? <ListView items={list} /> : isLoading ? <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">{STATUSES.map((s) => <Skeleton key={s} className="h-[320px] rounded-[24px] bg-primary/10" />)}</div>
+    {isError ? <div className="mt-6"><TeamLoadError onRetry={() => void refetch()} /></div> : !isLoading && view === "liste" ? <ListView items={list} /> : isLoading ? <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">{STATUSES.map((s) => <Skeleton key={s} className="h-[320px] rounded-[24px] bg-primary/10" />)}</div>
       : <>
       <div className="mt-6 grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {STATUSES.map((status) => {

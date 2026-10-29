@@ -77,6 +77,18 @@ export const Route = createFileRoute("/api/public/mollie-webhook")({
             }
             return done();
           }
+          // Remboursé ou contesté avant d'avoir été traité : aucun abonnement ni facture, l'équipe est alertée.
+          let ownerId = (meta.user_id as string | undefined) ?? null;
+          if (!ownerId && payment.customerId) {
+            const { data: p } = await admin.from("profiles").select("id").eq("mollie_customer_id", payment.customerId).maybeSingle();
+            ownerId = p?.id ?? null;
+          }
+          const { error: earlyError } = await admin.from("payment_failures").upsert(
+            { user_id: ownerId, mollie_payment_id: payment.id, amount_cents: adjustment.cents, status: adjustment.status, resolved_at: null },
+            { onConflict: "mollie_payment_id" },
+          );
+          if (earlyError) return retry("remboursement non enregistré", earlyError);
+          return done();
         }
 
         // 1) Paiement ponctuel d'une facture existante.
@@ -151,20 +163,43 @@ export const Route = createFileRoute("/api/public/mollie-webhook")({
                   startDate: subscriptionStartDate(todayParis(), plan.period),
                   description: `Art de Vie — Formule ${plan.name}`,
                   webhookUrl,
-                  metadata: { user_id: meta.user_id, kind: "subscription_charge" },
+                  metadata: { user_id: meta.user_id, kind: "subscription_charge", first_payment: payment.id },
                 }),
               });
               const { error: saveError } = await admin.from("profiles").update({ mollie_subscription_id: sub.id }).eq("id", meta.user_id).eq("mollie_subscription_id", claim);
-              if (saveError) console.error("[mollie-webhook] abonnement créé mais non enregistré", sub.id, saveError);
+              // Mollie rappellera : la reprise retrouve l'abonnement déjà créé et l'enregistre.
+              if (saveError) return retry("abonnement créé mais non enregistré", saveError);
               // Désactivation survenue pendant la création : l'abonnement est aussitôt arrêté.
               const { data: after } = await admin.from("profiles").select("disabled_at").eq("id", meta.user_id).maybeSingle();
               if (after?.disabled_at) {
                 await mollie(`/customers/${payment.customerId}/subscriptions/${sub.id}`, { method: "DELETE" }).catch((e: unknown) => console.error("[mollie-webhook] abonnement d'un compte désactivé non arrêté", sub.id, e));
                 await admin.from("profiles").update({ mollie_subscription_id: null }).eq("id", meta.user_id).eq("mollie_subscription_id", sub.id);
+                await admin.from("payment_failures").upsert(
+                  { user_id: meta.user_id, mollie_payment_id: payment.id, amount_cents: paidCents, status: "Payé, compte désactivé" },
+                  { onConflict: "mollie_payment_id", ignoreDuplicates: true },
+                );
               }
             } catch (err) {
               await admin.from("profiles").update({ mollie_subscription_id: null }).eq("id", meta.user_id).eq("mollie_subscription_id", claim);
               return retry("création de l'abonnement impossible", err);
+            }
+          } else {
+            // Abonnement déjà ouvert : simple rappel de ce même paiement, ou second premier paiement (double emploi à rembourser).
+            const { data: current } = await admin.from("profiles").select("mollie_subscription_id").eq("id", meta.user_id).maybeSingle();
+            const currentSub = current?.mollie_subscription_id as string | null | undefined;
+            let samePayment = false;
+            if (currentSub && !currentSub.startsWith("en_cours:")) {
+              try {
+                const existing = await mollie<{ metadata?: { first_payment?: string } }>(`/customers/${payment.customerId}/subscriptions/${currentSub}`);
+                samePayment = existing.metadata?.first_payment === payment.id;
+              } catch { samePayment = false; }
+            }
+            if (!samePayment) {
+              const { error: dupError } = await admin.from("payment_failures").upsert(
+                { user_id: meta.user_id, mollie_payment_id: payment.id, amount_cents: paidCents, status: "Payé en double" },
+                { onConflict: "mollie_payment_id", ignoreDuplicates: true },
+              );
+              if (dupError) return retry("double paiement non signalé", dupError);
             }
           }
           const invoiceError = await createInvoice(admin, { userId: meta.user_id, amountCents: paidCents, paymentId: payment.id });

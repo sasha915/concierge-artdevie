@@ -129,8 +129,8 @@ function Page() {
           <Field id="g" label={guestsLabel}><Input id="g" type="number" min="1" value={guests} onChange={(e) => setGuests(e.target.value)} placeholder="2" /></Field>
           <Field id="p" label="Précisions" full><Textarea id="p" rows={5} maxLength={4000} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Envies, contraintes ou attentions particulières…" /></Field>
           <Field id="rec" label="Récurrence" full>
-            <div id="rec" role="radiogroup" aria-label="Récurrence" className="flex flex-wrap gap-2">
-              {RHYTHMS.map((r) => <button key={r.value} type="button" role="radio" aria-checked={rhythm === r.value} onClick={() => setRhythm(r.value as "aucune" | Rhythm)} className={`h-11 rounded-full px-4 text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${rhythm === r.value ? "bg-primary text-primary-foreground" : "border border-border hover:bg-primary/10"}`}>{r.value === "aucune" ? "Ponctuelle" : r.label}</button>)}
+            <div id="rec" role="group" aria-label="Récurrence" className="flex flex-wrap gap-2">
+              {RHYTHMS.map((r) => <button key={r.value} type="button" aria-pressed={rhythm === r.value} onClick={() => setRhythm(r.value as "aucune" | Rhythm)} className={`h-11 rounded-full px-4 text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${rhythm === r.value ? "bg-primary text-primary-foreground" : "border border-border hover:bg-primary/10"}`}>{r.value === "aucune" ? "Ponctuelle" : r.label}</button>)}
             </div>
             <p className="mt-2 text-[12px] text-muted-foreground">Une demande récurrente se recrée seule à chaque échéance, jusqu’à la date de fin que vous indiquez. Pour des jours de match, choisissez « À des dates choisies ».</p>
             {rhythm !== "aucune" && <div className="mt-3 grid gap-3">

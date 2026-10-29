@@ -253,6 +253,13 @@
       "when": 1793318400000,
       "tag": "0035_gdpr_security_finishing",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1793320200000,
+      "tag": "0036_gdpr_complete_and_alert_traces",
+      "breakpoints": true
     }
   ]
 }

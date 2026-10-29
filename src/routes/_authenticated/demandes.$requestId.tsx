@@ -416,9 +416,9 @@ function ReviewBlock({ requestId, category }: { requestId: string; category: str
     <form onSubmit={submit} className="rounded-[22px] bg-panel p-5 text-primary">
       <p className="eyebrow text-muted-foreground">{t("Votre avis")}</p>
       <h2 className="v3-heading mt-3 text-[30px] leading-[1.06]">{reviewTitle[0]}{" "}<em className="font-display font-normal">{reviewTitle[1]}</em></h2>
-      <div role="radiogroup" aria-label={t("Votre avis sur la prestation")} className="mt-4 flex flex-wrap gap-2">
+      <div role="group" aria-label={t("Votre avis sur la prestation")} className="mt-4 flex flex-wrap gap-2">
         {REVIEW_RATINGS.map((r) => (
-          <button key={r} type="button" role="radio" aria-checked={rating === r} onClick={() => setRating(r)}
+          <button key={r} type="button" aria-pressed={rating === r} onClick={() => setRating(r)}
             className={`h-11 rounded-full px-5 text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${rating === r ? "bg-primary text-background" : "border border-primary/25 hover:bg-primary/10"}`}>
             {t(r)}
           </button>

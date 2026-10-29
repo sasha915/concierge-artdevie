@@ -36,9 +36,8 @@ function Authenticated() {
   }, [lang]);
   // Fuseau du membre (ou de son proche) ; l'interface équipe reste à l'heure de Paris.
   const tz = team ? DEFAULT_TIMEZONE : profile?.timezone ?? delegation?.timezone ?? DEFAULT_TIMEZONE;
-  useLayoutEffect(() => {
-    setTimeZone(tz);
-  }, [tz]);
+  // Appliqué dès le rendu (avant les pages) et la page est remontée si le fuseau change.
+  setTimeZone(tz);
 
   // Un compte de l'équipe n'a pas d'espace membre : toute page membre le renvoie vers l'espace équipe.
   const { data: isTeam } = useQuery({ ...isAdminQuery, enabled: !team });
@@ -50,5 +49,5 @@ function Authenticated() {
     if (!delegation) return <InactiveAccess />;
     if (!isDelegatePathAllowed(pathname)) return <Navigate to="/" replace />;
   }
-  return <Outlet />;
+  return <Outlet key={tz} />;
 }

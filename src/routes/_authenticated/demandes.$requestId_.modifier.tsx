@@ -74,11 +74,11 @@ function Page() {
             <p className="v3-card-title mt-3 text-[24px] lg:text-[34px]">{item.title}</p>
             <fieldset className="mt-6">
               <legend className="eyebrow text-primary">{t("Votre modification")}</legend>
-              <div role="radiogroup" className="mt-3 grid gap-2 sm:grid-cols-2">
+              <div role="group" aria-label={t("Votre modification")} className="mt-3 grid gap-2 sm:grid-cols-2">
                 {CHANGE_KINDS.filter((k) => k.value !== "annulation").map((k) => {
                   const active = kind === k.value;
                   return (
-                    <button key={k.value} type="button" role="radio" aria-checked={active} onClick={() => setKind(k.value)}
+                    <button key={k.value} type="button" aria-pressed={active} onClick={() => setKind(k.value)}
                       className={`flex min-h-[56px] items-center justify-between gap-3 rounded-[18px] px-4 py-3 text-left text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${active ? "bg-primary text-background" : "bg-panel hover:bg-primary/15"}`}>
                       {t(k.label)}
                       {active && <Check className="size-4 shrink-0" aria-hidden="true" />}

@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useState } from "react";
+import { cloneElement, isValidElement, useEffect, useId, useMemo, useState, type ReactElement } from "react";
 import { ChevronRight, Mail, Search, UserMinus, UserPlus } from "lucide-react";
-import { AdminShell } from "@/components/art-de-vie/admin-shell";
+import { AdminShell, TeamLoadError } from "@/components/art-de-vie/admin-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_authenticated/admin/membres/")({ validat
 
 function Page() {
   const queryClient = useQueryClient();
-  const { data: members = [], isLoading } = useQuery(membersQuery);
+  const { data: members = [], isLoading, isError, refetch } = useQuery(membersQuery);
   const create = useServerFn(createMember);
   const invite = useServerFn(sendMemberInvite);
   const toggle = useServerFn(setMemberDisabled);
@@ -58,7 +58,8 @@ function Page() {
       const r = await create({ data: { ...form, plan: form.plan as "Essentiel" | "Signature" } });
       if (!r.ok) { setError(r.reason); return; }
       if (prefill.parrainage) {
-        await convert({ data: { referralId: prefill.parrainage, memberId: r.id } });
+        const linked = await convert({ data: { referralId: prefill.parrainage, memberId: r.id } });
+        if (!linked.ok) setError(`Membre créé, mais le parrainage n’a pas pu être relié : ${linked.reason}`);
         await queryClient.invalidateQueries({ queryKey: ["admin", "referrals"] });
         await navigate({ to: "/admin/membres"});
       }
@@ -69,21 +70,27 @@ function Page() {
     } catch { setError("La création a échoué. Réessayez."); } finally { setBusy(false); }
   }
 
+  const [actingId, setActingId] = useState<string | null>(null);
   async function sendInvite(m: AdminMember) {
-    if (!m.email) return;
-    setError(null); setNotice(null);
-    const r = await invite({ data: { email: m.email } });
-    if (r.ok) setNotice(`Email d’invitation envoyé à ${m.email}.`);
-    else setError(r.reason);
+    if (!m.email || actingId) return;
+    setError(null); setNotice(null); setActingId(m.id);
+    try {
+      const r = await invite({ data: { email: m.email } });
+      if (r.ok) setNotice(`Email d’invitation envoyé à ${m.email}.`);
+      else setError(r.reason);
+    } catch { setError("L’email n’a pas pu être envoyé."); } finally { setActingId(null); }
   }
 
   async function toggleDisabled(m: AdminMember) {
+    if (actingId) return;
     if (!m.disabled_at && !window.confirm(`Désactiver ${m.full_name || "ce membre"} ? Son prélèvement automatique sera arrêté et il ne pourra plus se connecter.`)) return;
-    setError(null); setNotice(null);
-    const r = await toggle({ data: { id: m.id, disabled: !m.disabled_at } });
-    if (!r.ok) { setError(r.reason); return; }
-    setNotice(m.disabled_at ? `${m.full_name} a été réactivé.` : `${m.full_name} a été désactivé.`);
-    await queryClient.invalidateQueries({ queryKey: ["admin", "members"] });
+    setError(null); setNotice(null); setActingId(m.id);
+    try {
+      const r = await toggle({ data: { id: m.id, disabled: !m.disabled_at } });
+      if (!r.ok) { setError(r.reason); return; }
+      setNotice(m.disabled_at ? `${m.full_name} a été réactivé.` : `${m.full_name} a été désactivé.`);
+      await queryClient.invalidateQueries({ queryKey: ["admin", "members"] });
+    } catch { setError("L’opération a échoué."); } finally { setActingId(null); }
   }
 
 
@@ -111,6 +118,7 @@ function Page() {
 
     <section className="mt-[22px]">
       {isLoading ? <div className="grid gap-3 md:grid-cols-2"><Skeleton className="h-44 rounded-card bg-primary/10"/><Skeleton className="h-44 rounded-card bg-primary/10"/><Skeleton className="h-44 rounded-card bg-primary/10"/></div>
+        : isError ? <TeamLoadError onRetry={() => void refetch()} />
         : filtered.length === 0 ? <EmptyState>Aucun membre ne correspond à cette recherche.</EmptyState>
         : <div className="grid gap-3 md:grid-cols-2">
             {filtered.map((m) => <article key={m.id} className={`rounded-card p-5 ${m.disabled_at ? "border border-dashed border-border" : "team-panel"}`}>
@@ -124,8 +132,8 @@ function Page() {
               <p className="mt-3 text-[12px] text-muted-foreground">{m.plan} · {m.member_number}</p>
               <p className="mt-1 text-[12px] text-muted-foreground">{m.requests_count} demande{m.requests_count > 1 ? "s" : ""}{isAdmin ? ` · ${m.invoices_count} facture${m.invoices_count > 1 ? "s" : ""}` : ""}</p>
               <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-primary/10 pt-4">
-                {isAdmin && <><Button variant="soft" size="sm" onClick={() => sendInvite(m)}><Mail />Invitation</Button>
-                <Button variant="outline" size="sm" onClick={() => toggleDisabled(m)}>{m.disabled_at ? <UserPlus /> : <UserMinus />}{m.disabled_at ? "Réactiver" : "Désactiver"}</Button></>}
+                {isAdmin && <><Button variant="soft" size="sm" disabled={actingId === m.id} onClick={() => sendInvite(m)}><Mail />Invitation</Button>
+                <Button variant="outline" size="sm" disabled={actingId === m.id} onClick={() => toggleDisabled(m)}>{m.disabled_at ? <UserPlus /> : <UserMinus />}{m.disabled_at ? "Réactiver" : "Désactiver"}</Button></>}
                 <Button asChild variant="soft" size="sm" className="ml-auto"><Link to="/admin/membres/$memberId" params={{ memberId: m.id }}>Fiche<ChevronRight /></Link></Button>
               </div>
             </article>)}
@@ -153,13 +161,20 @@ function Page() {
   </AdminShell>;
 }
 
+/** Libellé relié à son champ (lecteurs d'écran) ; pour un groupe de boutons, le libellé nomme le groupe. */
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="min-w-0"><Label className="eyebrow text-muted-foreground">{label}</Label><div className="mt-2 min-w-0">{children}</div></div>;
+  const id = useId();
+  if (isValidElement(children) && children.type === Input) {
+    const child = children as ReactElement<{ id?: string }>;
+    const inputId = child.props.id ?? id;
+    return <div className="min-w-0"><Label htmlFor={inputId} className="eyebrow text-muted-foreground">{label}</Label><div className="mt-2 min-w-0">{cloneElement(child, { id: inputId })}</div></div>;
+  }
+  return <div className="min-w-0" role="group" aria-labelledby={id}><span id={id} className="eyebrow block text-sm font-medium text-muted-foreground">{label}</span><div className="mt-2 min-w-0">{children}</div></div>;
 }
 
 export function PlanSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return <div className="flex gap-2">
-    <Button type="button" variant={value === "Essentiel" ? "primary" : "outline"} onClick={() => onChange("Essentiel")}>Essentiel</Button>
-    <Button type="button" variant={value === "Signature" ? "primary" : "outline"} onClick={() => onChange("Signature")}>Signature</Button>
+    <Button type="button" aria-pressed={value === "Essentiel"} variant={value === "Essentiel" ? "primary" : "outline"} onClick={() => onChange("Essentiel")}>Essentiel</Button>
+    <Button type="button" aria-pressed={value === "Signature"} variant={value === "Signature" ? "primary" : "outline"} onClick={() => onChange("Signature")}>Signature</Button>
   </div>;
 }

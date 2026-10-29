@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowUpRight, Plus } from "lucide-react";
 import vendome from "@/assets/v3/place-vendome.jpg.asset.json";
-import { AdminShell, TeamStatus } from "@/components/art-de-vie/admin-shell";
+import { AdminShell, TeamStatus, TeamLoadError } from "@/components/art-de-vie/admin-shell";
 import { Title } from "@/components/art-de-vie/v3";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatShortDate } from "@/data/art-de-vie";
@@ -46,7 +46,7 @@ function Count({ value, label }: { value: number; label: string }) {
 
 function Page() {
   const fetchDashboard = useServerFn(getDashboard);
-  const { data, isLoading } = useQuery({ queryKey: ["admin", "dashboard"], queryFn: () => fetchDashboard() });
+  const { data, isLoading, isError, refetch } = useQuery({ queryKey: ["admin", "dashboard"], queryFn: () => fetchDashboard() });
   const { data: profile } = useQuery(profileQuery);
   const firstName = (profile?.full_name ?? "").trim().split(/\s+/)[0] ?? "";
   const queryClient = useQueryClient();
@@ -76,7 +76,7 @@ function Page() {
   const plural = (n: number, one: string, many: string) => (n > 1 ? many : one);
   return <AdminShell>
     <h1 className="sr-only">Tableau de bord</h1>
-    {isLoading || !data ? <div className="grid gap-4 lg:grid-cols-12"><Skeleton className="h-[460px] rounded-[28px] bg-primary/10 lg:col-span-8" /><Skeleton className="h-[460px] rounded-[28px] bg-primary/10 lg:col-span-4" /></div> : <>
+    {isError && !data ? <TeamLoadError onRetry={() => void refetch()} /> : isLoading || !data ? <div className="grid gap-4 lg:grid-cols-12"><Skeleton className="h-[460px] rounded-[28px] bg-primary/10 lg:col-span-8" /><Skeleton className="h-[460px] rounded-[28px] bg-primary/10 lg:col-span-4" /></div> : <>
       <div className="grid min-w-0 gap-4 lg:grid-cols-12">
         {/* Maquette V4 : en-tête photo « À traiter aujourd'hui. » et compteurs cliquables. */}
         <section className="relative isolate flex min-h-[420px] flex-col justify-between gap-8 overflow-hidden rounded-[28px] bg-[var(--team-panel)] p-6 lg:col-span-8 lg:min-h-[460px] lg:p-9">
@@ -189,14 +189,23 @@ function WatchBlock({ watch }: { watch: Watch }) {
   const alerts = watch.failedAlerts ?? [];
   const queryClient = useQueryClient();
   const resolveAlert = useServerFn(resolveNotificationFailure);
+  const [resolving, setResolving] = useState<string | null>(null);
   async function markAlertSeen(id: string) {
-    const r = await resolveAlert({ data: { id } });
-    if (!r.ok) toast.error(r.reason); else await queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
+    if (resolving) return;
+    setResolving(id);
+    try {
+      const r = await resolveAlert({ data: { id } });
+      if (!r.ok) toast.error(r.reason); else await queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
+    } catch { toast.error("Le suivi n’a pas pu être enregistré."); } finally { setResolving(null); }
   }
   const resolve = useServerFn(resolvePaymentFailure);
   async function markResolved(id: string) {
-    const r = await resolve({ data: { id } });
-    if (!r.ok) toast.error(r.reason); else await queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
+    if (resolving) return;
+    setResolving(id);
+    try {
+      const r = await resolve({ data: { id } });
+      if (!r.ok) toast.error(r.reason); else await queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
+    } catch { toast.error("Le suivi n’a pas pu être enregistré."); } finally { setResolving(null); }
   }
   // Lot 5.4 : proches invités par les membres, à confirmer par l'équipe.
   const { data: delegates = [] } = useQuery(pendingDelegatesQuery);
@@ -209,7 +218,7 @@ function WatchBlock({ watch }: { watch: Watch }) {
           {alerts.map((a) => <li key={a.id} className="flex items-center gap-3 border-b border-border last:border-0">
             {a.request_id ? <Link to="/admin/demandes/$requestId" params={{ requestId: a.request_id }} className={`${watchLink} min-w-0 flex-1`}><WatchRow title={a.title} meta={`${a.kind}${a.member_name ? ` · ${a.member_name}` : ""} · ${formatShortDate(a.created_at.slice(0, 10))}`} signal={a.reason} /></Link>
               : <div className={`${watchLink} min-w-0 flex-1`}><WatchRow title={a.title} meta={a.kind} signal={a.reason} /></div>}
-            <button type="button" onClick={() => void markAlertSeen(a.id)} className="shrink-0 rounded-full border border-border px-3 py-1 text-[12px] hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Traité</button>
+            <button type="button" disabled={resolving === a.id} onClick={() => void markAlertSeen(a.id)} className="shrink-0 rounded-full border border-border px-3 py-1 text-[12px] hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Traité</button>
           </li>)}
         </WatchGroup>
         <WatchGroup title={`Demandes sans prise en charge depuis plus de ${STALE_REQUEST_HOURS} h`} count={watch.staleRequests.length}>
@@ -228,7 +237,7 @@ function WatchBlock({ watch }: { watch: Watch }) {
           {charges.map((c) => <li key={c.id} className="flex items-center gap-3 border-b border-border last:border-0">
             {c.user_id ? <Link to="/admin/membres/$memberId" params={{ memberId: c.user_id }} className={`${watchLink} min-w-0 flex-1`}><WatchRow title={c.member_name || "Membre"} meta={`${formatAmount(c.amount_cents)} · ${formatShortDate(c.created_at.slice(0, 10))}`} signal={c.status} /></Link>
               : <div className={`${watchLink} min-w-0 flex-1`}><WatchRow title="Membre inconnu" meta={formatAmount(c.amount_cents)} signal={c.status} /></div>}
-            <button type="button" onClick={() => void markResolved(c.id)} className="shrink-0 rounded-full border border-border px-3 py-1 text-[12px] hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Relancé</button>
+            <button type="button" disabled={resolving === c.id} onClick={() => void markResolved(c.id)} className="shrink-0 rounded-full border border-border px-3 py-1 text-[12px] hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Traité</button>
           </li>)}
         </WatchGroup>
         <WatchGroup title="Membres Signature sans concierge attribué" count={noWhatsapp.length}>

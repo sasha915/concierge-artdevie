@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatShortDate } from "@/data/art-de-vie";
 import { adminReferralsQuery, type AdminReferral } from "@/lib/admin-queries";
-import { setReferralStatus } from "@/lib/admin.functions";
+import { linkReferralToMember, setReferralStatus } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/parrainages")({
   beforeLoad: ({ context }) => { if (context.teamRole !== "admin") throw redirect({ to: "/admin" }); },
@@ -43,12 +43,23 @@ function Page() {
     converti: referrals.filter((r) => r.status === "Converti").length,
   };
 
+  const link = useServerFn(linkReferralToMember);
+  async function linkToMember(r: AdminReferral) {
+    setBusyId(r.id); setError(null);
+    try {
+      const res = await link({ data: { referralId: r.id } });
+      if (!res.ok) setError(res.reason);
+      await queryClient.invalidateQueries({ queryKey: ["admin", "referrals"] });
+    } catch { setError("Le parrainage n’a pas pu être relié."); } finally { setBusyId(null); }
+  }
+
   async function changeStatus(r: AdminReferral, status: string) {
     setBusyId(r.id); setError(null);
-    const res = await setStatus({ data: { id: r.id, status: status as "Invitation envoyée" | "Contacté" | "Converti" } });
-    if (!res.ok) setError(res.reason);
-    await queryClient.invalidateQueries({ queryKey: ["admin", "referrals"] });
-    setBusyId(null);
+    try {
+      const res = await setStatus({ data: { id: r.id, status: status as "Invitation envoyée" | "Contacté" | "Converti" } });
+      if (!res.ok) setError(res.reason);
+      await queryClient.invalidateQueries({ queryKey: ["admin", "referrals"] });
+    } catch { setError("Le statut n’a pas pu être modifié."); } finally { setBusyId(null); }
   }
 
   return <AdminShell>
@@ -80,7 +91,9 @@ function Page() {
                     className={`${pill} border text-[13px] disabled:opacity-60 ${r.status === s.value ? "border-primary bg-primary font-medium text-primary-foreground" : "border-border hover:bg-primary/10"}`}>{s.label}</button>)}
                 </div>
                 <a href={`mailto:${r.email}`} className={`${pill} border border-border hover:bg-primary/10`}><Mail className="size-4" />Écrire</a>
-                {!r.converted_member_id && <Button asChild variant="outline" className="h-11 rounded-full"><Link to="/admin/membres" search={{ nom: r.full_name, email: r.email, parrainage: r.id }}><UserPlus className="size-4" />Créer le membre</Link></Button>}
+                {!r.converted_member_id && (r.already_member
+                  ? <Button type="button" variant="outline" disabled={busyId === r.id} className="h-11 rounded-full" onClick={() => void linkToMember(r)}><UserPlus className="size-4" />Relier à sa fiche</Button>
+                  : <Button asChild variant="outline" className="h-11 rounded-full"><Link to="/admin/membres" search={{ nom: r.full_name, email: r.email, parrainage: r.id }}><UserPlus className="size-4" />Créer le membre</Link></Button>)}
               </div>
             </li>)}</ul>}
       </div>

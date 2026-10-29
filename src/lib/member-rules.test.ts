@@ -38,3 +38,10 @@ describe("relevé", () => {
     expect(monthLabel("2026-10")).toBe("Octobre 2026");
   });
 });
+
+test("relevé : facture remboursée ou contestée exclue", () => {
+  const base = { id: "r1", title: "Dîner", status: "Terminée", amount_cents: 10000, scheduled_date: "2026-10-05", created_at: "2026-10-01T10:00:00Z" };
+  expect(statementLines([{ ...base, invoice: { amount_cents: 10000, status: "Remboursée" } }], "2026-10", "Signature")).toHaveLength(0);
+  expect(statementLines([{ ...base, invoice: { amount_cents: 10000, status: "Contestée" } }], "2026-10", "Signature")).toHaveLength(0);
+  expect(statementLines([{ ...base, invoice: { amount_cents: 10000, status: "Payée" } }], "2026-10", "Signature")).toHaveLength(1);
+});

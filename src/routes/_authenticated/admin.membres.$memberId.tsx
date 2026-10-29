@@ -13,6 +13,7 @@ import { formatAmount, formatShortDate, formatMonth, imageFor, initials, request
 import { memberDelegatesQuery, memberDetailQuery, memberParrainQuery, memberPaymentsQuery, memberPreferencesQuery, memberReviewsQuery } from "@/lib/admin-queries";
 import { anonymizeMember, approveDelegate, exportMemberData, refuseDelegate, revokeDelegateTeam, getMemberStatement, saveMemberPreferences, setMemberLanguage, setMemberTimezone, sendMemberInvite, setMemberDisabled, updateMember, type MemberAnswers as Answers } from "@/lib/admin.functions";
 import { DEFAULT_TIMEZONE, TIMEZONES } from "@/lib/timezone";
+import { todayParis } from "@/lib/billing-webhook-rules";
 import { monthLabel, shiftMonth, WELCOME_STEPS } from "@/lib/member-rules";
 import { delegateStatusLabel } from "@/lib/delegate-rules";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,21 +64,26 @@ function Page() {
     } catch { setError("L’enregistrement a échoué."); } finally { setBusy(false); }
   }
 
+  const [acting, setActing] = useState(false);
   async function sendInvite() {
-    if (!profile?.email) return;
-    setError(null); setNotice(null);
-    const r = await invite({ data: { email: profile.email } });
-    if (r.ok) setNotice(`Email d’invitation envoyé à ${profile.email}.`); else setError(r.reason);
+    if (!profile?.email || acting) return;
+    setError(null); setNotice(null); setActing(true);
+    try {
+      const r = await invite({ data: { email: profile.email } });
+      if (r.ok) setNotice(`Email d’invitation envoyé à ${profile.email}.`); else setError(r.reason);
+    } catch { setError("L’email n’a pas pu être envoyé."); } finally { setActing(false); }
   }
 
   async function toggleDisabled() {
-    if (!profile) return;
+    if (!profile || acting) return;
     if (!profile.disabled_at && !window.confirm("Désactiver ce membre ? Son prélèvement automatique sera arrêté et il ne pourra plus se connecter.")) return;
-    setError(null); setNotice(null);
-    const r = await toggle({ data: { id: profile.id, disabled: !profile.disabled_at } });
-    if (!r.ok) { setError(r.reason); return; }
-    setNotice(profile.disabled_at ? "Le membre a été réactivé." : "Le membre a été désactivé.");
-    await queryClient.invalidateQueries({ queryKey: ["admin"] });
+    setError(null); setNotice(null); setActing(true);
+    try {
+      const r = await toggle({ data: { id: profile.id, disabled: !profile.disabled_at } });
+      if (!r.ok) { setError(r.reason); return; }
+      setNotice(profile.disabled_at ? "Le membre a été réactivé." : "Le membre a été désactivé.");
+      await queryClient.invalidateQueries({ queryKey: ["admin"] });
+    } catch { setError("L’opération a échoué."); } finally { setActing(false); }
   }
 
   return <AdminShell>
@@ -127,8 +133,8 @@ function Page() {
       {parrain && <p className="mt-3 text-[13px] text-muted-foreground">Parrainé par <Link to="/admin/membres/$memberId" params={{ memberId: parrain.id }} className="underline underline-offset-2 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{parrain.full_name}</Link></p>}
       {profile.phone && <dl className="mt-4 grid min-w-0 gap-3 text-sm"><div><dt className="eyebrow team-mention">Téléphone</dt><dd className="mt-1">{profile.phone}</dd></div></dl>}
       {isAdmin && <div className="mt-4 flex flex-wrap gap-2">
-        <Button variant="soft" size="sm" onClick={sendInvite}><Mail />Envoyer l’invitation</Button>
-        <Button variant="outline" size="sm" onClick={toggleDisabled}>{profile.disabled_at ? <UserPlus /> : <UserMinus />}{profile.disabled_at ? "Réactiver" : "Désactiver"}</Button>
+        <Button variant="soft" size="sm" disabled={acting} onClick={sendInvite}><Mail />Envoyer l’invitation</Button>
+        <Button variant="outline" size="sm" disabled={acting} onClick={toggleDisabled}>{profile.disabled_at ? <UserPlus /> : <UserMinus />}{profile.disabled_at ? "Réactiver" : "Désactiver"}</Button>
       </div>}
 
       <LanguageField memberId={profile.id} language={(profile as { language?: string }).language === "en" ? "en" : "fr"} />
@@ -301,12 +307,12 @@ function DelegatesBlock({ memberId, isAdmin }: { memberId: string; isAdmin: bool
       const res = action === "approve" ? await approve({ data: { id } }) : action === "refuse" ? await refuse({ data: { id } }) : await revoke({ data: { id } });
       if (!res.ok) { toast.error(res.reason); return; }
       toast.success(action === "approve"
-        ? ("mailed" in res && res.mailed === false ? "Accès ouvert ; l'email n'a pas pu partir, renvoyez-le depuis la connexion." : "Accès ouvert : le proche reçoit un email pour choisir son mot de passe.")
+        ? ("mailed" in res && res.mailed === false ? "Accès ouvert, mais l’email n’est pas parti : le proche peut choisir son mot de passe avec « Mot de passe oublié » sur la page de connexion." : "Accès ouvert : le proche reçoit un email pour choisir son mot de passe.")
         : action === "refuse" ? "Invitation non retenue." : "Accès retiré.");
       await queryClient.invalidateQueries({ queryKey: ["admin", "member", memberId, "delegates"] });
       await queryClient.invalidateQueries({ queryKey: ["admin", "delegates", "pending"] });
     } catch {
-      toast.error("L'opération a échoué.");
+      toast.error("L’opération a échoué.");
     } finally {
       setBusy(null);
     }
@@ -323,10 +329,10 @@ function DelegatesBlock({ memberId, isAdmin }: { memberId: string; isAdmin: bool
           </div>
           <span className="rounded-full border border-primary/25 px-3 py-1 text-[11px] font-medium">{delegateStatusLabel(d.status)}</span>
           {d.status === "en_attente" && <div className="flex gap-2">
-            {isAdmin && <Button type="button" size="sm" disabled={busy === d.id} onClick={() => void run(d.id, "approve")}>Confirmer l'accès</Button>}
+            {isAdmin && <Button type="button" size="sm" disabled={busy === d.id} onClick={() => void run(d.id, "approve")}>Confirmer l’accès</Button>}
             <Button type="button" size="sm" variant="outline" disabled={busy === d.id} onClick={() => void run(d.id, "refuse")}>Ne pas retenir</Button>
           </div>}
-          {d.status === "actif" && <Button type="button" size="sm" variant="outline" disabled={busy === d.id} onClick={() => void run(d.id, "revoke")}>Retirer l'accès</Button>}
+          {d.status === "actif" && <Button type="button" size="sm" variant="outline" disabled={busy === d.id} onClick={() => void run(d.id, "revoke")}>Retirer l’accès</Button>}
         </li>)}</ul>}
     {!isAdmin && delegates.some((d) => d.status === "en_attente") && <p className="mt-3 text-[12px] text-muted-foreground">La confirmation est réservée aux administrateurs.</p>}
   </section>;
@@ -378,7 +384,7 @@ function PrivacyBlock({ memberId, disabled, name }: { memberId: string; disabled
     try {
       const r = await anonymize({ data: { id: memberId } });
       if (!r.ok) { toast.error(r.reason); return; }
-      toast.success("Le compte a été anonymisé.");
+      if ("warning" in r && r.warning) toast.warning(r.warning); else toast.success("Le compte a été anonymisé.");
       await queryClient.invalidateQueries({ queryKey: ["admin"] });
     } catch {
       toast.error("L’anonymisation a échoué.");
@@ -396,7 +402,7 @@ function PrivacyBlock({ memberId, disabled, name }: { memberId: string; disabled
 
 /** Lot 6.4 : « Relevé du mois », même document que celui du membre. */
 function StatementButton({ memberId }: { memberId: string }) {
-  const current = new Date().toISOString().slice(0, 7);
+  const current = todayParis().slice(0, 7);
   const [month, setMonth] = useState(current);
   const [busy, setBusy] = useState(false);
   const fetchStatement = useServerFn(getMemberStatement);

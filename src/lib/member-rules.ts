@@ -67,6 +67,8 @@ function invoiceOf(r: StatementSource): { amount_cents: number; status: string }
  */
 export function statementLines(rows: StatementSource[], month: string, plan?: string | null): StatementLine[] {
   return rows
+    // Facture remboursée ou contestée : la prestation n'est pas due en l'état, elle sort du relevé.
+    .filter((r) => !["Remboursée", "Contestée"].includes(invoiceOf(r)?.status ?? ""))
     .filter((r) => (STATEMENT_STATUSES as readonly string[]).includes(r.status) && (r.amount_cents !== null || invoiceOf(r)) && statementDate(r).startsWith(month))
     .map((r) => {
       const inv = invoiceOf(r);

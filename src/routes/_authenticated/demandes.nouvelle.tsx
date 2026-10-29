@@ -132,6 +132,7 @@ function Page() {
           scheduledDate: date,
           scheduledTime: time,
           guests: guests ? Number(guests) : null,
+          draftId: draftId.current,
         } });
         if (!res.ok) { sending.current = false; setError(t(res.reason)); return; }
         await queryClient.invalidateQueries({ queryKey: ["delegate-requests"] });

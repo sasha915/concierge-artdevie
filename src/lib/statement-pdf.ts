@@ -85,6 +85,11 @@ export async function downloadStatement({ lang = "fr", month, memberName, member
     doc.line(left, y, right, y);
   }
 
+  // Le total et sa note ne chevauchent jamais le pied de page : nouvelle page si la place manque.
+  if (y + 16 + 16 > 274) {
+    doc.addPage();
+    y = 24;
+  }
   y += 16;
   doc.setTextColor(...MUTED);
   doc.setFontSize(8);

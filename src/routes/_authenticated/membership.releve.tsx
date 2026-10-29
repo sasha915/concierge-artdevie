@@ -6,7 +6,7 @@ import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/art-de-vie/app-shell";
 import { SubHeader } from "@/components/art-de-vie/page-header";
-import { EmptyState } from "@/components/art-de-vie/cards";
+import { EmptyState, ErrorState } from "@/components/art-de-vie/cards";
 import { PillAction } from "@/components/art-de-vie/v3";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatShortDate } from "@/data/art-de-vie";
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/membership/releve")({
 function Page() {
   const [month, setMonth] = useState(() => todayIn().slice(0, 7));
   const [busy, setBusy] = useState(false);
-  const { data: rows = [], isLoading } = useQuery(statementSourceQuery);
+  const { data: rows = [], isLoading, isError, refetch } = useQuery(statementSourceQuery);
   const { data: profile } = useQuery(profileQuery);
   const lines = statementLines(rows, month, profile?.plan);
   const total = statementTotal(lines);
@@ -66,6 +66,8 @@ function Page() {
 
         {isLoading ? (
           <Skeleton className="mt-5 h-40 rounded-card bg-panel lg:mx-4" />
+        ) : isError ? (
+          <div className="mt-6 lg:mx-4"><ErrorState onRetry={() => void refetch()} /></div>
         ) : lines.length === 0 ? (
           <div className="mt-6 lg:mx-4">
             <EmptyState>{t("Aucune prestation ce mois-ci.")}</EmptyState>

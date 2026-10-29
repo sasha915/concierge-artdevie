@@ -52,7 +52,7 @@ function asItem(r: { status: string } & Omit<RequestItem, "status">): RequestIte
 
 /** Accueil du proche : pour qui il agit, ses demandes, une nouvelle demande. */
 export function DelegateHome({ delegation }: { delegation: DelegationInfo }) {
-  const { data: requests = [], isLoading } = useQuery(delegateRequestsQuery);
+  const { data: requests = [], isLoading, isError, refetch } = useQuery(delegateRequestsQuery);
   // Le prénom n'est pas une clé du dictionnaire : seule la salutation est traduite.
   const head = t("Bonjour");
   const tail = `${firstName(delegation.delegateName)}.`;
@@ -75,6 +75,8 @@ export function DelegateHome({ delegation }: { delegation: DelegationInfo }) {
         <h2 className="eyebrow mx-2 mb-3.5 text-muted-foreground">{t("Vos demandes")}</h2>
         {isLoading ? (
           <Skeleton className="h-[220px] rounded-card bg-panel" />
+        ) : isError ? (
+          <ErrorState onRetry={() => void refetch()} />
         ) : requests.length === 0 ? (
           <EmptyState>{t("Vous n’avez pas encore fait de demande.")}</EmptyState>
         ) : (
@@ -94,7 +96,7 @@ export function DelegateHome({ delegation }: { delegation: DelegationInfo }) {
 
 /** Liste des demandes du proche. */
 export function DelegateRequestsList() {
-  const { data: requests = [], isLoading } = useQuery(delegateRequestsQuery);
+  const { data: requests = [], isLoading, isError, refetch } = useQuery(delegateRequestsQuery);
   const [head, tail] = tPair("Mes", "demandes.");
   return (
     <AppShell>
@@ -108,6 +110,8 @@ export function DelegateRequestsList() {
       </section>
       {isLoading ? (
         <Skeleton className="mt-6 h-[220px] rounded-card bg-panel" />
+      ) : isError ? (
+        <div className="mt-6"><ErrorState onRetry={() => void refetch()} /></div>
       ) : requests.length === 0 ? (
         <div className="mt-6"><EmptyState>{t("Vous n’avez pas encore fait de demande.")}</EmptyState></div>
       ) : (

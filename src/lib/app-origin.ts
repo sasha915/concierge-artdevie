@@ -12,10 +12,15 @@ const ALLOWED = [
   // Aperçus Lovable de ce projet uniquement (id-preview--…, project--…-dev, …lovableproject.com).
   new RegExp(`^https:\\/\\/([a-z0-9-]+--)?${PROJECT_ID}(-dev)?\\.lovable\\.app$`, "i"),
   new RegExp(`^https:\\/\\/${PROJECT_ID}\\.lovableproject\\.com$`, "i"),
-  /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i,
 ];
+
+// Poste de développement : accepté hors production uniquement.
+const DEV_ONLY = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+const isProduction = typeof process !== "undefined" && process.env?.["NODE_ENV"] === "production";
 
 export function trustedOrigin(origin: string | null | undefined): string {
   const value = (origin ?? "").replace(/\/+$/, "");
-  return ALLOWED.some((re) => re.test(value)) ? value : DEFAULT_APP_ORIGIN;
+  if (ALLOWED.some((re) => re.test(value))) return value;
+  if (!isProduction && DEV_ONLY.test(value)) return value;
+  return DEFAULT_APP_ORIGIN;
 }

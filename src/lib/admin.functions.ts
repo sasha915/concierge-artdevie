@@ -114,7 +114,8 @@ export const listMembers = createServerFn({ method: "GET" })
     ]);
     const byMember = new Map(counts.map((c) => [c.user_id, c]));
     const team = await teamIds(admin);
-    return profiles.filter((p) => !team.includes(p['id'] as string)).map((p) => ({
+    // Ni l'équipe actuelle, ni d'anciens collègues (comptes « Équipe Art de Vie ») : la liste ne montre que des membres.
+    return profiles.filter((p) => !team.includes(p['id'] as string) && p['role_label'] !== "Équipe Art de Vie").map((p) => ({
       ...p,
       requests_count: byMember.get(p['id'] as string)?.requests_count ?? 0,
       invoices_count: role === "admin" ? byMember.get(p['id'] as string)?.invoices_count ?? 0 : 0,
@@ -176,6 +177,8 @@ export const updateMember = createServerFn({ method: "POST" })
     const admin = await assertAdmin(context as Ctx);
     // Changement de formule : le prélèvement automatique suit le nouveau tarif dès sa prochaine échéance.
     const { data: before } = await admin.from("profiles").select("plan").eq("id", data.id).maybeSingle();
+    // Retour arrière chez Mollie si la fiche ne peut pas être enregistrée après l'ajustement du prélèvement.
+    let undoMollie: (() => Promise<void>) | null = null;
     if (before && before.plan !== data.plan) {
       const sub = await memberSubscription(admin, data.id);
       if (sub) {
@@ -188,6 +191,15 @@ export const updateMember = createServerFn({ method: "POST" })
             method: "PATCH",
             body: JSON.stringify({ amount: { currency: "EUR", value: (plan.price_cents / 100).toFixed(2) }, interval: subscriptionInterval(plan.period), description: `Art de Vie — Formule ${plan.name}`, webhookUrl: `${webhookBase(getRequest())}/api/public/mollie-webhook` }),
           });
+          const { data: oldPlan } = await admin.from("membership_plans").select("name, price_cents, period").eq("name", before.plan).maybeSingle();
+          if (oldPlan) {
+            undoMollie = async () => {
+              await mollie(`/customers/${sub.customerId}/subscriptions/${sub.subscriptionId}`, {
+                method: "PATCH",
+                body: JSON.stringify({ amount: { currency: "EUR", value: (oldPlan.price_cents / 100).toFixed(2) }, interval: subscriptionInterval(oldPlan.period), description: `Art de Vie — Formule ${oldPlan.name}` }),
+              }).catch((e: unknown) => console.error("[updateMember] retour arrière Mollie impossible", e));
+            };
+          }
         } catch (err) {
           console.error("[updateMember] abonnement Mollie non ajusté", err);
           return { ok: false as const, reason: "Le prélèvement automatique n’a pas pu suivre le changement de formule ; rien n’a été modifié." };
@@ -203,7 +215,10 @@ export const updateMember = createServerFn({ method: "POST" })
       concierge_referent: data.plan === "Signature" ? data.conciergeReferent || null : null,
       concierge_whatsapp: data.plan === "Signature" ? data.conciergeWhatsapp || null : null,
     }).eq("id", data.id);
-    if (error) return { ok: false as const, reason: "La modification a échoué." };
+    if (error) {
+      if (undoMollie) await undoMollie();
+      return { ok: false as const, reason: "La modification a échoué ; le prélèvement garde l’ancien tarif." };
+    }
     return { ok: true as const };
   });
 
@@ -257,6 +272,24 @@ export const setMemberDisabled = createServerFn({ method: "POST" })
           }
         }
         await admin.from("profiles").update({ mollie_subscription_id: null }).eq("id", data.id);
+      } else {
+        // Abonnement en cours de création (« en_cours: ») ou non enregistré : tout abonnement actif du membre chez Mollie est arrêté.
+        const { data: p } = await admin.from("profiles").select("mollie_customer_id").eq("id", data.id).maybeSingle();
+        if (p?.mollie_customer_id) {
+          try {
+            const { mollie, mollieKey } = await import("./mollie.server");
+            if (mollieKey()) {
+              const list = await mollie<{ _embedded?: { subscriptions?: Array<{ id: string; status: string }> } }>(`/customers/${p.mollie_customer_id}/subscriptions?limit=50`);
+              for (const s of list._embedded?.subscriptions ?? []) {
+                if (s.status === "active" || s.status === "pending") await mollie(`/customers/${p.mollie_customer_id}/subscriptions/${s.id}`, { method: "DELETE" });
+              }
+            }
+          } catch (err) {
+            console.error("[setMemberDisabled] abonnements Mollie non vérifiés", err);
+            return { ok: false as const, reason: "Le prélèvement automatique n’a pas pu être vérifié chez Mollie ; le compte n’a pas été désactivé." };
+          }
+          await admin.from("profiles").update({ mollie_subscription_id: null }).eq("id", data.id);
+        }
       }
     }
     const { error } = await admin.auth.admin.updateUserById(data.id, { ban_duration: data.disabled ? "876000h" : "none" });
@@ -698,6 +731,22 @@ export const convertReferral = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+/** Parrainage d'une personne déjà membre : relié à sa fiche existante et marqué « Converti ». */
+export const linkReferralToMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ referralId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { data: ref } = await admin.from("referrals").select("email").eq("id", data.referralId).maybeSingle();
+    if (!ref) return { ok: false as const, reason: "Parrainage introuvable." };
+    const { data: member } = await admin.from("profiles").select("id").ilike("email", exactLike(ref.email)).maybeSingle();
+    if (!member) return { ok: false as const, reason: "Aucune fiche membre ne porte cette adresse." };
+    if ((await teamIds(admin)).includes(member.id)) return { ok: false as const, reason: "Ce compte appartient à l’équipe." };
+    const { error } = await admin.from("referrals").update({ status: "Converti", converted_member_id: member.id }).eq("id", data.referralId);
+    if (error) return { ok: false as const, reason: "Le parrainage n’a pas pu être mis à jour." };
+    return { ok: true as const };
+  });
+
 // ---- Lot 3.1 : rôles d'équipe ----
 
 export const getMyTeamRole = createServerFn({ method: "GET" })
@@ -784,7 +833,8 @@ export const inviteColleague = createServerFn({ method: "POST" })
     });
     if (error || !created.user) {
       const already = /already|exist|registered/i.test(error?.message ?? "");
-      return { ok: false as const, reason: already ? "Cette adresse correspond déjà à un compte." : "La création du compte a échoué." };
+      if (!already) return { ok: false as const, reason: "La création du compte a échoué." };
+      return rejoinTeam(admin, email, data.fullName, data.role);
     }
     const id = created.user.id;
     const { error: profileError } = await admin.from("profiles").update({ full_name: data.fullName, role_label: "Équipe Art de Vie", concierge_referent: null, concierge_whatsapp: null }).eq("id", id);
@@ -796,6 +846,35 @@ export const inviteColleague = createServerFn({ method: "POST" })
     // Pas d'e-mail de mot de passe : le collègue se connecte avec Google (adresse @artdevie.co).
     return { ok: true as const, id, mailed: false };
   });
+
+/** Compte déjà existant pour une adresse @artdevie.co : ancien collègue, ou connexion Google faite avant l'invitation. */
+async function findUserIdByEmail(admin: any, email: string): Promise<string | null> {
+  for (let page = 1; page <= 50; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) return null;
+    const users = (data?.users ?? []) as Array<{ id: string; email?: string }>;
+    const hit = users.find((u) => (u.email ?? "").toLowerCase() === email);
+    if (hit) return hit.id;
+    if (users.length < 1000) return null;
+  }
+  return null;
+}
+
+async function rejoinTeam(admin: any, email: string, fullName: string, role: TeamRole) {
+  const id = await findUserIdByEmail(admin, email);
+  if (!id) return { ok: false as const, reason: "Cette adresse correspond déjà à un compte, introuvable pour le moment. Réessayez." };
+  const { data: prof } = await admin.from("profiles").select("id, role_label").eq("id", id).maybeSingle();
+  // Un membre ne devient pas collègue par ce biais.
+  if (prof && prof.role_label !== "Équipe Art de Vie") return { ok: false as const, reason: "Cette adresse est celle d’un membre : elle ne peut pas rejoindre l’équipe." };
+  const { error: authError } = await admin.auth.admin.updateUserById(id, { ban_duration: "none", app_metadata: { account_kind: "equipe" }, user_metadata: { full_name: fullName } });
+  if (authError) return { ok: false as const, reason: "Le compte n’a pas pu être réactivé." };
+  // Profil créé par le déclencheur s'il manquait (connexion Google antérieure à l'invitation), puis remis en état.
+  const { error: profileError } = await admin.from("profiles").update({ full_name: fullName, role_label: "Équipe Art de Vie", concierge_referent: null, concierge_whatsapp: null, disabled_at: null }).eq("id", id);
+  if (profileError) return { ok: false as const, reason: "Le compte n’a pas pu être préparé." };
+  const { error: roleError } = await admin.from("user_roles").upsert({ user_id: id, role }, { onConflict: "user_id,role", ignoreDuplicates: true });
+  if (roleError) return { ok: false as const, reason: "Le rôle n’a pas pu être attribué." };
+  return { ok: true as const, id, mailed: false, rejoined: true };
+}
 
 // ---------- Offres (administrateurs) ----------
 export const OFFER_CATEGORIES = ["Restaurant", "Bien-être", "Culture", "Voyage"] as const;
@@ -898,11 +977,13 @@ export const getRequestBilling = createServerFn({ method: "GET" })
       admin.from("profiles").select("plan").eq("id", request.user_id).maybeSingle(),
       admin.from("invoices").select("id, number, status, issued_on, amount_cents").eq("request_id", data.id).maybeSingle(),
     ]);
-    const plan: string = member?.plan ?? "Signature";
+    // Formule inconnue : ni commission supposée, ni facture possible (la fiche doit d'abord être corrigée).
+    const { data: known } = member?.plan ? await admin.from("membership_plans").select("name").eq("name", member.plan).maybeSingle() : { data: null };
+    const plan: string | null = known ? (known.name as string) : null;
     return {
       amount_cents: request.amount_cents as number | null,
       plan,
-      breakdown: request.amount_cents === null ? null : invoiceBreakdown(request.amount_cents, plan),
+      breakdown: request.amount_cents === null || !plan ? null : invoiceBreakdown(request.amount_cents, plan),
       invoiced: !!invoice,
       invoice: role === "admin" ? ((invoice as BillingInvoice | null) ?? null) : null,
     };
@@ -1239,6 +1320,8 @@ export const decideRequestChange = createServerFn({ method: "POST" })
       if (pendingChange?.kind === "annulation") {
         const { data: invoice } = await admin.from("invoices").select("id").eq("request_id", pendingChange.request_id).maybeSingle();
         if (invoice) return { ok: false as const, reason: "Cette demande est facturée : régularisez d’abord la facture avant d’accepter l’annulation." };
+        const { data: req } = await admin.from("requests").select("status").eq("id", pendingChange.request_id).maybeSingle();
+        if (req?.status === "Terminée") return { ok: false as const, reason: "La demande est terminée : l’annulation ne peut plus être acceptée. Refusez-la en l’expliquant au membre." };
       }
     }
     const { data: row, error } = await admin.from("request_changes").update({ status: data.decision, decided_by: (context as Ctx).userId, decided_at: new Date().toISOString() }).eq("id", data.id).eq("status", "en attente").select("request_id, kind").maybeSingle();
@@ -1576,77 +1659,126 @@ export const revokeDelegateTeam = createServerFn({ method: "POST" })
 
 // ---- RGPD (30 octobre) : export et anonymisation d'un membre, réservés aux administrateurs ----
 
+/** Lit une requête par paquets d'identifiants (filtre « in » limité) et par pages de 1 000 lignes ; toute erreur est remontée. */
+async function fetchByIds<T>(ids: string[], page: (chunk: string[], from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>): Promise<T[]> {
+  const rows: T[] = [];
+  for (let i = 0; i < ids.length; i += 150) {
+    const chunk = ids.slice(i, i + 150);
+    rows.push(...(await fetchAll<T>((from, to) => page(chunk, from, to))));
+  }
+  return rows;
+}
+
 /** Toutes les données d'un membre, en un fichier JSON remis au membre sur demande (droit d'accès et de portabilité). */
 export const exportMemberData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
-    const { data: profile } = await admin.from("profiles").select("full_name, email, phone, plan, role_label, member_number, member_since, valid_until, language, created_at").eq("id", data.id).maybeSingle();
-    if (!profile) return { ok: false as const, reason: "Membre introuvable." };
-    const { data: requests } = await admin.from("requests").select("id, category, title, description, status, scheduled_date, scheduled_time, guests, created_at").eq("user_id", data.id).order("created_at");
-    const ids = ((requests ?? []) as Array<{ id: string }>).map((r) => r.id);
-    const inIds = (q: any) => (ids.length ? q.in("request_id", ids) : q.eq("request_id", "00000000-0000-0000-0000-000000000000"));
-    const [messages, files, changes, reviews, invoices, preferences, delegates, referrals, recurring] = await Promise.all([
-      inIds((admin as any).from("request_messages").select("request_id, author_role, body, created_at")).order("created_at"),
-      inIds((admin as any).from("request_files").select("request_id, name, mime, size, created_at").eq("visible_to_member", true)),
-      inIds((admin as any).from("request_changes").select("request_id, kind, body, status, created_at")),
-      (admin as any).from("request_reviews").select("request_id, rating, comment, created_at").eq("user_id", data.id),
-      (admin as any).from("invoices").select("number, kind, status, issued_on, amount_cents, service_cents, commission_cents").eq("user_id", data.id).order("issued_on"),
-      (admin as any).from("member_preferences").select("tables_choix, sejours_choix, transferts_choix, dates_membre, member_updated_at").eq("user_id", data.id).maybeSingle(),
-      (admin as any).from("member_delegates").select("full_name, email, relation, status, invited_at").eq("member_id", data.id),
-      (admin as any).from("referrals").select("full_name, email, message, status, created_at").eq("inviter_id", data.id),
-      (admin as any).from("recurring_requests").select("category, title, rhythm, start_date, dates, end_date, paused").eq("user_id", data.id),
-    ]);
-    console.info("[RGPD] export des données", data.id, "par", (context as Ctx).userId);
-    return {
-      ok: true as const,
-      fileName: `art-de-vie-donnees-${String(profile.member_number ?? data.id).replace(/[^A-Za-z0-9]+/g, "-")}.json`,
-      content: JSON.stringify({
-        exporte_le: new Date().toISOString(),
-        profil: profile,
-        preferences: preferences.data ?? null,
-        demandes: requests ?? [],
-        echanges: messages.data ?? [],
-        documents: files.data ?? [],
-        modifications_demandees: changes.data ?? [],
-        avis: reviews.data ?? [],
-        series_recurrentes: recurring.data ?? [],
-        factures: invoices.data ?? [],
-        proches: delegates.data ?? [],
-        recommandations: referrals.data ?? [],
-      }, null, 2),
-    };
+    const admin = (await assertAdmin(context as Ctx)) as any;
+    try {
+      const { data: profile, error: profileError } = await admin.from("profiles").select("full_name, email, phone, plan, role_label, member_number, member_since, valid_until, language, timezone, concierge_referent, created_at").eq("id", data.id).maybeSingle();
+      if (profileError) throw new Error(profileError.message);
+      if (!profile) return { ok: false as const, reason: "Membre introuvable." };
+      const requests = await fetchAll<Record<string, unknown>>((from, to) => admin.from("requests").select("id, category, title, description, status, scheduled_date, scheduled_time, guests, team_reply, team_reply_at, created_at").eq("user_id", data.id).order("created_at").order("id").range(from, to));
+      const ids = requests.map((r) => r["id"] as string);
+      const [messages, files, changes, proposals] = await Promise.all([
+        fetchByIds<Record<string, unknown>>(ids, (c, f, t) => admin.from("request_messages").select("request_id, author_role, body, created_at").in("request_id", c).order("created_at").order("id").range(f, t)),
+        fetchByIds<Record<string, unknown>>(ids, (c, f, t) => admin.from("request_files").select("request_id, name, mime, size, created_at").eq("visible_to_member", true).in("request_id", c).order("id").range(f, t)),
+        fetchByIds<Record<string, unknown>>(ids, (c, f, t) => admin.from("request_changes").select("request_id, kind, body, status, created_at").in("request_id", c).order("id").range(f, t)),
+        fetchByIds<Record<string, unknown>>(ids, (c, f, t) => admin.from("request_proposals").select("id, request_id, status, created_at, decided_at").in("request_id", c).order("id").range(f, t)),
+      ]);
+      const options = await fetchByIds<Record<string, unknown>>(proposals.map((p) => p["id"] as string), (c, f, t) => admin.from("request_proposal_options").select("proposal_id, label, detail, estimate_cents, chosen").in("proposal_id", c).order("id").range(f, t));
+      const [reviews, invoices, delegates, referrals, recurring] = await Promise.all([
+        fetchAll<Record<string, unknown>>((f, t) => admin.from("request_reviews").select("request_id, rating, comment, created_at").eq("user_id", data.id).order("request_id").range(f, t)),
+        fetchAll<Record<string, unknown>>((f, t) => admin.from("invoices").select("number, kind, status, issued_on, amount_cents, service_cents, commission_cents").eq("user_id", data.id).order("issued_on").order("id").range(f, t)),
+        fetchAll<Record<string, unknown>>((f, t) => admin.from("member_delegates").select("full_name, email, relation, status, invited_at").eq("member_id", data.id).order("id").range(f, t)),
+        fetchAll<Record<string, unknown>>((f, t) => admin.from("referrals").select("full_name, email, message, status, created_at").eq("inviter_id", data.id).order("id").range(f, t)),
+        fetchAll<Record<string, unknown>>((f, t) => admin.from("recurring_requests").select("category, title, rhythm, start_date, dates, end_date, paused").eq("user_id", data.id).order("id").range(f, t)),
+      ]);
+      const { data: preferences, error: prefError } = await admin.from("member_preferences").select("tables_choix, sejours_choix, transferts_choix, dates_membre, member_updated_at").eq("user_id", data.id).maybeSingle();
+      if (prefError) throw new Error(prefError.message);
+      console.info("[RGPD] export des données", data.id, "par", (context as Ctx).userId);
+      return {
+        ok: true as const,
+        fileName: `art-de-vie-donnees-${String(profile.member_number ?? data.id).replace(/[^A-Za-z0-9]+/g, "-")}.json`,
+        content: JSON.stringify({
+          exporte_le: new Date().toISOString(),
+          profil: profile,
+          preferences: preferences ?? null,
+          demandes: requests,
+          echanges: messages,
+          documents: files,
+          modifications_demandees: changes,
+          propositions: proposals.map((p) => ({ ...p, options: options.filter((o) => o["proposal_id"] === p["id"]) })),
+          avis: reviews,
+          series_recurrentes: recurring,
+          factures: invoices,
+          proches: delegates,
+          recommandations: referrals,
+        }, null, 2),
+      };
+    } catch (err) {
+      console.error("[RGPD] export incomplet", err);
+      return { ok: false as const, reason: "L’export n’a pas pu être complété ; aucun fichier n’a été produit. Réessayez." };
+    }
   });
 
 /**
- * Droit à l'effacement : un membre désactivé est anonymisé (nom, coordonnées, préférences, échanges, documents, proches).
- * Les factures restent, sans les coordonnées du membre (obligation comptable de conservation).
+ * Droit à l'effacement : un membre désactivé est anonymisé (nom, coordonnées, préférences, échanges, documents, proches,
+ * client Mollie). Les factures restent, sans les coordonnées du membre (obligation comptable de conservation).
  */
 export const anonymizeMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const admin = await assertAdmin(context as Ctx);
+    const admin = (await assertAdmin(context as Ctx)) as any;
     if (data.id === (context as Ctx).userId) return { ok: false as const, reason: "Vous ne pouvez pas anonymiser votre propre compte." };
     const ids = await teamIds(admin);
     if (ids.includes(data.id)) return { ok: false as const, reason: "Ce compte appartient à l’équipe." };
-    const { data: profile } = await admin.from("profiles").select("disabled_at").eq("id", data.id).maybeSingle();
+    const { data: profile } = await admin.from("profiles").select("disabled_at, mollie_customer_id").eq("id", data.id).maybeSingle();
     if (!profile) return { ok: false as const, reason: "Membre introuvable." };
     if (!profile.disabled_at) return { ok: false as const, reason: "Désactivez d’abord le compte : son prélèvement est ainsi arrêté." };
-    // Documents déposés : supprimés du stockage avant l'effacement des lignes.
-    const { data: reqs } = await admin.from("requests").select("id").eq("user_id", data.id);
-    const reqIds = ((reqs ?? []) as Array<{ id: string }>).map((r) => r.id);
-    if (reqIds.length) {
-      const { data: files } = await (admin as any).from("request_files").select("path").in("request_id", reqIds);
-      const paths = ((files ?? []) as Array<{ path: string }>).map((f) => f.path);
-      if (paths.length) {
-        const { error: storageError } = await admin.storage.from("request-files").remove(paths);
-        if (storageError) return { ok: false as const, reason: "Les documents n’ont pas pu être supprimés ; rien n’a été effacé." };
+
+    // Ce qui sera supprimé hors de la base, relevé avant l'effacement des lignes.
+    let paths: string[] = [];
+    let delegateIds: string[] = [];
+    try {
+      const reqs = await fetchAll<{ id: string }>((f, t) => admin.from("requests").select("id").eq("user_id", data.id).order("id").range(f, t));
+      const files = await fetchByIds<{ path: string }>(reqs.map((r) => r.id), (c, f, t) => admin.from("request_files").select("path").in("request_id", c).order("id").range(f, t));
+      paths = files.map((f) => f.path);
+      const dels = await fetchAll<{ delegate_id: string | null }>((f, t) => admin.from("member_delegates").select("delegate_id").eq("member_id", data.id).order("id").range(f, t));
+      delegateIds = [...new Set(dels.map((d) => d.delegate_id).filter((x): x is string => !!x))];
+    } catch {
+      return { ok: false as const, reason: "Les données du membre n’ont pas pu être relevées ; rien n’a été effacé." };
+    }
+
+    // 1) Base d'abord : en cas d'échec, rien n'est perdu.
+    const { error } = await admin.rpc("anonymize_member", { _user_id: data.id });
+    if (error) return { ok: false as const, reason: "L’anonymisation a échoué ; rien n’a été effacé." };
+
+    // 2) Puis le reste ; un échec est signalé sans remettre en cause l'anonymisation déjà faite.
+    const leftovers: string[] = [];
+    for (let i = 0; i < paths.length; i += 100) {
+      const { error: storageError } = await admin.storage.from("request-files").remove(paths.slice(i, i + 100));
+      if (storageError) { leftovers.push("documents"); break; }
+    }
+    for (const delegateId of delegateIds) {
+      // Le compte d'un proche n'est supprimé que s'il n'a plus aucun accès auprès d'un autre membre.
+      const { data: other } = await admin.from("member_delegates").select("id").eq("delegate_id", delegateId).limit(1);
+      if ((other ?? []).length) continue;
+      const { error: delError } = await admin.auth.admin.deleteUser(delegateId);
+      if (delError) leftovers.push("comptes des proches");
+    }
+    if (profile.mollie_customer_id) {
+      try {
+        const { mollie } = await import("./mollie.server");
+        await mollie(`/customers/${profile.mollie_customer_id}`, { method: "DELETE" });
+        await admin.from("profiles").update({ mollie_customer_id: null }).eq("id", data.id);
+      } catch (err) {
+        if (!String(err).includes("Mollie 404")) leftovers.push("client Mollie");
       }
     }
-    const { error } = await (admin as any).rpc("anonymize_member", { _user_id: data.id });
-    if (error) return { ok: false as const, reason: "L’anonymisation a échoué ; rien n’a été effacé." };
+    if (leftovers.length) return { ok: true as const, warning: `Compte anonymisé. Reste à supprimer à la main : ${[...new Set(leftovers)].join(", ")}.` };
     return { ok: true as const };
   });
 

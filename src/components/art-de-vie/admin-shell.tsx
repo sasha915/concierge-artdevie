@@ -5,7 +5,7 @@ import { Lock, LogOut, Menu, Plus, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Logo } from "@/components/art-de-vie/app-shell";
 import { supabase } from "@/integrations/supabase/client";
-import { lockAdmin } from "@/lib/admin-gate.functions";
+import { adminGateStatus, lockAdmin } from "@/lib/admin-gate.functions";
 import { adminReferralsQuery, allRequestsQuery, teamRoleQuery } from "@/lib/admin-queries";
 import { profileQuery } from "@/lib/adv-queries";
 import { initials } from "@/data/art-de-vie";
@@ -35,6 +35,12 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
   const { data: requests = [] } = useQuery(allRequestsQuery);
   const newRequests = requests.filter((r) => r.status === "Nouvelle").length;
   const { data: profile } = useQuery(profileQuery);
+  // Session équipe vérifiée chaque minute et au retour sur l'onglet : expirée, on revient à l'accès équipe.
+  const gate = useServerFn(adminGateStatus);
+  const { data: gateState } = useQuery({ queryKey: ["admin-gate"], queryFn: () => gate(), refetchInterval: 60_000, refetchOnWindowFocus: true, staleTime: 0 });
+  useEffect(() => {
+    if (gateState && !gateState.unlocked) void navigate({ to: "/admin-connexion", replace: true });
+  }, [gateState, navigate]);
   const badge = "inline-flex min-w-5 items-center justify-center rounded-full bg-primary-foreground px-1.5 text-[11px] font-semibold text-primary";
 
   async function signOut() {
@@ -146,4 +152,12 @@ export function teamStatusClass(status: string): string {
 
 export function TeamStatus({ status }: { status: string }) {
   return <span className={`inline-flex shrink-0 rounded-full px-3 py-1 text-[11px] font-medium ${teamStatusClass(status)}`}>{status}</span>;
+}
+
+/** Chargement en échec dans l'espace équipe : message et nouvel essai, jamais une liste vide trompeuse. */
+export function TeamLoadError({ onRetry }: { onRetry: () => void }) {
+  return <div role="alert" className="team-panel rounded-[28px] p-6 text-[14px] text-muted-foreground">
+    <p>Le chargement n’a pas abouti. Vérifiez votre connexion.</p>
+    <Button type="button" variant="outline" size="sm" className="mt-4" onClick={onRetry}>Réessayer</Button>
+  </div>;
 }

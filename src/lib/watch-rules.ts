@@ -47,6 +47,7 @@ export function notificationFailureLabel(reason: string): string {
     case "missing_WHATSAPP_API_TOKEN":
     case "missing_WHATSAPP_PHONE_NUMBER_ID": return "WhatsApp non configuré";
     case "adresse_ou_secret_absent": return "Alerte non configurée";
+    case "application_injoignable": return status ? `Application injoignable (${status})` : "Application injoignable";
     case "whatsapp_api_error": return status ? `Refusée par WhatsApp (${status})` : "Refusée par WhatsApp";
     case "whatsapp_fetch_failed": return "WhatsApp injoignable";
     case "profile_not_found": return "Membre introuvable";

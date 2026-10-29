@@ -6,7 +6,8 @@ import { EmptyState, ErrorState, Filters, RequestCard, RequestRow } from "@/comp
 import { Skeleton } from "@/components/ui/skeleton";
 import { recurringRequestsQuery, requestsQuery } from "@/lib/adv-queries";
 import { t } from "@/lib/i18n";
-import { isActiveRequest, orderForDisplay, todayInParis } from "@/lib/request-order";
+import { isActiveRequest, orderForDisplay } from "@/lib/request-order";
+import { todayIn } from "@/lib/timezone";
 import { useDelegation } from "@/components/art-de-vie/use-delegation";
 import { DelegateRequestsList } from "@/components/art-de-vie/delegate";
 
@@ -24,7 +25,7 @@ function MemberPage() {
   const [active, setActive] = useState("Toutes");
   const { data: requests = [], isLoading, isError, refetch } = useQuery(requestsQuery);
   const { data: recurring = [] } = useQuery(recurringRequestsQuery);
-  const ordered = orderForDisplay(requests, todayInParis());
+  const ordered = orderForDisplay(requests, todayIn());
   const list = active === "Toutes" ? ordered : ordered.filter((r) => r.status === active);
   return <AppShell immersive>
     <div className="md:hidden"><ListHeader eyebrow="Demandes" title="Mes " italic="demandes." introduction="Suivez l’avancement de chaque demande en temps réel."><Filters values={filters} active={active} onChange={setActive} dark /></ListHeader></div>

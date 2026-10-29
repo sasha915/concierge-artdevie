@@ -19,11 +19,6 @@ export const unlockAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { teamSessionIssue } = await import("./team-auth-rules");
-    const issue = teamSessionIssue(context.claims as { email?: unknown; amr?: unknown });
-    if (issue) return { ok: false as const, reason: issue };
-    const { data: team } = await context.supabase.rpc("is_team", { _user_id: context.userId });
-    if (team !== true) return { ok: false as const, reason: "hors_equipe" as const };
-
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const since = new Date(Date.now() - GATE_WINDOW_MINUTES * 60_000).toISOString();
     const { count } = await supabaseAdmin
@@ -33,6 +28,15 @@ export const unlockAdmin = createServerFn({ method: "POST" })
       .eq("succeeded", false)
       .gte("created_at", since);
     if ((count ?? 0) >= GATE_MAX_ATTEMPTS) return { ok: false as const, reason: "locked" as const };
+
+    const issue = teamSessionIssue(context.claims as { email?: unknown; amr?: unknown });
+    const { data: team } = issue ? { data: null } : await context.supabase.rpc("is_team", { _user_id: context.userId });
+    const refusal = issue ?? (team !== true ? ("hors_equipe" as const) : null);
+    // Chaque refus compte (cinq par quart d'heure) ; une session simplement trop ancienne n'est pas une tentative suspecte.
+    if (refusal && refusal !== "connexion_ancienne" && refusal !== "connexion_google_requise") {
+      await supabaseAdmin.from("admin_gate_attempts").insert({ user_id: context.userId, succeeded: false });
+    }
+    if (refusal) return { ok: false as const, reason: refusal };
     await supabaseAdmin.from("admin_gate_attempts").insert({ user_id: context.userId, succeeded: true });
 
     const session = await useSession<AdminGateSession>(adminSessionConfig());

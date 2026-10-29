@@ -31,7 +31,8 @@ export const sendReferralInvite = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [{ data: open }, { data: already }] = await Promise.all([
-      supabaseAdmin.from("referrals").select("id").eq("inviter_id", userId).neq("status", "Converti"),
+      // Seules les recommandations encore à traiter comptent ; celles déjà contactées ne bloquent plus le membre.
+      supabaseAdmin.from("referrals").select("id").eq("inviter_id", userId).eq("status", "Invitation envoyée"),
       supabaseAdmin.from("referrals").select("id").eq("inviter_id", userId).eq("email", email).limit(1),
     ]);
     if ((open ?? []).length >= MAX_OPEN_REFERRALS) return { ok: false as const, reason: "Vous avez déjà plusieurs recommandations en cours. Notre équipe y répond avant d’en recevoir de nouvelles." };

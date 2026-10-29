@@ -76,15 +76,13 @@ function Page() {
         {isLoading ? (
           <Skeleton className="h-40 rounded-card bg-panel lg:mx-4" />
         ) : (
-          <div role="radiogroup" aria-label={t("Langue de l’application")} className="grid gap-3 text-primary sm:grid-cols-2 lg:mx-4">
+          <div role="group" aria-label={t("Langue de l’application")} className="grid gap-3 text-primary sm:grid-cols-2 lg:mx-4">
             {LANGUAGES.map((l) => {
               const active = current === l.value;
               return (
                 <button
                   key={l.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
+                  type="button" aria-pressed={active}
                   lang={l.value}
                   disabled={busy}
                   onClick={() => void choose(l.value)}

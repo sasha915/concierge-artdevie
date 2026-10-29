@@ -75,11 +75,11 @@ function Page() {
           <div className="text-primary lg:mx-4">
             {item && <p className="eyebrow text-muted-foreground">{item.title}</p>}
             {item && recall(item) && <p className="mb-5 mt-3 text-[15px] text-muted-foreground lg:text-[18px]">{recall(item)}</p>}
-            <div role="radiogroup" aria-label={t("Options proposées")} className="grid gap-3 lg:grid-cols-2">
+            <div role="group" aria-label={t("Options proposées")} className="grid gap-3 lg:grid-cols-2">
               {proposal.options.map((o) => {
                 const active = choice === o.id;
                 return (
-                  <button key={o.id} type="button" role="radio" aria-checked={active} onClick={() => setChoice(o.id)}
+                  <button key={o.id} type="button" aria-pressed={active} onClick={() => setChoice(o.id)}
                     className={`rounded-[28px] p-5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:p-8 ${active ? "bg-primary text-background" : "bg-card hover:bg-primary/10"}`}>
                     <span className="flex items-start justify-between gap-3">
                       <span className="v3-card-title text-[22px] lg:text-[30px]">{o.label}</span>

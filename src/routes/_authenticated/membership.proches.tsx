@@ -1,3 +1,4 @@
+import { ErrorState } from "@/components/art-de-vie/cards";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -40,7 +41,7 @@ function Page() {
   const queryClient = useQueryClient();
   const invite = useServerFn(inviteDelegate);
   const revoke = useServerFn(revokeMyDelegate);
-  const { data: delegates = [], isLoading } = useQuery(myDelegatesQuery);
+  const { data: delegates = [], isLoading, isError, refetch } = useQuery(myDelegatesQuery);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [relation, setRelation] = useState("");
@@ -67,7 +68,10 @@ function Page() {
     }
   }
 
+  const [removing, setRemoving] = useState<string | null>(null);
   async function remove(id: string) {
+    if (removing) return;
+    setRemoving(id);
     try {
       const res = await revoke({ data: { id } });
       if (!res.ok) { toast.error(t(res.reason)); return; }
@@ -76,6 +80,8 @@ function Page() {
       await queryClient.invalidateQueries({ queryKey: ["delegates"] });
     } catch {
       toast.error(t("L’accès n’a pas pu être retiré."));
+    } finally {
+      setRemoving(null);
     }
   }
 
@@ -100,7 +106,9 @@ function Page() {
 
         <section className="mt-8 lg:mx-4 lg:mt-12">
           <h2 className="eyebrow text-muted-foreground">{t("Vos proches")} · {open.length}/{MAX_DELEGATES}</h2>
-          {isLoading ? null : delegates.length === 0 ? (
+          {isLoading ? null : isError ? (
+            <div className="mt-3"><ErrorState onRetry={() => void refetch()} /></div>
+          ) : delegates.length === 0 ? (
             <p className="mt-3 rounded-card bg-panel p-5 text-[13px] text-muted-foreground">{t("Aucun proche n’a encore d’accès.")}</p>
           ) : (
             <ul className="mt-3 overflow-hidden rounded-card bg-panel px-5">
@@ -118,7 +126,7 @@ function Page() {
                     {active && (confirming === d.id ? (
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         <p className="text-[13px] text-muted-foreground">{t("Retirer l’accès de {name} ?", { name: d.full_name })}</p>
-                        <Button type="button" size="sm" onClick={() => void remove(d.id)}>{t("Confirmer")}</Button>
+                        <Button type="button" size="sm" disabled={removing !== null} onClick={() => void remove(d.id)}>{t("Confirmer")}</Button>
                         <Button type="button" size="sm" variant="outline" onClick={() => setConfirming(null)}>{t("Annuler")}</Button>
                       </div>
                     ) : (
@@ -133,7 +141,7 @@ function Page() {
           )}
         </section>
 
-        {canInvite ? (
+        {isLoading || isError ? null : canInvite ? (
           <form className="mt-8 rounded-[28px] bg-card p-5 sm:p-8 lg:mx-4 lg:mt-12 lg:p-10" onSubmit={submit}>
             <h2 className="eyebrow text-primary">{t("Inviter un proche")}</h2>
             <div className="mt-5 grid gap-5 lg:grid-cols-2">

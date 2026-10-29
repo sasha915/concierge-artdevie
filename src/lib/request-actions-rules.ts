@@ -68,27 +68,6 @@ function compactDate(iso: string): string {
   return iso.replace(/-/g, "");
 }
 
-/** Fuseau de Paris décrit dans le fichier : Outlook et certains agendas Android l'exigent pour lire TZID. */
-const PARIS_VTIMEZONE = [
-  "BEGIN:VTIMEZONE",
-  "TZID:Europe/Paris",
-  "BEGIN:DAYLIGHT",
-  "TZOFFSETFROM:+0100",
-  "TZOFFSETTO:+0200",
-  "TZNAME:CEST",
-  "DTSTART:19700329T020000",
-  "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU",
-  "END:DAYLIGHT",
-  "BEGIN:STANDARD",
-  "TZOFFSETFROM:+0200",
-  "TZOFFSETTO:+0100",
-  "TZNAME:CET",
-  "DTSTART:19701025T030000",
-  "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU",
-  "END:STANDARD",
-  "END:VTIMEZONE",
-];
-
 /** Lignes de plus de 75 octets repliées (RFC 5545), sans couper un caractère accentué. */
 function foldLine(line: string): string {
   const out: string[] = [];
@@ -119,8 +98,9 @@ function timeOf(value: string): [number, number] | null {
 }
 
 /**
- * Fichier .ics d'une prestation confirmée : heure du lieu (Paris) si une heure est lisible, sinon journée entière.
- * Le bloc VTIMEZONE accompagne toujours une heure.
+ * Fichier .ics d'une prestation confirmée. L'heure saisie est celle du lieu (Paris, Miami, Dubaï…) :
+ * elle est écrite en heure « flottante » (sans fuseau), que tout agenda — Outlook, Android, Apple — affiche telle quelle.
+ * Sans heure lisible : journée entière.
  */
 export function buildIcs(item: { id: string; title: string; category: string; description: string; scheduled_date: string; scheduled_time: string | null }, now: Date = new Date()): string {
   const stamp = now.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
@@ -132,7 +112,7 @@ export function buildIcs(item: { id: string; title: string; category: string; de
     const start = `${day}T${String(h).padStart(2, "0")}${String(m).padStart(2, "0")}00`;
     const endDate = new Date(Date.UTC(Number(day.slice(0, 4)), Number(day.slice(4, 6)) - 1, Number(day.slice(6, 8)), h + 2, m));
     const end = `${endDate.toISOString().slice(0, 10).replace(/-/g, "")}T${String(endDate.getUTCHours()).padStart(2, "0")}${String(endDate.getUTCMinutes()).padStart(2, "0")}00`;
-    when = [`DTSTART;TZID=Europe/Paris:${start}`, `DTEND;TZID=Europe/Paris:${end}`];
+    when = [`DTSTART:${start}`, `DTEND:${end}`];
   } else {
     const next = new Date(Date.UTC(Number(day.slice(0, 4)), Number(day.slice(4, 6)) - 1, Number(day.slice(6, 8)) + 1));
     when = [`DTSTART;VALUE=DATE:${day}`, `DTEND;VALUE=DATE:${next.toISOString().slice(0, 10).replace(/-/g, "")}`];
@@ -143,7 +123,6 @@ export function buildIcs(item: { id: string; title: string; category: string; de
     "PRODID:-//Art de Vie//Conciergerie//FR",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    ...(at ? PARIS_VTIMEZONE : []),
     "BEGIN:VEVENT",
     `UID:${item.id}@artdevie.co`,
     `DTSTAMP:${stamp}`,

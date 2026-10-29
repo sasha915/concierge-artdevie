@@ -68,7 +68,7 @@ function Page() {
     try {
       const r = await invite({ data: form });
       if (!r.ok) { setNotice({ ok: false, text: r.reason }); return; }
-      setNotice({ ok: true, text: `${form.fullName} a été ajouté. Il se connecte avec son compte Google ${form.email.toLowerCase()} : « Équipe Art de Vie : se connecter avec Google » sur la page de connexion.` });
+      setNotice({ ok: true, text: `${form.fullName} ${"rejoined" in r && r.rejoined ? "a retrouvé l’équipe" : "a été ajouté"}. Il se connecte avec son compte Google ${form.email.toLowerCase()} : « Équipe Art de Vie : se connecter avec Google » sur la page de connexion.` });
       setForm({ fullName: "", email: "", role: "concierge" });
       await qc.invalidateQueries({ queryKey: ["admin"] });
     } catch { setNotice({ ok: false, text: "L’invitation a échoué." }); }

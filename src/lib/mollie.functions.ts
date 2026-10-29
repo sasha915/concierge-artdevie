@@ -110,7 +110,8 @@ export const payInvoice = createServerFn({ method: "POST" })
     if (!invoice) return { ok: false as const, reason: "invoice_not_found" };
     if (invoice.status === "Payée" || invoice.status === "Remboursée" || invoice.status === "Remboursée en partie") return { ok: false as const, reason: "already_paid" };
     // Double clic ou retour sur la page : le lien déjà ouvert est repris.
-    const previous = await previousPayment(invoice.mollie_payment_id);
+    // Facture contestée : l'ancien paiement reste « payé » chez Mollie ; il est ignoré pour permettre un nouveau règlement.
+    const previous = invoice.status === "Contestée" ? { checkout: null, processing: false } : await previousPayment(invoice.mollie_payment_id);
     if (previous.checkout) return { ok: true as const, checkoutUrl: previous.checkout };
     if (previous.processing) return { ok: false as const, reason: "payment_processing" };
 
@@ -126,7 +127,7 @@ export const payInvoice = createServerFn({ method: "POST" })
     // Deux clics simultanés portent la même clé : Mollie renvoie le même paiement au lieu d'en créer deux.
     const payment = await mollie<MolliePayment>("/payments", {
       method: "POST",
-      headers: { "Idempotency-Key": `adv-inv-${invoice.id}-${invoice.mollie_payment_id ?? "0"}` },
+      headers: { "Idempotency-Key": `adv-inv-${invoice.id}-${invoice.mollie_payment_id ?? "0"}-${invoice.status === "Contestée" ? "reprise" : "1"}` },
       body: JSON.stringify({
         amount: { currency: "EUR", value: euro(invoice.amount_cents) },
         description: `Art de Vie — ${invoice.number}`,
