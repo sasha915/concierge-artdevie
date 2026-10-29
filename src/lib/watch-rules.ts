@@ -38,3 +38,18 @@ export function isRenewalDue(validUntil: string | null | undefined, now: Date = 
 export function isFailedInvoice(status: string): boolean {
   return (FAILED_INVOICE_STATUSES as readonly string[]).includes(status);
 }
+
+/** Raison d'une alerte WhatsApp non partie, en clair pour l'équipe. */
+export function notificationFailureLabel(reason: string): string {
+  const [code, status] = reason.split(":");
+  switch (code) {
+    case "missing_recipient": return "Aucun numéro WhatsApp";
+    case "missing_WHATSAPP_API_TOKEN":
+    case "missing_WHATSAPP_PHONE_NUMBER_ID": return "WhatsApp non configuré";
+    case "adresse_ou_secret_absent": return "Alerte non configurée";
+    case "whatsapp_api_error": return status ? `Refusée par WhatsApp (${status})` : "Refusée par WhatsApp";
+    case "whatsapp_fetch_failed": return "WhatsApp injoignable";
+    case "profile_not_found": return "Membre introuvable";
+    default: return "Envoi impossible";
+  }
+}

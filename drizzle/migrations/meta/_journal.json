@@ -232,6 +232,13 @@
       "when": 1792725485078,
       "tag": "0032_payment_failures",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793306400000,
+      "tag": "0033_disabled_accounts_and_alerts",
+      "breakpoints": true
     }
   ]
 }

@@ -35,6 +35,12 @@ async function assertTeam(context: Ctx) {
 }
 
 /** Administrateur seul, session d'équipe déverrouillée. */
+/** Ferme les sessions d'un compte désactivé ; un échec est journalisé sans bloquer (l'accès aux données est déjà coupé). */
+async function revokeSessions(admin: any, userId: string) {
+  const { error } = await admin.rpc("revoke_user_sessions", { _user_id: userId });
+  if (error) console.error("[revokeSessions] sessions non fermées", userId, error.message);
+}
+
 async function assertAdmin(context: Ctx) {
   const role = await teamRoleOf(context);
   if (role !== "admin") throw new Error("Forbidden");
@@ -241,6 +247,8 @@ export const setMemberDisabled = createServerFn({ method: "POST" })
       await admin.auth.admin.updateUserById(data.id, { ban_duration: data.disabled ? "none" : "876000h" });
       return { ok: false as const, reason: "L’opération a échoué ; rien n’a été modifié." };
     }
+    // Sessions ouvertes fermées sur-le-champ ; les règles d'accès (account_enabled) coupent aussi un jeton encore valide.
+    if (data.disabled) await revokeSessions(admin, data.id);
     return { ok: true as const };
   });
 
@@ -712,6 +720,7 @@ export const setTeamRole = createServerFn({ method: "POST" })
       const { error: banError } = await admin.auth.admin.updateUserById(data.userId, { ban_duration: "876000h" });
       const { error: profileError } = await admin.from("profiles").update({ disabled_at: new Date().toISOString() }).eq("id", data.userId);
       if (banError || profileError) return { ok: false as const, reason: "Le rôle est retiré, mais le compte n’a pas pu être désactivé. Désactivez-le depuis sa fiche." };
+      await revokeSessions(admin, data.userId);
     }
     return { ok: true as const };
   });
@@ -913,7 +922,7 @@ async function dashboardWatch(admin: any, role: TeamRole, rows: Array<{ id: stri
   const signatureWithoutWhatsapp = members
     .filter((m) => !m.disabled_at && !teamIdList.includes(m.id) && m.plan === "Signature" && (m.concierge_whatsapp ?? "").replace(/[^0-9]/g, "").length < 8)
     .map((m) => ({ id: m.id, full_name: m.full_name }));
-  const { isStaleRequest, isRenewalDue, waitingLabel, FAILED_INVOICE_STATUSES } = await import("./watch-rules");
+  const { isStaleRequest, isRenewalDue, waitingLabel, notificationFailureLabel, FAILED_INVOICE_STATUSES } = await import("./watch-rules");
   const staleRequests = rows.filter((r) => isStaleRequest(r)).map((r) => ({ id: r.id, title: r.title, member_name: r.member_name, waiting: waitingLabel(r.created_at) }));
   const { data: changes } = await admin.from("request_changes").select("id, request_id, kind, created_at").eq("status", "en attente").order("created_at");
   const titles = new Map<string, { title: string; member_name: string }>(rows.map((r) => [r.id, r]));
@@ -929,7 +938,24 @@ async function dashboardWatch(admin: any, role: TeamRole, rows: Array<{ id: stri
     .filter((m) => !m.disabled_at && !teamIdList.includes(m.id) && isRenewalDue(m.valid_until))
     .sort((a, b) => (a.valid_until ?? "").localeCompare(b.valid_until ?? ""))
     .map((m) => ({ id: m.id, full_name: m.full_name, valid_until: m.valid_until as string }));
-  if (role !== "admin") return { staleRequests, renewals, pendingChanges, signatureWithoutWhatsapp, failedInvoices: null, receivedReferrals: null, failedCharges: null };
+  // Alertes WhatsApp non parties : visibles de toute l'équipe, puisque la demande n'a peut-être été vue par personne.
+  const { data: alertRows } = await admin.from("notification_failures").select("id, request_id, kind, reason, created_at").is("resolved_at", null).order("created_at", { ascending: false }).limit(50);
+  const alertList = (alertRows ?? []) as Array<{ id: string; request_id: string | null; kind: string; reason: string; created_at: string }>;
+  const unknownAlertRequests = [...new Set(alertList.map((a) => a.request_id).filter((id): id is string => !!id && !titles.has(id)))];
+  if (unknownAlertRequests.length) {
+    const { data: extra } = await admin.from("requests").select("id, title, user_id").in("id", unknownAlertRequests);
+    for (const r of (extra ?? []) as Array<{ id: string; title: string; user_id: string }>) titles.set(r.id, { title: r.title, member_name: names.get(r.user_id) ?? "" });
+  }
+  const failedAlerts = alertList.map((a) => ({
+    id: a.id,
+    request_id: a.request_id,
+    title: a.request_id ? titles.get(a.request_id)?.title ?? "Demande" : "Demande",
+    member_name: a.request_id ? titles.get(a.request_id)?.member_name ?? "" : "",
+    kind: a.kind === "message" ? "Message" : "Nouvelle demande",
+    reason: notificationFailureLabel(a.reason),
+    created_at: a.created_at,
+  }));
+  if (role !== "admin") return { staleRequests, renewals, pendingChanges, signatureWithoutWhatsapp, failedAlerts, failedInvoices: null, receivedReferrals: null, failedCharges: null };
   const [{ data: invoices }, { data: referrals }, { data: failures }] = await Promise.all([
     admin.from("invoices").select("id, number, user_id, amount_cents, status, issued_on").in("status", [...FAILED_INVOICE_STATUSES]).order("issued_on", { ascending: false }),
     admin.from("referrals").select("id, full_name, inviter_id, created_at").eq("status", "Invitation envoyée").order("created_at", { ascending: true }),
@@ -940,6 +966,7 @@ async function dashboardWatch(admin: any, role: TeamRole, rows: Array<{ id: stri
     renewals,
     pendingChanges,
     signatureWithoutWhatsapp,
+    failedAlerts,
     failedCharges: ((failures ?? []) as Array<{ id: string; user_id: string | null; amount_cents: number; status: string; created_at: string }>).map((f) => ({ ...f, member_name: f.user_id ? names.get(f.user_id) ?? "" : "" })),
     failedInvoices: ((invoices ?? []) as Array<{ id: string; number: string; user_id: string; amount_cents: number; status: string }>).map((i) => ({ ...i, member_name: names.get(i.user_id) ?? "" })),
     receivedReferrals: ((referrals ?? []) as Array<{ id: string; full_name: string; inviter_id: string; created_at: string }>).map((r) => ({ id: r.id, full_name: r.full_name, inviter_name: names.get(r.inviter_id) ?? "", created_at: r.created_at })),
@@ -1485,6 +1512,18 @@ export const revokeDelegateTeam = createServerFn({ method: "POST" })
     if (!row) return { ok: false as const, reason: "Ce proche est introuvable." };
     const { revokeDelegation } = await import("./delegates.server");
     return revokeDelegation(admin, row, (context as Ctx).userId);
+  });
+
+// ---- Alertes WhatsApp non parties ----
+/** L'équipe a vu la demande ou réglé la cause : l'alerte quitte « À surveiller ». */
+export const resolveNotificationFailure = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { error } = await (admin as any).from("notification_failures").update({ resolved_at: new Date().toISOString() }).eq("id", data.id).is("resolved_at", null);
+    if (error) return { ok: false as const, reason: "Le suivi n’a pas pu être enregistré." };
+    return { ok: true as const };
   });
 
 // ---- Seconde analyse : prélèvements rejetés ----

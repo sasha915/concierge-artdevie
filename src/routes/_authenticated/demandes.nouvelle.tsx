@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, X } from "lucide-react";
 import { AppShell, Logo, TopBar } from "@/components/art-de-vie/app-shell";
 import { Photo } from "@/components/art-de-vie/cards";
@@ -79,6 +79,9 @@ function Page() {
   const [guests, setGuests] = useState("");
   const [description, setDescription] = useState(offer && partner ? t("Offre : {partner}", { partner }) : "");
   const [busy, setBusy] = useState(false);
+  // Un seul envoi à la fois ; l'identifiant fixé d'avance rend un second envoi sans effet (doublon refusé par la base).
+  const sending = useRef(false);
+  const draftId = useRef<string>(crypto.randomUUID());
   const [error, setError] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [rhythm, setRhythm] = useState<"aucune" | Rhythm>("aucune");
@@ -102,6 +105,8 @@ function Page() {
   }, [renew, renewed, previous]);
 
   async function submit() {
+    if (sending.current || createdId) return;
+    sending.current = true;
     setBusy(true);
     setError(null);
     if (delegation) {
@@ -114,10 +119,11 @@ function Page() {
           scheduledTime: time,
           guests: guests ? Number(guests) : null,
         } });
-        if (!res.ok) { setError(t(res.reason)); return; }
+        if (!res.ok) { sending.current = false; setError(t(res.reason)); return; }
         await queryClient.invalidateQueries({ queryKey: ["delegate-requests"] });
         setCreatedId(res.id);
       } catch {
+        sending.current = false;
         setError(t("L’envoi a échoué. Réessayez dans un instant."));
       } finally {
         setBusy(false);
@@ -126,13 +132,15 @@ function Page() {
     }
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) {
+      sending.current = false;
       setBusy(false);
       setError(t("Votre session a expiré. Reconnectez-vous."));
       return;
     }
-    const { data, error } = await supabase
+    const { error: insertError } = await supabase
       .from("requests")
       .insert({
+        id: draftId.current,
         user_id: auth.user.id,
         category,
         title: title || `${t("Demande")} ${t(category).toLowerCase()}`,
@@ -141,14 +149,15 @@ function Page() {
         scheduled_time: time || null,
         guests: guests ? Number(guests) : null,
         image_key: allCats.find((cat) => cat.name === category)?.imageKey ?? "entree-de-nuit",
-      })
-      .select("id")
-      .single();
-    setBusy(false);
-    if (error || !data) {
+      });
+    // 23505 : la demande existe déjà (premier envoi parvenu malgré une erreur réseau) ; on la considère transmise.
+    if (insertError && insertError.code !== "23505") {
+      sending.current = false;
+      setBusy(false);
       setError(t("L’envoi a échoué. Réessayez dans un instant."));
       return;
     }
+    const data = { id: draftId.current };
     if (rhythm !== "aucune") {
       try {
         const rec = await createRecurring({ data: { requestId: data.id, recurrence: { rhythm, dates: extraDates, endDate: endDate || null } } });
@@ -159,6 +168,7 @@ function Page() {
       await queryClient.invalidateQueries({ queryKey: ["recurring"] });
     }
     await queryClient.invalidateQueries({ queryKey: ["requests"] });
+    setBusy(false);
     setCreatedId(data.id);
   }
 

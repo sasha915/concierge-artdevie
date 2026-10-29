@@ -30,6 +30,22 @@ function formatDate(value: string | null | undefined): string {
  * Destinataire : le concierge attribué au membre, s'il a un numéro, sinon le numéro commun.
  */
 export async function notifyConcierge(req: ConciergeRequest, message?: string): Promise<NotifyResult> {
+  const result = await sendConciergeAlert(req, message);
+  // Toute alerte non partie est gardée pour l'équipe (« À surveiller »), avec sa raison.
+  if (!("sent" in result)) {
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const reason = result.status ? `${result.skipped}:${result.status}` : result.skipped;
+      const { error } = await (supabaseAdmin as any).from("notification_failures").insert({ request_id: req.id, kind: message ? "message" : "demande", reason });
+      if (error) console.error("[notify-concierge] échec non enregistré", error.message);
+    } catch (err) {
+      console.error("[notify-concierge] échec non enregistré", err);
+    }
+  }
+  return result;
+}
+
+async function sendConciergeAlert(req: ConciergeRequest, message?: string): Promise<NotifyResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: profile, error } = await supabaseAdmin
     .from("profiles")

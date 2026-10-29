@@ -10,7 +10,7 @@ import { formatAmount, formatShortDate } from "@/data/art-de-vie";
 import { STALE_REQUEST_HOURS, RENEWAL_WINDOW_DAYS } from "@/lib/watch-rules";
 import { profileQuery } from "@/lib/adv-queries";
 import { pendingDelegatesQuery } from "@/lib/admin-queries";
-import { getDashboard, resolvePaymentFailure, takeRequest } from "@/lib/admin.functions";
+import { getDashboard, resolveNotificationFailure, resolvePaymentFailure, takeRequest } from "@/lib/admin.functions";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -190,7 +190,13 @@ function WatchBlock({ watch }: { watch: Watch }) {
   const referrals = watch.receivedReferrals ?? [];
   const charges = watch.failedCharges ?? [];
   const noWhatsapp = watch.signatureWithoutWhatsapp ?? [];
+  const alerts = watch.failedAlerts ?? [];
   const queryClient = useQueryClient();
+  const resolveAlert = useServerFn(resolveNotificationFailure);
+  async function markAlertSeen(id: string) {
+    const r = await resolveAlert({ data: { id } });
+    if (!r.ok) toast.error(r.reason); else await queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
+  }
   const resolve = useServerFn(resolvePaymentFailure);
   async function markResolved(id: string) {
     const r = await resolve({ data: { id } });
@@ -198,11 +204,18 @@ function WatchBlock({ watch }: { watch: Watch }) {
   }
   // Lot 5.4 : proches invités par les membres, à confirmer par l'équipe.
   const { data: delegates = [] } = useQuery(pendingDelegatesQuery);
-  const total = watch.staleRequests.length + watch.pendingChanges.length + watch.renewals.length + failed.length + referrals.length + delegates.length + charges.length + noWhatsapp.length;
+  const total = watch.staleRequests.length + watch.pendingChanges.length + watch.renewals.length + failed.length + referrals.length + delegates.length + charges.length + noWhatsapp.length + alerts.length;
   return <section aria-labelledby="watch-title" className="team-panel mt-6 min-w-0 rounded-[28px] p-6">
     <h2 id="watch-title" className="eyebrow team-mention">À surveiller</h2>
     {total === 0 ? <p className="mt-4 text-[14px] text-muted-foreground">Rien à signaler pour le moment.</p>
       : <div className="mt-4 grid min-w-0 gap-6 lg:grid-cols-2">
+        <WatchGroup title="Alertes WhatsApp non parties" count={alerts.length}>
+          {alerts.map((a) => <li key={a.id} className="flex items-center gap-3 border-b border-border last:border-0">
+            {a.request_id ? <Link to="/admin/demandes/$requestId" params={{ requestId: a.request_id }} className={`${watchLink} min-w-0 flex-1`}><WatchRow title={a.title} meta={`${a.kind}${a.member_name ? ` · ${a.member_name}` : ""} · ${formatShortDate(a.created_at.slice(0, 10))}`} signal={a.reason} /></Link>
+              : <div className={`${watchLink} min-w-0 flex-1`}><WatchRow title={a.title} meta={a.kind} signal={a.reason} /></div>}
+            <button type="button" onClick={() => void markAlertSeen(a.id)} className="shrink-0 rounded-full border border-border px-3 py-1 text-[12px] hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Traité</button>
+          </li>)}
+        </WatchGroup>
         <WatchGroup title={`Demandes sans prise en charge depuis plus de ${STALE_REQUEST_HOURS} h`} count={watch.staleRequests.length}>
           {watch.staleRequests.map((r) => <li key={r.id} className="border-b border-border last:border-0"><Link to="/admin/demandes/$requestId" params={{ requestId: r.id }} className={watchLink}><WatchRow title={r.title} meta={r.member_name || "Membre"} signal={`En attente · ${r.waiting}`} /></Link></li>)}
         </WatchGroup>

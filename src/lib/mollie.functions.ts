@@ -4,6 +4,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getRequest } from "@tanstack/react-start/server";
 import { euro, mollie, mollieKey, publicBase, webhookBase, type MolliePayment } from "./mollie.server";
 
+async function accountEnabled(context: { supabase: unknown; userId: string }): Promise<boolean> {
+  const { data, error } = await (context.supabase as any).rpc("account_enabled", { _user_id: context.userId });
+  return !error && data === true;
+}
+
 /**
  * Client Mollie du membre, créé une seule fois même en cas de double clic :
  * l'enregistrement est conditionnel, le second appel reprend le client déjà enregistré.
@@ -75,6 +80,8 @@ export const payInvoice = createServerFn({ method: "POST" })
       return { ok: false as const, reason: "mollie_not_configured" };
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Ces lectures passent par la clé de service : un compte désactivé est refusé explicitement.
+    if (!(await accountEnabled(context))) return { ok: false as const, reason: "account_disabled" };
 
     const { data: invoice } = await supabaseAdmin
       .from("invoices")
@@ -129,6 +136,8 @@ export const activateAutoDebit = createServerFn({ method: "POST" })
       return { ok: false as const, reason: "mollie_not_configured" };
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Ces lectures passent par la clé de service : un compte désactivé est refusé explicitement.
+    if (!(await accountEnabled(context))) return { ok: false as const, reason: "account_disabled" };
 
     const { data: profile } = await supabaseAdmin
       .from("profiles")
