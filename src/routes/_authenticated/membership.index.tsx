@@ -7,7 +7,7 @@ import { MemberCard } from "@/components/art-de-vie/member-card";
 import { PillAction, Title } from "@/components/art-de-vie/v3";
 import { imageFor } from "@/data/art-de-vie";
 import { supabase } from "@/integrations/supabase/client";
-import { profileQuery } from "@/lib/adv-queries";
+import { hotlineQuery, profileQuery } from "@/lib/adv-queries";
 import { isAdminQuery } from "@/lib/admin-queries";
 import { t, tPair } from "@/lib/i18n";
 
@@ -63,10 +63,18 @@ function Page() {
     navigate({ to: "/connexion", replace: true });
   }
 
+  const { data: hotline } = useQuery({ ...hotlineQuery, enabled: !!profile && !showConcierge });
+  const hotlineUrl = !showConcierge && hotline?.digits ? `https://wa.me/${hotline.digits}?text=${encodeURIComponent(t("Bonjour, j’aimerais échanger avec la conciergerie."))}` : null;
   const writeButton = showConcierge ? (
     <PillAction asChild light className="w-full lg:w-auto">
       <a href={whatsappUrl} target="_blank" rel="noreferrer">
         {t("Écrire à")} {conciergeFirstName}
+      </a>
+    </PillAction>
+  ) : hotlineUrl ? (
+    <PillAction asChild light className="w-full lg:w-auto">
+      <a href={hotlineUrl} target="_blank" rel="noreferrer">
+        {t("Nous écrire sur WhatsApp")}
       </a>
     </PillAction>
   ) : null;

@@ -210,6 +210,13 @@ export const myDelegatesQuery = queryOptions({
   },
 });
 
+/** Hotline WhatsApp de la conciergerie, pour les membres hors Signature. */
+export const hotlineQuery = queryOptions({
+  queryKey: ["hotline"],
+  queryFn: () => import("./hotline.functions").then(({ getHotline }) => getHotline()),
+  staleTime: 30 * 60_000,
+});
+
 /** Délégation du compte connecté, s'il est le proche d'un membre ; vérifiée côté serveur. */
 export const delegationQuery = queryOptions({
   queryKey: ["delegation"],

@@ -17,7 +17,7 @@ import {
   type Offer,
   type Profile,
   type RequestItem, requestPhoto } from "@/data/art-de-vie";
-import { offersQuery, profileQuery, requestsQuery } from "@/lib/adv-queries";
+import { hotlineQuery, offersQuery, profileQuery, requestsQuery } from "@/lib/adv-queries";
 import { WELCOME_LATER_KEY } from "@/components/art-de-vie/welcome";
 import vendome from "@/assets/v3/place-vendome.jpg.asset.json";
 import { locale, t, tPair } from "@/lib/i18n";
@@ -175,6 +175,8 @@ function MemberHome() {
   // Concierge attribué (Signature) : nommé seulement si son nom et son WhatsApp sont sur la fiche.
   const showConcierge = profile?.plan === "Signature" && Boolean(conciergeFirstName) && whatsappDigits.length > 0;
   const whatsappUrl = `https://wa.me/${whatsappDigits}?text=${encodeURIComponent(t("Bonjour {name}, j’aimerais échanger avec vous.", { name: conciergeFirstName ?? "" }))}`;
+  const { data: hotline } = useQuery({ ...hotlineQuery, enabled: !!profile && !showConcierge });
+  const hotlineUrl = !showConcierge && hotline?.digits ? `https://wa.me/${hotline.digits}?text=${encodeURIComponent(t("Bonjour, j’aimerais échanger avec la conciergerie."))}` : null;
   const hello = `${t(greeting)}${firstName ? ` ${firstName}` : ""}`;
 
   return (
@@ -258,7 +260,18 @@ function MemberHome() {
               </span>
             </a>
           ) : (
-            /* Sans concierge référent : la quatrième tuile de la maquette ouvre une demande écrite à la conciergerie. */
+            /* Hors Signature : la hotline WhatsApp de la conciergerie ; à défaut, une demande écrite. */
+            hotlineUrl ? (
+              <a href={hotlineUrl} target="_blank" rel="noreferrer" className={`${tile} bg-panel text-foreground lg:border lg:border-foreground/16 lg:bg-glass`}>
+                <span className="flex justify-end">
+                  <span className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground"><MessageCircle className="size-4" /></span>
+                </span>
+                <span>
+                  <span className="eyebrow block whitespace-nowrap text-[10px] text-muted-foreground lg:text-[11px]">{t("Votre conciergerie")}</span>
+                  <span className="mt-1.5 block text-[18px] leading-tight tracking-[-0.02em] lg:text-[28px]">{t("Nous écrire sur WhatsApp")}</span>
+                </span>
+              </a>
+            ) : (
             <Link to="/demandes/nouvelle" search={{ offer: undefined }} className={`${tile} bg-panel text-foreground lg:border lg:border-foreground/16 lg:bg-glass`}>
               <span className="flex justify-end">
                 <span className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground"><MessageCircle className="size-4" /></span>
@@ -268,6 +281,7 @@ function MemberHome() {
                 <span className="mt-1.5 block text-[18px] leading-tight tracking-[-0.02em] lg:text-[28px]">{t("Nous écrire")}</span>
               </span>
             </Link>
+            )
           )}
         </section>
 

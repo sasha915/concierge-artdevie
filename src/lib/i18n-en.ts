@@ -279,6 +279,8 @@ export const EN: Record<string, string> = {
   "Aucune précision complémentaire n’a été indiquée.": "No further details were given.",
   "Vous": "You",
   "Votre conciergerie": "Your concierge",
+  "Nous écrire sur WhatsApp": "Message us on WhatsApp",
+  "Bonjour, j’aimerais échanger avec la conciergerie.": "Hello, I would like to speak with the concierge team.",
   "Les comptes de l’équipe se connectent avec Google, avec leur adresse @artdevie.co.": "Team accounts sign in with Google, using their @artdevie.co address.",
   "Équipe Art de Vie :": "Art de Vie team:",
   "se connecter avec Google": "sign in with Google",
