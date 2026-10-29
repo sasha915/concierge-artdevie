@@ -27,7 +27,7 @@ function formatDate(value: string | null | undefined): string {
 
 /**
  * Prévient le concierge d'une demande : nouvelle demande (par défaut) ou nouveau message du membre (`message`).
- * Destinataire : le concierge attribué au membre, s'il a un numéro, sinon le numéro commun.
+ * Destinataire : le concierge attribué au membre Signature, sinon le numéro commun.
  */
 export async function notifyConcierge(req: ConciergeRequest, message?: string): Promise<NotifyResult> {
   const result = await sendConciergeAlert(req, message);
@@ -60,8 +60,8 @@ async function sendConciergeAlert(req: ConciergeRequest, message?: string): Prom
   const essentielNumber = process.env["ESSENTIEL_CONCIERGE_WHATSAPP"];
   const token = process.env["WHATSAPP_API_TOKEN"];
   const phoneNumberId = process.env["WHATSAPP_PHONE_NUMBER_ID"];
-  // Le concierge attribué d'abord, quelle que soit la formule ; le numéro commun en repli (numéro absent, faux ou envoi refusé).
-  const recipients = conciergeRecipients(profile.concierge_whatsapp, essentielNumber ?? null);
+  // Signature : le concierge attribué d'abord ; autres formules (concierge choisi à chaque demande) et repli : le numéro commun.
+  const recipients = conciergeRecipients(profile.plan === "Signature" ? profile.concierge_whatsapp : null, essentielNumber ?? null);
   if (recipients.length === 0) {
     console.warn("notification WhatsApp non envoyée : aucun numéro (concierge ni ESSENTIEL_CONCIERGE_WHATSAPP)");
     return { skipped: "missing_recipient" };

@@ -235,8 +235,8 @@ function WatchBlock({ watch }: { watch: Watch }) {
             <button type="button" onClick={() => void markResolved(c.id)} className="shrink-0 rounded-full border border-border px-3 py-1 text-[12px] hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Relancé</button>
           </li>)}
         </WatchGroup>
-        <WatchGroup title="Fiches à compléter : concierge attribué" count={noWhatsapp.length}>
-          {noWhatsapp.map((m) => <li key={m.id} className="border-b border-border last:border-0"><Link to="/admin/membres/$memberId" params={{ memberId: m.id }} className={watchLink}><WatchRow title={m.full_name || "Membre"} meta="Nom ou WhatsApp du concierge manquant" signal="À compléter" /></Link></li>)}
+        <WatchGroup title="Membres Signature sans concierge attribué" count={noWhatsapp.length}>
+          {noWhatsapp.map((m) => <li key={m.id} className="border-b border-border last:border-0"><Link to="/admin/membres/$memberId" params={{ memberId: m.id }} className={watchLink}><WatchRow title={m.full_name || "Membre"} meta="Nom ou WhatsApp du concierge à renseigner" signal="À compléter" /></Link></li>)}
         </WatchGroup>
         <WatchGroup title="Proches à confirmer" count={delegates.length}>
           {delegates.map((d) => <li key={d.id} className="border-b border-border last:border-0"><Link to="/admin/membres/$memberId" params={{ memberId: d.member_id }} className={watchLink}><WatchRow title={d.full_name} meta={d.member_name ? `Proche de ${d.member_name}` : "Proche"} signal={formatShortDate(d.invited_at.slice(0, 10))} /></Link></li>)}

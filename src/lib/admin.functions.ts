@@ -86,18 +86,13 @@ async function memberSubscription(admin: any, memberId: string): Promise<{ custo
 }
 
 /**
- * Concierge attribué (décision de Sasha, 29 octobre) : obligatoire pour un membre Signature (nom et WhatsApp) ;
- * facultatif pour les autres formules, mais complet s'il est renseigné. Sans concierge, le membre écrit à « votre conciergerie ».
+ * Concierge attribué (décision de Sasha, 29 octobre) : obligatoire pour un membre Signature (nom et WhatsApp).
+ * Pour les autres formules, le concierge est choisi à chaque demande : la fiche n'en porte pas.
  */
 function signatureNeedsWhatsapp(v: { plan: string; conciergeReferent?: string | undefined; conciergeWhatsapp?: string | undefined }, ctx: z.RefinementCtx) {
-  const hasName = (v.conciergeReferent ?? "").trim().length > 0;
-  const hasNumber = (v.conciergeWhatsapp ?? "").replace(/[^0-9]/g, "").length >= 8;
-  if (v.plan === "Signature" && !hasName && !hasNumber) {
-    ctx.addIssue({ code: "custom", path: ["conciergeReferent"], message: "Un membre Signature a toujours un concierge attribué : indiquez son nom et son WhatsApp." });
-    return;
-  }
-  if (hasName && !hasNumber) ctx.addIssue({ code: "custom", path: ["conciergeWhatsapp"], message: "Indiquez le WhatsApp du concierge attribué, ou retirez son nom." });
-  if (!hasName && (v.conciergeWhatsapp ?? "").trim()) ctx.addIssue({ code: "custom", path: ["conciergeReferent"], message: "Indiquez le nom du concierge attribué, ou retirez son WhatsApp." });
+  if (v.plan !== "Signature") return;
+  if (!(v.conciergeReferent ?? "").trim()) ctx.addIssue({ code: "custom", path: ["conciergeReferent"], message: "Un membre Signature a toujours un concierge attribué : indiquez son nom." });
+  if ((v.conciergeWhatsapp ?? "").replace(/[^0-9]/g, "").length < 8) ctx.addIssue({ code: "custom", path: ["conciergeWhatsapp"], message: "Indiquez le WhatsApp du concierge attribué au membre Signature." });
 }
 
 const memberFields = {
@@ -162,8 +157,9 @@ export const createMember = createServerFn({ method: "POST" })
       phone: data.phone || null,
       plan: data.plan,
       role_label: data.roleLabel || `Membre ${data.plan}`,
-      concierge_referent: data.conciergeReferent || null,
-      concierge_whatsapp: data.conciergeWhatsapp || null,
+      // Hors Signature, aucun concierge sur la fiche : il est choisi à chaque demande.
+      concierge_referent: data.plan === "Signature" ? data.conciergeReferent || null : null,
+      concierge_whatsapp: data.plan === "Signature" ? data.conciergeWhatsapp || null : null,
     }).eq("id", created.user.id).select("id").maybeSingle();
     if (profileError || !saved) {
       // Fiche incomplète : le compte est retiré pour ne pas laisser un membre à la formule par défaut.
@@ -203,8 +199,9 @@ export const updateMember = createServerFn({ method: "POST" })
       phone: data.phone || null,
       plan: data.plan,
       role_label: data.roleLabel || `Membre ${data.plan}`,
-      concierge_referent: data.conciergeReferent || null,
-      concierge_whatsapp: data.conciergeWhatsapp || null,
+      // Hors Signature, aucun concierge sur la fiche : il est choisi à chaque demande.
+      concierge_referent: data.plan === "Signature" ? data.conciergeReferent || null : null,
+      concierge_whatsapp: data.plan === "Signature" ? data.conciergeWhatsapp || null : null,
     }).eq("id", data.id);
     if (error) return { ok: false as const, reason: "La modification a échoué." };
     return { ok: true as const };
@@ -964,14 +961,10 @@ export const createRequestInvoice = createServerFn({ method: "POST" })
 // ---- Lot 4.3 : « À surveiller », préférences du membre ----
 
 async function dashboardWatch(admin: any, role: TeamRole, rows: Array<{ id: string; title: string; status: string; created_at: string; member_name: string; user_id: string }>, teamIdList: string[], names: Map<string, string>, members: Array<{ id: string; full_name: string; valid_until: string | null; disabled_at: string | null; plan?: string | null; concierge_whatsapp?: string | null; concierge_referent?: string | null }>) {
-  // Fiches à compléter : membre Signature sans concierge complet, ou concierge attribué sans WhatsApp.
+  // Seuls les membres Signature ont un concierge attribué : fiche à compléter si son nom ou son WhatsApp manque.
   const signatureWithoutWhatsapp = members
-    .filter((m) => {
-      if (m.disabled_at || teamIdList.includes(m.id)) return false;
-      const hasName = (m.concierge_referent ?? "").trim().length > 0;
-      const hasNumber = (m.concierge_whatsapp ?? "").replace(/[^0-9]/g, "").length >= 8;
-      return m.plan === "Signature" ? !(hasName && hasNumber) : hasName && !hasNumber;
-    })
+    .filter((m) => !m.disabled_at && !teamIdList.includes(m.id) && m.plan === "Signature"
+      && !((m.concierge_referent ?? "").trim().length > 0 && (m.concierge_whatsapp ?? "").replace(/[^0-9]/g, "").length >= 8))
     .map((m) => ({ id: m.id, full_name: m.full_name }));
   const { isStaleRequest, isRenewalDue, waitingLabel, notificationFailureLabel, FAILED_INVOICE_STATUSES } = await import("./watch-rules");
   const staleRequests = rows.filter((r) => isStaleRequest(r)).map((r) => ({ id: r.id, title: r.title, member_name: r.member_name, waiting: waitingLabel(r.created_at) }));

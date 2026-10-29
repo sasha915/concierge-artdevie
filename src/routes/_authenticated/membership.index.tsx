@@ -52,8 +52,8 @@ function Page() {
   const conciergeFirstName = profile?.concierge_referent?.split(/\s+/)[0] ?? null;
   const whatsappDigits = profile?.concierge_whatsapp?.replace(/[^0-9]/g, "") ?? "";
   const whatsappUrl = `https://wa.me/${whatsappDigits}?text=${encodeURIComponent(t("Bonjour {name}, j’aimerais échanger avec vous.", { name: conciergeFirstName ?? "" }))}`;
-  // Le concierge n'est nommé que s'il est réellement attribué (nom et WhatsApp sur la fiche), quelle que soit la formule.
-  const showConcierge = Boolean(conciergeFirstName) && whatsappDigits.length > 0;
+  // Concierge attribué (Signature) : nommé seulement si son nom et son WhatsApp sont sur la fiche.
+  const showConcierge = profile?.plan === "Signature" && Boolean(conciergeFirstName) && whatsappDigits.length > 0;
   const [head, tail] = tPair("Votre", "Membership.");
 
   async function signOut() {
