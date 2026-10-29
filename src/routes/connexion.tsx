@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { imageFor } from "@/data/art-de-vie";
 import { supabase } from "@/integrations/supabase/client";
 import { t } from "@/lib/i18n";
+import { unlockAdmin } from "@/lib/admin-gate.functions";
 
 let greetingInitialized = false;
 
@@ -50,12 +51,21 @@ function Page() {
     setBusy(true);
     setError(null);
     setNotice(null);
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    setBusy(false);
-    if (signInError) {
+    const { data: signedIn, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInError || !signedIn.user) {
+      setBusy(false);
       setError(t("Email ou mot de passe incorrect."));
       return;
     }
+    // Administrateur ou concierge : ses identifiants personnels ouvrent aussi l'espace équipe, sans seconde saisie.
+    const { data: team } = await supabase.rpc("is_team", { _user_id: signedIn.user.id });
+    if (team === true) {
+      const unlocked = await unlockAdmin({ data: { email, password } }).catch(() => null);
+      setBusy(false);
+      navigate({ to: unlocked?.ok ? "/admin" : "/admin-connexion", replace: true });
+      return;
+    }
+    setBusy(false);
     navigate({ to: "/", replace: true });
   }
 

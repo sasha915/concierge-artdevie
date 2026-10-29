@@ -1,10 +1,9 @@
 import { useSession } from "@tanstack/react-start/server";
-import { createHash, timingSafeEqual } from "node:crypto";
 
 /** La session d'équipe est liée au compte qui l'a ouverte. */
 export type AdminGateSession = { adminUnlocked?: boolean; userId?: string };
 
-/** Tentatives de mot de passe tolérées par compte sur la fenêtre, avant blocage temporaire. */
+/** Tentatives d'identification tolérées par compte sur la fenêtre, avant blocage temporaire. */
 export const GATE_MAX_ATTEMPTS = 5;
 export const GATE_WINDOW_MINUTES = 15;
 
@@ -15,12 +14,6 @@ export function adminSessionConfig() {
     maxAge: 60 * 60 * 2,
     cookie: { httpOnly: true, secure: true, sameSite: "lax" as const, path: "/" },
   };
-}
-
-export function adminPasswordMatches(input: string, expected: string): boolean {
-  const a = createHash("sha256").update(input, "utf8").digest();
-  const b = createHash("sha256").update(expected, "utf8").digest();
-  return timingSafeEqual(a, b);
 }
 
 /** Sans identifiant, indique seulement si un verrou est ouvert dans ce navigateur (affichage). */
