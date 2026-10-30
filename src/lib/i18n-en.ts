@@ -627,4 +627,6 @@ export const EN: Record<string, string> = {
   "La photo n’a pas pu être enregistrée.": "The photo could not be saved.",
   "La photo est retirée de la fiche, mais le fichier n’a pas pu être effacé.": "The photo has been removed from your profile, but the file could not be deleted.",
   "Ce compte ne peut pas recevoir de photo.": "This account cannot have a photo.",
+  "Mentions légales": "Legal notice",
+  "Confidentialité": "Privacy",
 };

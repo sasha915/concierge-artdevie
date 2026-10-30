@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { hotlineQuery, profileQuery } from "@/lib/adv-queries";
 import { isAdminQuery } from "@/lib/admin-queries";
 import { t, tPair } from "@/lib/i18n";
+import { LegalLinks } from "@/components/art-de-vie/legal-links";
 
 export const Route = createFileRoute("/_authenticated/membership/")({
   head: () => ({
@@ -94,6 +95,7 @@ function Page() {
         <span className="lg:order-2">{t("Se déconnecter")}</span>
         <span className="flex size-9 items-center justify-center rounded-full border border-foreground/24 lg:order-1 lg:size-auto lg:border-0"><LogOut className="size-4" /></span>
       </button>
+      <LegalLinks className="px-2 lg:basis-full" />
     </div>
   );
 

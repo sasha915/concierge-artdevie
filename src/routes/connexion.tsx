@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { imageFor } from "@/data/art-de-vie";
 import { supabase } from "@/integrations/supabase/client";
 import { t } from "@/lib/i18n";
+import { LegalLinks } from "@/components/art-de-vie/legal-links";
 import { lovable } from "@/integrations/lovable";
 import { TEAM_EMAIL_DOMAIN } from "@/lib/team-auth-rules";
 
@@ -153,6 +154,7 @@ function Page() {
             {t("se connecter avec Google")}
           </button>
         </p>
+        <LegalLinks className="mx-2 mt-6 md:mx-8 lg:mx-0" />
       </div>
     </main>
   );
