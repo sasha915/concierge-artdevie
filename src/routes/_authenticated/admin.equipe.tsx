@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { Check, UserPlus } from "lucide-react";
 import { AdminShell } from "@/components/art-de-vie/admin-shell";
+import { Avatar, MyAvatarEditor } from "@/components/art-de-vie/avatar";
+import { useAvatarUrls } from "@/components/art-de-vie/team-avatars";
 import { Title } from "@/components/art-de-vie/v3";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +46,7 @@ const pill = "inline-flex h-11 items-center rounded-full px-4 text-[14px] transi
 function Page() {
   const qc = useQueryClient();
   const { data: team = [], isLoading } = useQuery(teamQuery);
+  const photos = useAvatarUrls(team.map((m) => m.id));
   const changeRole = useServerFn(setTeamRole);
   const invite = useServerFn(inviteColleague);
   const [busy, setBusy] = useState<string | null>(null);
@@ -93,15 +96,19 @@ function Page() {
         {isLoading ? <Skeleton className="mt-4 h-40 rounded-card bg-primary/10" />
           : <ul className="mt-2">
               {team.map((t) => <li key={t.id} className="grid min-w-0 gap-3 border-b border-border py-4 last:border-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-                <div className="min-w-0">
-                  <p className="flex min-w-0 items-center gap-2 text-[20px] text-primary"><span className="truncate">{t.full_name || "Sans nom"}</span>{t.is_self ? <span className="shrink-0 rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-medium text-primary-foreground">Vous</span> : null}</p>
-                  <p className="truncate text-[12px] text-muted-foreground">{t.email} · depuis le {formatShortDate(t.since.slice(0, 10))}</p>
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar url={photos[t.id]} name={t.full_name || ""} className="size-12 bg-primary/14 text-[13px] font-semibold text-primary" />
+                  <div className="min-w-0">
+                    <p className="flex min-w-0 items-center gap-2 text-[20px] text-primary"><span className="truncate">{t.full_name || "Sans nom"}</span>{t.is_self ? <span className="shrink-0 rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-medium text-primary-foreground">Vous</span> : null}</p>
+                    <p className="truncate text-[12px] text-muted-foreground">{t.email} · depuis le {formatShortDate(t.since.slice(0, 10))}</p>
+                  </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2" role="group" aria-label={`Rôle de ${t.full_name}`}>
                   {(["admin", "concierge"] as const).map((r) => <button key={r} type="button" aria-pressed={t.role === r} disabled={t.is_self || busy === t.id || t.role === r} onClick={() => apply(t.id, r, t.full_name)}
                     className={`${pill} ${t.role === r ? "bg-primary font-medium text-primary-foreground" : "border border-border hover:bg-primary/10"}`}>{ROLE_LABEL[r]}</button>)}
                   {!t.is_self && <Button type="button" variant="outline" size="sm" disabled={busy === t.id} onClick={() => apply(t.id, null, t.full_name)}>Retirer de l’équipe</Button>}
                 </div>
+                {t.is_self && <div className="sm:col-span-2"><MyAvatarEditor name={t.full_name || ""} /></div>}
               </li>)}
             </ul>}
       </section>

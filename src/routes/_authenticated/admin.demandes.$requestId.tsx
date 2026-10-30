@@ -4,10 +4,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, ChevronLeft, Download, FileText, Paperclip, Plus, X } from "lucide-react";
 import { AdminShell, TeamStatus } from "@/components/art-de-vie/admin-shell";
+import { Avatar } from "@/components/art-de-vie/avatar";
+import { useAvatarUrls } from "@/components/art-de-vie/team-avatars";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatAmount, formatDate, formatShortDate, initials, type RequestStatus } from "@/data/art-de-vie";
+import { formatAmount, formatDate, formatShortDate, type RequestStatus } from "@/data/art-de-vie";
 import { requestDetailQuery, teamNamesQuery, requestEventsQuery, replyTemplatesQuery, requestBillingQuery, requestMessagesAdminQuery, requestFilesQuery, requestChangesQuery, requestReviewQuery, requestProposalsQuery } from "@/lib/admin-queries";
 import { eurosInput, invoiceBreakdown, parseEuros, ratePercent } from "@/lib/billing-rules";
 import { canInvoice, canTransition, insertReply, isOpenStatus, requestHistory } from "@/lib/team-request-rules";
@@ -52,6 +54,7 @@ function Page() {
   const { data: messages = [], isLoading: messagesLoading, isError: messagesError } = useQuery(requestMessagesAdminQuery(requestId));
   const r = data?.request ?? null;
   const m = data?.member ?? null;
+  const photos = useAvatarUrls([data?.request?.user_id]);
 
   const [reply, setReplyText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -100,7 +103,7 @@ function Page() {
 
     <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-12">
       <div className="grid min-w-0 content-start gap-4 lg:col-span-7">
-        <section className="team-panel rounded-[28px] p-6">
+        <section className="team-panel min-w-0 rounded-[28px] p-6">
           <div className="flex flex-wrap items-center gap-2"><span className="eyebrow rounded-full border border-border px-3 py-1 text-[10px]">{r.category}</span><TeamStatus status={r.status} /></div>
           <h1 className="v3-heading mt-4 break-words text-[clamp(32px,4vw,52px)] leading-[1.02]">{r.title}</h1>
           <p className="mt-3 text-[14px] text-muted-foreground">Reçue le {formatDate(r.created_at.slice(0, 10))}{r.scheduled_date ? ` · souhaitée le ${formatDate(r.scheduled_date)}` : ""}</p>
@@ -114,7 +117,7 @@ function Page() {
           </dl>
         </section>
 
-        <section aria-labelledby="exchanges-title" className="team-panel rounded-[28px] p-6">
+        <section aria-labelledby="exchanges-title" className="team-panel min-w-0 rounded-[28px] p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 id="exchanges-title" className="eyebrow team-mention">Échanges avec le membre</h2>
             <span className="rounded-full border border-border px-3 py-1 text-[11px]">{r.delegate_name ? "Visible par le membre et son proche" : "Visible par le membre"}</span>
@@ -147,7 +150,7 @@ function Page() {
 
         <FilesBlock requestId={r.id} busy={busy} run={run} />
 
-        <section className="team-panel rounded-[28px] p-6">
+        <section className="team-panel min-w-0 rounded-[28px] p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="eyebrow team-mention">Notes internes</h2>
             <span className="rounded-full border border-dashed border-border px-3 py-1 text-[11px]">Invisibles du membre</span>
@@ -166,7 +169,7 @@ function Page() {
       </div>
 
       <div className="grid min-w-0 content-start gap-4 lg:col-span-5">
-        <section className="team-panel rounded-[28px] p-6">
+        <section className="team-panel min-w-0 rounded-[28px] p-6">
           <h2 className="eyebrow team-mention">Statut</h2>
           {/* Maquette V4 : sélecteur segmenté ; l'annulation reste un bouton distinct. */}
           <div role="group" aria-label="Statut de la demande" className="team-glass mt-4 flex flex-wrap gap-1 rounded-[28px] p-1 sm:rounded-full">
@@ -184,7 +187,7 @@ function Page() {
             : <button type="button" disabled={busy || !canTransition(r.status, "Annulée")} title={canTransition(r.status, "Annulée") ? undefined : `Passage impossible depuis « ${r.status} »`} onClick={() => changeStatus("Annulée")} className="mt-3 h-11 rounded-full border border-dashed border-border px-4 text-[14px] font-medium transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60">Annuler la demande</button>}
         </section>
 
-        <section className="team-panel rounded-[28px] p-6">
+        <section className="team-panel min-w-0 rounded-[28px] p-6">
           <h2 className="eyebrow team-mention">Concierge en charge</h2>
           <label htmlFor="concierge" className="sr-only">Concierge en charge</label>
           <select id="concierge" value={conciergeValue} disabled={busy} onChange={(e) => { const id = e.target.value || null; if (id === "legacy") return; const name = team.find((t) => t.id === id)?.name ?? UNASSIGNED; run(() => setConcierge({ data: { id: r.id, conciergeId: id } }), id ? `Demande attribuée à ${name}.` : "Demande remise « À attribuer »."); }}
@@ -200,7 +203,7 @@ function Page() {
         {m && <section className="team-glass rounded-[28px] p-6">
           <div className="flex items-start justify-between gap-3">
             <h2 className="eyebrow team-mention">Membre</h2>
-            <span className="flex size-12 items-center justify-center rounded-full bg-primary-light text-[15px] font-medium text-primary-deep">{initials(m.full_name)}</span>
+            <Avatar url={data?.request?.user_id ? photos[data.request.user_id] : null} name={m.full_name} className="size-12 bg-primary-light text-[15px] font-medium text-primary-deep" />
           </div>
           <p className="mt-2 text-[28px] leading-tight">{m.full_name}</p>
           <p className="mt-1 text-[13px] text-muted-foreground">{m.plan} · N° {m.member_number}</p>
@@ -213,7 +216,7 @@ function Page() {
           </Link>
         </section>}
         {r.status === "Terminée" && <ReviewPanel requestId={r.id} />}
-        <section className="team-panel rounded-[28px] p-6">
+        <section className="team-panel min-w-0 rounded-[28px] p-6">
           <h2 className="eyebrow team-mention">Historique</h2>
           {eventsLoading ? <Skeleton className="mt-4 h-28 bg-primary/10" /> : eventsError ? <p role="alert" className="mt-4 text-[13px] text-muted-foreground">L’historique n’a pas pu être chargé.</p> : <ol className="mt-4 divide-y divide-border border-y border-border">
             {history.map((e) => <li key={e.id} className="py-4">
@@ -240,7 +243,7 @@ function BillingBlock({ requestId, cancelled, invoiceable, isAdmin, busy, run }:
   useEffect(() => { setValue(eurosInput(billing?.amount_cents)); setInvalid(false); }, [billing?.amount_cents]);
 
   if (isLoading) return <Skeleton className="h-56 rounded-[28px] bg-primary/10" />;
-  if (isError || !billing) return <section className="team-panel rounded-[28px] p-6"><h2 className="eyebrow team-mention">Montant et commission</h2><p role="alert" className="mt-4 text-[13px] text-muted-foreground">Le montant n’a pas pu être chargé.</p></section>;
+  if (isError || !billing) return <section className="team-panel min-w-0 rounded-[28px] p-6"><h2 className="eyebrow team-mention">Montant et commission</h2><p role="alert" className="mt-4 text-[13px] text-muted-foreground">Le montant n’a pas pu être chargé.</p></section>;
 
   const typed = parseEuros(value);
   const preview = !billing.plan ? null : typed !== null ? invoiceBreakdown(typed, billing.plan) : billing.breakdown;
@@ -260,7 +263,7 @@ function BillingBlock({ requestId, cancelled, invoiceable, isAdmin, busy, run }:
     run(() => createInvoice({ data: { id: requestId } }), "Facture créée. Elle apparaît dans les factures du membre.");
   }
 
-  return <section className="team-panel rounded-[28px] p-6">
+  return <section className="team-panel min-w-0 rounded-[28px] p-6">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h2 className="eyebrow team-mention">Montant et commission</h2>
       <span className="rounded-full border border-dashed border-border px-3 py-1 text-[11px]">Interne</span>
@@ -340,7 +343,7 @@ function FilesBlock({ requestId, busy, run }: { requestId: string; busy: boolean
     if (res.ok) window.location.href = res.url; else setProblem(res.reason);
   }
 
-  return <section aria-labelledby="files-title" className="team-panel rounded-[28px] p-6">
+  return <section aria-labelledby="files-title" className="team-panel min-w-0 rounded-[28px] p-6">
     <h2 id="files-title" className="eyebrow team-mention">Pièces jointes</h2>
     {isLoading ? <Skeleton className="mt-4 h-16 bg-primary/10" />
       : isError ? <p role="alert" className="mt-4 text-[13px] text-muted-foreground">Les pièces jointes n’ont pas pu être chargées.</p>
@@ -366,7 +369,7 @@ function FilesBlock({ requestId, busy, run }: { requestId: string; busy: boolean
 
 function ReviewPanel({ requestId }: { requestId: string }) {
   const { data: review } = useQuery(requestReviewQuery(requestId));
-  return <section className="team-panel rounded-[28px] p-6">
+  return <section className="team-panel min-w-0 rounded-[28px] p-6">
     <h2 className="eyebrow team-mention">Avis du membre</h2>
     {review ? <>
       <p className="mt-3 font-display text-[26px] italic">{review.rating}</p>
@@ -411,7 +414,7 @@ function ProposalBlock({ requestId, cancelled, closed, busy, run }: { requestId:
   if (isLoading) return <Skeleton className="h-24 rounded-[28px] bg-primary/10" />;
   if (cancelled && !latest) return null;
 
-  return <section aria-labelledby="proposal-title" className="team-panel rounded-[28px] p-6">
+  return <section aria-labelledby="proposal-title" className="team-panel min-w-0 rounded-[28px] p-6">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h2 id="proposal-title" className="eyebrow team-mention">Proposition au membre</h2>
       {latest && <span className={`rounded-full px-3 py-1 text-[11px] ${latest.status === "en attente" ? "border border-dashed border-border" : latest.status === "acceptée" ? "bg-primary text-primary-foreground" : "border border-border"}`}>{latest.status === "en attente" ? "En attente de sa réponse" : latest.status === "acceptée" ? "Option choisie" : "Aucune ne convient"}</span>}

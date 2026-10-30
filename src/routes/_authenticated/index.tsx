@@ -13,7 +13,6 @@ import {
   formatTime,
   imageFor,
   offerImage,
-  initials,
   type Offer,
   type Profile,
   type RequestItem, requestPhoto } from "@/data/art-de-vie";
@@ -25,6 +24,7 @@ import { isActiveRequest, orderForDisplay } from "@/lib/request-order";
 import { getTimeZone, minutesIn, todayIn } from "@/lib/timezone";
 import { useDelegation } from "@/components/art-de-vie/use-delegation";
 import { DelegateHome } from "@/components/art-de-vie/delegate";
+import { Avatar, useMyAvatar } from "@/components/art-de-vie/avatar";
 
 export const Route = createFileRoute("/_authenticated/")({
   beforeLoad: async () => {
@@ -92,11 +92,12 @@ function CurrentRequest({ item }: { item: RequestItem }) {
 }
 
 function MiniMember({ profile }: { profile: Profile | null | undefined }) {
+  const photo = useMyAvatar(!!profile);
   return (
     <div className="member-grain relative h-[66px] w-[104px] overflow-hidden rounded-[12px] border border-gold p-[9px] text-foreground lg:h-[90px] lg:w-[148px] lg:p-3">
       <div className="flex items-center justify-between gap-2">
         <Logo inverse className="h-[11px] w-auto lg:h-3" />
-        <span className="hidden text-[8px] lg:inline">{initials(profile?.full_name ?? "")}</span>
+        <span className="hidden lg:inline-flex"><Avatar url={photo} name={profile?.full_name ?? ""} className="size-6 border border-gold/60 text-[8px]" /></span>
       </div>
       <p className="absolute bottom-[7px] left-[9px] font-display text-[12px] lg:bottom-3 lg:left-3 lg:text-[15px]">{profile?.plan ?? "—"}</p>
     </div>

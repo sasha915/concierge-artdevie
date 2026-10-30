@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { adminGateStatus, lockAdmin } from "@/lib/admin-gate.functions";
 import { adminReferralsQuery, allRequestsQuery, teamRoleQuery } from "@/lib/admin-queries";
 import { profileQuery } from "@/lib/adv-queries";
-import { initials } from "@/data/art-de-vie";
+import { Avatar, useMyAvatar } from "./avatar";
 import { Button } from "@/components/ui/button";
 
 const teamNav = [
@@ -35,6 +35,7 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
   const { data: requests = [] } = useQuery(allRequestsQuery);
   const newRequests = requests.filter((r) => r.status === "Nouvelle").length;
   const { data: profile } = useQuery(profileQuery);
+  const myPhoto = useMyAvatar();
   // Session équipe vérifiée chaque minute et au retour sur l'onglet : expirée, on revient à l'accès équipe.
   const gate = useServerFn(adminGateStatus);
   const { data: gateState } = useQuery({ queryKey: ["admin-gate"], queryFn: () => gate(), refetchInterval: 60_000, refetchOnWindowFocus: true, staleTime: 0 });
@@ -96,7 +97,7 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
                 Menu
                 {total > 0 && <span className={badge} aria-label={`${total} à traiter`}>{total}</span>}
               </button>
-              <span title={profile?.full_name ?? ""} aria-label={profile?.full_name ? `Connecté : ${profile.full_name}` : undefined} className="hidden size-11 items-center justify-center rounded-full bg-primary/14 text-[13px] font-semibold sm:inline-flex">{initials(profile?.full_name ?? "")}</span>
+              <span title={profile?.full_name ?? ""} aria-label={profile?.full_name ? `Connecté : ${profile.full_name}` : undefined} className="hidden sm:inline-flex"><Avatar url={myPhoto} name={profile?.full_name ?? ""} className="size-11 bg-primary/14 text-[13px] font-semibold" /></span>
             </div>
           </div>
           {menuOpen && (
@@ -125,9 +126,8 @@ export function AdminShell({ children }: { children: ReactNode; title?: string }
             return <Link key={to} to={to} aria-current={active ? "page" : undefined} className={`${pill} ${active ? "bg-primary font-medium text-primary-foreground" : "hover:bg-primary/10"}`}>{label}{to === "/admin/parrainages" && pendingReferrals > 0 && <span className={active ? "inline-flex min-w-5 items-center justify-center rounded-full bg-primary-foreground px-1.5 text-[11px] font-semibold text-primary" : badge}>{pendingReferrals}</span>}{to === "/admin/demandes" && newRequests > 0 && <span className={badge} aria-label={`${newRequests} nouvelle${newRequests > 1 ? "s" : ""}`}>{newRequests}</span>}</Link>;
           })}
           <Link to="/admin/demandes/nouvelle" className={`${pill} bg-primary font-medium text-primary-foreground hover:bg-primary/90`}><Plus className="size-4" />Demande</Link>
-          {/* Maquette V4 : les initiales mènent à l'espace membre. */}
           {/* Initiales du compte connecté : simple repère, l'équipe n'a pas d'espace membre. */}
-          <span title={profile?.full_name ? `Connecté : ${profile.full_name}` : undefined} aria-label={profile?.full_name ? `Connecté : ${profile.full_name}` : undefined} className="inline-flex size-11 items-center justify-center rounded-full bg-primary text-[13px] font-semibold text-primary-foreground">{initials(profile?.full_name ?? "")}</span>
+          <span title={profile?.full_name ? `Connecté : ${profile.full_name}` : undefined} aria-label={profile?.full_name ? `Connecté : ${profile.full_name}` : undefined} className="inline-flex"><Avatar url={myPhoto} name={profile?.full_name ?? ""} className="size-11 bg-primary text-[13px] font-semibold text-primary-foreground" /></span>
           <Button type="button" variant="outline" size="icon" title="Verrouiller l’espace équipe" aria-label="Verrouiller l’espace équipe" onClick={lockSession} className="size-11 rounded-full"><Lock className="size-4" /></Button>
           <Button type="button" variant="outline" size="icon" title="Se déconnecter" aria-label="Se déconnecter" onClick={signOut} className="size-11 rounded-full"><LogOut className="size-4" /></Button>
         </nav>

@@ -5,13 +5,15 @@ import { useEffect, useState } from "react";
 import { ChevronLeft, Download, Mail, UserMinus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { AdminShell, TeamStatus } from "@/components/art-de-vie/admin-shell";
+import { Avatar, AvatarEditor } from "@/components/art-de-vie/avatar";
+import { useAvatarUrls } from "@/components/art-de-vie/team-avatars";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState, StatusBadge } from "@/components/art-de-vie/cards";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatAmount, formatShortDate, formatMonth, imageFor, initials, requestPhoto } from "@/data/art-de-vie";
+import { formatAmount, formatShortDate, formatMonth, imageFor, requestPhoto } from "@/data/art-de-vie";
 import { memberDelegatesQuery, memberDetailQuery, memberParrainQuery, memberPaymentsQuery, memberPreferencesQuery, memberReviewsQuery } from "@/lib/admin-queries";
-import { anonymizeMember, approveDelegate, exportMemberData, refuseDelegate, revokeDelegateTeam, getMemberStatement, saveMemberPreferences, setMemberLanguage, setMemberTimezone, sendMemberInvite, setMemberDisabled, updateMember, type MemberAnswers as Answers } from "@/lib/admin.functions";
+import { anonymizeMember, approveDelegate, removeMemberAvatar, setMemberAvatar, exportMemberData, refuseDelegate, revokeDelegateTeam, getMemberStatement, saveMemberPreferences, setMemberLanguage, setMemberTimezone, sendMemberInvite, setMemberDisabled, updateMember, type MemberAnswers as Answers } from "@/lib/admin.functions";
 import { DEFAULT_TIMEZONE, TIMEZONES } from "@/lib/timezone";
 import { todayParis } from "@/lib/billing-webhook-rules";
 import { monthLabel, shiftMonth, WELCOME_STEPS } from "@/lib/member-rules";
@@ -33,6 +35,7 @@ function Page() {
   const invite = useServerFn(sendMemberInvite);
   const toggle = useServerFn(setMemberDisabled);
   const profile = data?.profile ?? null;
+  const photos = useAvatarUrls([memberId]);
 
   const [form, setForm] = useState({ fullName: "", phone: "", plan: "Signature", roleLabel: "", conciergeReferent: "", conciergeWhatsapp: "" });
   const [busy, setBusy] = useState(false);
@@ -100,7 +103,7 @@ function Page() {
       {/* Maquette V4 : carte, informations et préférences à gauche (7/12) ; en-tête et suivi à droite (5/12). */}
       <aside className="min-w-0">
         <section aria-label="Carte du membre" className="team-panel rounded-card border border-gold p-6">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4"><span className="font-display text-xl">Art de Vie</span><span className="grid size-11 shrink-0 place-items-center rounded-full border border-border text-sm">{initials(profile.full_name)}</span></div>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4"><span className="font-display text-xl">Art de Vie</span><Avatar url={photos[profile.id]} name={profile.full_name} className="size-11 border border-border text-sm" /></div>
           <p className="mt-8 font-display text-[30px]">{profile.plan}</p>
           <p className="mt-2 break-words text-xs text-muted-foreground">{profile.member_number}</p>
           <p className="mt-1 text-sm">{profile.full_name}</p>
@@ -109,6 +112,7 @@ function Page() {
       {isAdmin && <form className="team-panel mt-5 min-w-0 rounded-card p-5 sm:p-7" onSubmit={submit}>
         <h2 className="eyebrow team-mention">Informations</h2>
         <div className="mt-5 grid min-w-0 gap-5">
+          <MemberPhoto memberId={profile.id} name={profile.full_name} url={photos[profile.id] ?? null} />
           <Field label="Nom complet"><Input value={form.fullName} onChange={(e) => set("fullName", e.target.value)} required maxLength={80} /></Field>
           <Field label="Téléphone"><Input value={form.phone} onChange={(e) => set("phone", e.target.value)} maxLength={40} /></Field>
           <Field label="Formule"><PlanSelect value={form.plan} onChange={(v) => set("plan", v)} /></Field>
@@ -488,4 +492,24 @@ function LanguageField({ memberId, language }: { memberId: string; language: "fr
       <option value="en" className="text-black">English</option>
     </select>
   </div>;
+}
+
+/** Photo du membre, déposée ou retirée par un administrateur. */
+function MemberPhoto({ memberId, name, url }: { memberId: string; name: string; url: string | null }) {
+  const queryClient = useQueryClient();
+  const send = useServerFn(setMemberAvatar);
+  const drop = useServerFn(removeMemberAvatar);
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["avatar"] });
+  return (
+    <div>
+      <p className="mb-2 text-[13px] text-muted-foreground">Photo</p>
+      <AvatarEditor
+        url={url}
+        name={name}
+        labels={{ add: "Ajouter une photo", change: "Changer la photo", remove: "Retirer", hint: "Recadrée au carré ; visible par le membre.", saved: "Photo du membre enregistrée.", removed: "Photo du membre retirée.", failed: "Cette image n’a pas pu être lue. Essayez une autre photo." }}
+        upload={async (file) => { const fd = new FormData(); fd.append("file", file); fd.append("memberId", memberId); const r = await send({ data: fd }); await refresh(); return r; }}
+        remove={async () => { const r = await drop({ data: { id: memberId } }); await refresh(); return r; }}
+      />
+    </div>
+  );
 }

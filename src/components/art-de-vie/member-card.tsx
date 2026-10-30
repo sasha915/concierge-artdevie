@@ -1,6 +1,7 @@
 import { Logo } from "@/components/art-de-vie/app-shell";
 import { useState, type MouseEvent } from "react";
-import { formatMonth, initials, type Profile } from "@/data/art-de-vie";
+import { formatMonth, type Profile } from "@/data/art-de-vie";
+import { Avatar, useMyAvatar } from "./avatar";
 import { t } from "@/lib/i18n";
 
 export function MemberCard({ profile }: { profile: Profile | null }) {
@@ -10,6 +11,7 @@ export function MemberCard({ profile }: { profile: Profile | null }) {
     setTilt({ x: ((e.clientY - r.top) / r.height - 0.5) * -8, y: ((e.clientX - r.left) / r.width - 0.5) * 10 });
   }
   const name = profile?.full_name?.trim() || t("Membre Art de Vie");
+  const photo = useMyAvatar(!!profile);
   return (
     <div className="perspective-distant" onMouseMove={move} onMouseLeave={() => setTilt({ x: 4, y: -4 })}>
       <div
@@ -21,9 +23,7 @@ export function MemberCard({ profile }: { profile: Profile | null }) {
         <div className="relative z-30">
           <div className="flex items-start justify-between">
             <Logo inverse className="h-5 w-auto" />
-            <div className="flex size-10 items-center justify-center rounded-full border border-gold font-display text-sm">
-              {initials(name)}
-            </div>
+            <Avatar url={photo} name={name} className="size-10 border border-gold font-display text-sm" />
           </div>
           <div className="mt-[18px] flex items-center gap-3">
             <span className="font-display text-2xl sm:text-3xl">{profile?.plan ?? t("Membre")}</span>

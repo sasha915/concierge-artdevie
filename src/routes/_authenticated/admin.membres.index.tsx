@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { cloneElement, isValidElement, useEffect, useId, useMemo, useState, type ReactElement } from "react";
 import { ChevronRight, Mail, Search, UserMinus, UserPlus } from "lucide-react";
 import { AdminShell, TeamLoadError } from "@/components/art-de-vie/admin-shell";
+import { Avatar } from "@/components/art-de-vie/avatar";
+import { useAvatarUrls } from "@/components/art-de-vie/team-avatars";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,6 +45,7 @@ function Page() {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({ fullName: "", email: "", phone: "", plan: "Signature", conciergeReferent: "", conciergeWhatsapp: "" });
 
+  const photos = useAvatarUrls(members.map((m) => m.id));
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return members;
@@ -123,9 +126,12 @@ function Page() {
         : <div className="grid gap-3 md:grid-cols-2">
             {filtered.map((m) => <article key={m.id} className={`rounded-card p-5 ${m.disabled_at ? "border border-dashed border-border" : "team-panel"}`}>
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate text-[24px] text-primary">{m.full_name || "Sans nom"}</p>
-                  <p className="mt-1 truncate text-[12px] text-muted-foreground">{m.email}</p>
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar url={photos[m.id]} name={m.full_name || ""} className="size-12 bg-primary/14 text-[13px] font-semibold text-primary" />
+                  <div className="min-w-0">
+                    <p className="truncate text-[24px] text-primary">{m.full_name || "Sans nom"}</p>
+                    <p className="mt-1 truncate text-[12px] text-muted-foreground">{m.email}</p>
+                  </div>
                 </div>
                 <span className={m.disabled_at ? "shrink-0 rounded-full border border-primary/25 px-3 py-1 text-[10px] font-semibold text-muted-foreground" : "shrink-0 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-semibold text-primary"}>{m.disabled_at ? "Désactivé" : "Actif"}</span>
               </div>

@@ -959,6 +959,42 @@ export const uploadOfferImage = createServerFn({ method: "POST" })
     return { ok: true as const, path, previewUrl: s?.signedUrl ?? null };
   });
 
+// ---- Photos de profil (30 octobre) ----
+/** Liens temporaires vers les photos des comptes affichés (membres, équipe). */
+export const getAvatarUrls = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ ids: z.array(z.string().uuid()).max(500) }).parse(input))
+  .handler(async ({ data, context }): Promise<Record<string, string>> => {
+    const { admin } = await assertTeam(context as Ctx);
+    const { avatarUrls } = await import("./avatar.server");
+    return avatarUrls(admin, data.ids);
+  });
+
+/** Photo d'un membre déposée par un administrateur (par exemple à l'accueil d'un nouveau membre). */
+export const setMemberAvatar = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: FormData) => {
+    if (!(input instanceof FormData)) throw new Error("Format invalide.");
+    const file = input.get("file");
+    const memberId = z.string().uuid().parse(input.get("memberId"));
+    if (!(file instanceof File)) throw new Error("Aucun fichier.");
+    return { file, memberId };
+  })
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { storeAvatar } = await import("./avatar.server");
+    return storeAvatar(admin, data.memberId, data.file);
+  });
+
+export const removeMemberAvatar = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = await assertAdmin(context as Ctx);
+    const { clearAvatar } = await import("./avatar.server");
+    return clearAvatar(admin, data.id);
+  });
+
 // ---- Lot 4.2 : montant, commission, facture d'une demande ----
 
 type BillingInvoice = { id: string; number: string; status: string; issued_on: string; amount_cents: number };
@@ -1769,6 +1805,9 @@ export const anonymizeMember = createServerFn({ method: "POST" })
       const { error: delError } = await admin.auth.admin.deleteUser(delegateId);
       if (delError) leftovers.push("comptes des proches");
     }
+    const { clearAvatar } = await import("./avatar.server");
+    const photo = await clearAvatar(admin, data.id);
+    if (!photo.ok) leftovers.push("photo de profil");
     if (profile.mollie_customer_id) {
       try {
         const { mollie } = await import("./mollie.server");

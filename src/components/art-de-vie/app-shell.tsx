@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import logoBeige from "@/assets/logo-beige.svg";
 import logoViolet from "@/assets/logo-violet.svg";
-import { initials } from "@/data/art-de-vie";
+import { Avatar, useMyAvatar } from "./avatar";
 import { profileQuery, unreadRequestNotificationsQuery } from "@/lib/adv-queries";
 import { BookmarkIcon, HomeIcon, InboxIcon, UserIcon } from "./icons";
 import { PillAction, Title } from "./v3";
@@ -86,6 +86,7 @@ export function TopBar({ title, action }: { title?: string; action?: ReactNode }
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { delegation } = useDelegation();
   const signOut = useSignOut();
+  const myPhoto = useMyAvatar(!delegation);
   const items = delegation ? nav.filter((n) => n.to === "/" || n.to === "/demandes") : nav;
   const account = delegation ? (
     <Button type="button" variant="light" size="icon" className="size-11" onClick={() => void signOut()} aria-label={t("Se déconnecter")} title={t("Se déconnecter")}>
@@ -109,9 +110,9 @@ export function TopBar({ title, action }: { title?: string; action?: ReactNode }
             </Button>
           )}
           {action ?? account ?? (
-            <Button asChild variant="light" size="icon" className="size-11 font-medium">
+            <Button asChild variant="light" size="icon" className="size-11 overflow-hidden font-medium">
               <Link to="/membership" aria-label={t("Votre Membership")}>
-                {initials(profile?.full_name ?? "")}
+                <Avatar url={myPhoto} name={profile?.full_name ?? ""} className="size-11" />
               </Link>
             </Button>
           )}
@@ -161,7 +162,7 @@ export function TopBar({ title, action }: { title?: string; action?: ReactNode }
             className="lg:size-11 lg:border-foreground/22 lg:bg-transparent lg:text-foreground lg:hover:bg-foreground/10"
           >
             <Link to="/membership" aria-label={t("Votre Membership")}>
-              {initials(profile?.full_name ?? "")}
+              <Avatar url={myPhoto} name={profile?.full_name ?? ""} className="size-11" />
             </Link>
           </Button>
         )}

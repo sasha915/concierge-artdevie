@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { profileQuery } from "@/lib/adv-queries";
 import { PillAction } from "@/components/art-de-vie/v3";
+import { MyAvatarEditor } from "@/components/art-de-vie/avatar";
 import { t } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/membership/informations")({ head: () => ({ meta: [{ title: t("Vos informations — Art de Vie") }, { name: "description", content: t("Gérez vos coordonnées et préférences.") }, ] }), component: Page });
@@ -46,6 +47,7 @@ function Page() {
 
   return <AppShell nav={false}><div className="mx-auto max-w-3xl lg:max-w-none"><SubHeader title="Vos informations"/>
     <section className="rounded-[28px] bg-card p-5 sm:p-8 lg:mx-4 lg:p-10">
+      <div className="mb-6 border-b border-primary/10 pb-6"><span className="eyebrow">{t("Photo")}</span><div className="mt-3"><MyAvatarEditor name={profile?.full_name ?? ""} /></div></div>
       {editing ? <form className="grid gap-5" onSubmit={save}>
         <div><Label htmlFor="fullName" className="eyebrow">{t("Nom")}</Label><Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required minLength={2} maxLength={80} autoComplete="name" className="mt-2"/></div>
         <div><Label htmlFor="phone" className="eyebrow">{t("Téléphone")}</Label><Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={40} autoComplete="tel" className="mt-2"/></div>
