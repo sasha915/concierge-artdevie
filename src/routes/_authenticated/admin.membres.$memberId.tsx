@@ -13,7 +13,7 @@ import { EmptyState, StatusBadge } from "@/components/art-de-vie/cards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatShortDate, formatMonth, imageFor, requestPhoto } from "@/data/art-de-vie";
 import { memberDelegatesQuery, memberDetailQuery, memberParrainQuery, memberPaymentsQuery, memberPreferencesQuery, memberReviewsQuery } from "@/lib/admin-queries";
-import { anonymizeMember, approveDelegate, removeMemberAvatar, setMemberAvatar, exportMemberData, refuseDelegate, revokeDelegateTeam, getMemberStatement, saveMemberPreferences, setMemberLanguage, setMemberTimezone, sendMemberInvite, setMemberDisabled, updateMember, type MemberAnswers as Answers } from "@/lib/admin.functions";
+import { anonymizeMember, approveDelegate, removeMemberAvatar, setMemberAvatar, setMemberClickupTask, exportMemberData, refuseDelegate, revokeDelegateTeam, getMemberStatement, saveMemberPreferences, setMemberLanguage, setMemberTimezone, sendMemberInvite, setMemberDisabled, updateMember, type MemberAnswers as Answers } from "@/lib/admin.functions";
 import { DEFAULT_TIMEZONE, TIMEZONES } from "@/lib/timezone";
 import { todayParis } from "@/lib/billing-webhook-rules";
 import { monthLabel, shiftMonth, WELCOME_STEPS } from "@/lib/member-rules";
@@ -145,6 +145,7 @@ function Page() {
       <TimezoneField memberId={profile.id} timezone={(profile as { timezone?: string }).timezone ?? DEFAULT_TIMEZONE} />
       {isAdmin && <StatementButton memberId={profile.id} />}
       {isAdmin && <PrivacyBlock memberId={profile.id} disabled={!!profile.disabled_at} name={profile.full_name || "ce membre"} />}
+      <ClickupBlock memberId={profile.id} taskId={(profile as { clickup_task_id?: string | null }).clickup_task_id ?? null} isAdmin={isAdmin} />
 
       {notice && <p className="mt-4 rounded-2xl bg-primary/10 p-4 text-xs leading-5 text-primary">{notice}</p>}
       {error && <p className="mt-4 rounded-2xl border border-primary/25 p-4 text-xs leading-5 text-primary">{error}</p>}
@@ -512,4 +513,44 @@ function MemberPhoto({ memberId, name, url }: { memberId: string; name: string; 
       />
     </div>
   );
+}
+
+/** Liaison ClickUp : la fiche de Conciergerie > Fiches clients, créée ou rapprochée automatiquement ; un administrateur peut la changer. */
+function ClickupBlock({ memberId, taskId, isAdmin }: { memberId: string; taskId: string | null; isAdmin: boolean }) {
+  const queryClient = useQueryClient();
+  const link = useServerFn(setMemberClickupTask);
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const r = await link({ data: { id: memberId, task: value } });
+      if (!r.ok) { toast.error(r.reason); return; }
+      toast.success(value.trim() ? "Fiche ClickUp reliée." : "Une fiche sera créée dans ClickUp.");
+      setEditing(false);
+      setValue("");
+      await queryClient.invalidateQueries({ queryKey: ["admin"] });
+    } catch {
+      toast.error("La fiche n’a pas pu être reliée.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return <div className="mt-4">
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="eyebrow team-mention">ClickUp</span>
+      {taskId
+        ? <a href={`https://app.clickup.com/t/${taskId}`} target="_blank" rel="noopener" className="inline-flex h-9 items-center rounded-full border border-border px-3 text-[13px] hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Voir la fiche client</a>
+        : <span className="text-[13px] text-muted-foreground">Fiche créée ou rapprochée au prochain envoi</span>}
+      {isAdmin && !editing && <Button type="button" variant="outline" size="sm" onClick={() => setEditing(true)}>{taskId ? "Changer de fiche" : "Relier à une fiche"}</Button>}
+    </div>
+    {editing && <form onSubmit={save} className="mt-3 flex flex-wrap items-center gap-2">
+      <Input aria-label="Lien de la fiche ClickUp" placeholder="https://app.clickup.com/t/…" value={value} onChange={(e) => setValue(e.target.value)} maxLength={300} className="h-10 min-w-0 flex-1 basis-60" />
+      <Button type="submit" variant="primary" size="sm" disabled={busy}>{busy ? "Enregistrement…" : "Relier"}</Button>
+      <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => setEditing(false)}>Annuler</Button>
+      <p className="basis-full text-[12px] text-muted-foreground">Laissez vide pour que l’application crée une nouvelle fiche.</p>
+    </form>}
+  </div>;
 }

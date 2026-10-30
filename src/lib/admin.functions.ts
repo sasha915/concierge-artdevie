@@ -128,7 +128,7 @@ export const getMemberDetail = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { admin, role } = await assertTeam(context as Ctx);
     const [{ data: profile }, { data: requests }, { data: invoices }] = await Promise.all([
-      admin.from("profiles").select("id, full_name, email, phone, plan, role_label, member_number, member_since, valid_until, disabled_at, concierge_referent, concierge_whatsapp, language, timezone").eq("id", data.id).maybeSingle(),
+      admin.from("profiles").select("id, full_name, email, phone, plan, role_label, member_number, member_since, valid_until, disabled_at, concierge_referent, concierge_whatsapp, language, timezone, clickup_task_id").eq("id", data.id).maybeSingle(),
       admin.from("requests").select("id, category, status, title, description, scheduled_date, scheduled_time, concierge, image_key").eq("user_id", data.id).order("created_at", { ascending: false }),
       admin.from("invoices").select("id, number, kind, issued_on, amount_cents, status").eq("user_id", data.id).order("issued_on", { ascending: false }),
     ]);
@@ -358,7 +358,7 @@ export const listMemberPayments = createServerFn({ method: "GET" })
 // ---- Lot 1.1 : demandes (équipe) ----
 
 const requestStatus = z.enum(["Nouvelle", "En cours", "Confirmée", "Terminée", "Annulée"]);
-const requestCols = "id, user_id, category, status, title, description, scheduled_date, scheduled_time, guests, concierge, concierge_id, image_key, created_at, team_reply, team_reply_at, amount_cents, delegate_record";
+const requestCols = "id, user_id, category, status, title, description, scheduled_date, scheduled_time, guests, concierge, concierge_id, image_key, created_at, team_reply, team_reply_at, amount_cents, delegate_record, clickup_task_id";
 
 export const listAllRequests = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -959,6 +959,31 @@ export const uploadOfferImage = createServerFn({ method: "POST" })
     return { ok: true as const, path, previewUrl: s?.signedUrl ?? null };
   });
 
+// ---- Liaison ClickUp (30 octobre) ----
+/** Relie un membre à une fiche existante de Conciergerie > Fiches clients (lien ou identifiant), ou laisse l'app en créer une. */
+export const setMemberClickupTask = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), task: z.string().max(300) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const admin = (await assertAdmin(context as Ctx)) as any;
+    const { parseClickupTaskId } = await import("./clickup-rules");
+    const taskId = data.task.trim() ? parseClickupTaskId(data.task) : null;
+    if (data.task.trim() && !taskId) return { ok: false as const, reason: "Collez le lien de la fiche ClickUp (…/t/…) ou son identifiant." };
+    if (taskId) {
+      const { data: taken } = await admin.from("profiles").select("id").eq("clickup_task_id", taskId).neq("id", data.id).limit(1);
+      if ((taken ?? []).length) return { ok: false as const, reason: "Cette fiche est déjà reliée à un autre membre." };
+    }
+    const { data: p } = await admin.from("profiles").select("full_name").eq("id", data.id).maybeSingle();
+    if (!p) return { ok: false as const, reason: "Membre introuvable." };
+    // Fiche existante : son nom n'est pas réécrit ; le reste suit l'application.
+    const { error } = await admin.from("profiles").update({ clickup_task_id: taskId, clickup_state: taskId ? { name: p.full_name.trim() } : null }).eq("id", data.id);
+    if (error) return { ok: false as const, reason: "La fiche n’a pas pu être reliée." };
+    await admin.rpc("clickup_enqueue", { _kind: "membre", _ref: data.id });
+    const { data: reqs } = await admin.from("requests").select("id").eq("user_id", data.id).not("clickup_task_id", "is", null);
+    for (const r of (reqs ?? []) as Array<{ id: string }>) await admin.rpc("clickup_enqueue", { _kind: "demande", _ref: r.id });
+    return { ok: true as const };
+  });
+
 // ---- Photos de profil (30 octobre) ----
 /** Liens temporaires vers les photos des comptes affichés (membres, équipe). */
 export const getAvatarUrls = createServerFn({ method: "POST" })
@@ -1105,8 +1130,8 @@ async function dashboardWatch(admin: any, role: TeamRole, rows: Array<{ id: stri
     .sort((a, b) => (a.valid_until ?? "").localeCompare(b.valid_until ?? ""))
     .map((m) => ({ id: m.id, full_name: m.full_name, valid_until: m.valid_until as string }));
   // Alertes WhatsApp non parties : visibles de toute l'équipe, puisque la demande n'a peut-être été vue par personne.
-  const { data: alertRows } = await admin.from("notification_failures").select("id, request_id, kind, reason, created_at").is("resolved_at", null).order("created_at", { ascending: false }).limit(50);
-  const alertList = (alertRows ?? []) as Array<{ id: string; request_id: string | null; kind: string; reason: string; created_at: string }>;
+  const { data: alertRows } = await admin.from("notification_failures").select("id, request_id, user_id, kind, reason, created_at").is("resolved_at", null).order("created_at", { ascending: false }).limit(50);
+  const alertList = (alertRows ?? []) as Array<{ id: string; request_id: string | null; user_id: string | null; kind: string; reason: string; created_at: string }>;
   const unknownAlertRequests = [...new Set(alertList.map((a) => a.request_id).filter((id): id is string => !!id && !titles.has(id)))];
   if (unknownAlertRequests.length) {
     const { data: extra } = await admin.from("requests").select("id, title, user_id").in("id", unknownAlertRequests);
@@ -1115,9 +1140,10 @@ async function dashboardWatch(admin: any, role: TeamRole, rows: Array<{ id: stri
   const failedAlerts = alertList.map((a) => ({
     id: a.id,
     request_id: a.request_id,
-    title: a.request_id ? titles.get(a.request_id)?.title ?? "Demande" : "Demande",
-    member_name: a.request_id ? titles.get(a.request_id)?.member_name ?? "" : "",
-    kind: a.kind === "message" ? "Message" : "Nouvelle demande",
+    member_id: a.request_id ? null : a.user_id,
+    title: a.request_id ? titles.get(a.request_id)?.title ?? "Demande" : a.user_id ? "Fiche client" : "Demande",
+    member_name: a.request_id ? titles.get(a.request_id)?.member_name ?? "" : a.user_id ? names.get(a.user_id) ?? "" : "",
+    kind: a.kind === "clickup" ? "ClickUp" : a.kind === "message" ? "Message" : "Nouvelle demande",
     reason: notificationFailureLabel(a.reason),
     created_at: a.created_at,
   }));

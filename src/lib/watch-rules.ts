@@ -51,6 +51,8 @@ export function notificationFailureLabel(reason: string): string {
     case "whatsapp_api_error": return status ? `Refusée par WhatsApp (${status})` : "Refusée par WhatsApp";
     case "whatsapp_fetch_failed": return "WhatsApp injoignable";
     case "profile_not_found": return "Membre introuvable";
+    case "clickup_error": return status ? `Refusée par ClickUp (${status})` : "Refusée par ClickUp";
+    case "clickup_unreachable": return "ClickUp injoignable";
     default: return "Envoi impossible";
   }
 }

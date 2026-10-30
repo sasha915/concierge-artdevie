@@ -36,6 +36,7 @@ import { Route as AuthenticatedMembershipParrainerRouteImport } from './routes/_
 import { Route as AuthenticatedMembershipPreferencesRouteImport } from './routes/_authenticated/membership.preferences'
 import { Route as AuthenticatedMembershipProchesRouteImport } from './routes/_authenticated/membership.proches'
 import { Route as AuthenticatedMembershipReleveRouteImport } from './routes/_authenticated/membership.releve'
+import { Route as ApiPublicClickupSyncRouteImport } from './routes/api/public/clickup-sync'
 import { Route as ApiPublicMollieWebhookRouteImport } from './routes/api/public/mollie-webhook'
 import { Route as ApiPublicNotifyConciergeRouteImport } from './routes/api/public/notify-concierge'
 import { Route as AuthenticatedAdminDemandesIndexRouteImport } from './routes/_authenticated/admin.demandes.index'
@@ -199,6 +200,11 @@ const AuthenticatedMembershipReleveRoute =
     path: '/membership/releve',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicClickupSyncRoute = ApiPublicClickupSyncRouteImport.update({
+  id: '/api/public/clickup-sync',
+  path: '/api/public/clickup-sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicMollieWebhookRoute = ApiPublicMollieWebhookRouteImport.update({
   id: '/api/public/mollie-webhook',
   path: '/api/public/mollie-webhook',
@@ -277,6 +283,7 @@ export interface FileRoutesByFullPath {
   '/membership/preferences': typeof AuthenticatedMembershipPreferencesRoute
   '/membership/proches': typeof AuthenticatedMembershipProchesRoute
   '/membership/releve': typeof AuthenticatedMembershipReleveRoute
+  '/api/public/clickup-sync': typeof ApiPublicClickupSyncRoute
   '/api/public/mollie-webhook': typeof ApiPublicMollieWebhookRoute
   '/api/public/notify-concierge': typeof ApiPublicNotifyConciergeRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -313,6 +320,7 @@ export interface FileRoutesByTo {
   '/membership/preferences': typeof AuthenticatedMembershipPreferencesRoute
   '/membership/proches': typeof AuthenticatedMembershipProchesRoute
   '/membership/releve': typeof AuthenticatedMembershipReleveRoute
+  '/api/public/clickup-sync': typeof ApiPublicClickupSyncRoute
   '/api/public/mollie-webhook': typeof ApiPublicMollieWebhookRoute
   '/api/public/notify-concierge': typeof ApiPublicNotifyConciergeRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -352,6 +360,7 @@ export interface FileRoutesById {
   '/_authenticated/membership/preferences': typeof AuthenticatedMembershipPreferencesRoute
   '/_authenticated/membership/proches': typeof AuthenticatedMembershipProchesRoute
   '/_authenticated/membership/releve': typeof AuthenticatedMembershipReleveRoute
+  '/api/public/clickup-sync': typeof ApiPublicClickupSyncRoute
   '/api/public/mollie-webhook': typeof ApiPublicMollieWebhookRoute
   '/api/public/notify-concierge': typeof ApiPublicNotifyConciergeRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -391,6 +400,7 @@ export interface FileRouteTypes {
     | '/membership/preferences'
     | '/membership/proches'
     | '/membership/releve'
+    | '/api/public/clickup-sync'
     | '/api/public/mollie-webhook'
     | '/api/public/notify-concierge'
     | '/admin/'
@@ -427,6 +437,7 @@ export interface FileRouteTypes {
     | '/membership/preferences'
     | '/membership/proches'
     | '/membership/releve'
+    | '/api/public/clickup-sync'
     | '/api/public/mollie-webhook'
     | '/api/public/notify-concierge'
     | '/admin'
@@ -465,6 +476,7 @@ export interface FileRouteTypes {
     | '/_authenticated/membership/preferences'
     | '/_authenticated/membership/proches'
     | '/_authenticated/membership/releve'
+    | '/api/public/clickup-sync'
     | '/api/public/mollie-webhook'
     | '/api/public/notify-concierge'
     | '/_authenticated/admin/'
@@ -483,6 +495,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   ConnexionRoute: typeof ConnexionRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicClickupSyncRoute: typeof ApiPublicClickupSyncRoute
   ApiPublicMollieWebhookRoute: typeof ApiPublicMollieWebhookRoute
   ApiPublicNotifyConciergeRoute: typeof ApiPublicNotifyConciergeRoute
 }
@@ -678,6 +691,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMembershipReleveRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/clickup-sync': {
+      id: '/api/public/clickup-sync'
+      path: '/api/public/clickup-sync'
+      fullPath: '/api/public/clickup-sync'
+      preLoaderRoute: typeof ApiPublicClickupSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/mollie-webhook': {
       id: '/api/public/mollie-webhook'
       path: '/api/public/mollie-webhook'
@@ -836,6 +856,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   ConnexionRoute: ConnexionRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicClickupSyncRoute: ApiPublicClickupSyncRoute,
   ApiPublicMollieWebhookRoute: ApiPublicMollieWebhookRoute,
   ApiPublicNotifyConciergeRoute: ApiPublicNotifyConciergeRoute,
 }

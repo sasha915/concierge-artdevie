@@ -274,6 +274,13 @@
       "when": 1793325600000,
       "tag": "0038_profile_photos",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1793329200000,
+      "tag": "0039_clickup_sync",
+      "breakpoints": true
     }
   ]
 }

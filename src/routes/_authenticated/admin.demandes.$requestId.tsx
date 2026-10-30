@@ -214,6 +214,7 @@ function Page() {
           <Link to="/admin/membres/$memberId" params={{ memberId: m.id }} className="mt-5 inline-flex h-11 items-center gap-3 rounded-full bg-primary pl-5 pr-1.5 text-[14px] font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             Fiche membre<span className="flex size-8 items-center justify-center rounded-full bg-primary-foreground text-primary"><ArrowUpRight className="size-4" /></span>
           </Link>
+          {(r as { clickup_task_id?: string | null }).clickup_task_id && <a href={`https://app.clickup.com/t/${(r as { clickup_task_id?: string | null }).clickup_task_id}`} target="_blank" rel="noopener" className="ml-2 mt-5 inline-flex h-11 items-center rounded-full border border-border px-4 text-[14px] hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Voir dans ClickUp</a>}
         </section>}
         {r.status === "Terminée" && <ReviewPanel requestId={r.id} />}
         <section className="team-panel min-w-0 rounded-[28px] p-6">

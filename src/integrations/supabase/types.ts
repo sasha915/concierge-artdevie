@@ -856,6 +856,8 @@ export type Database = {
       requests: {
         Row: {
           amount_cents: number | null
+          clickup_state: Json | null
+          clickup_task_id: string | null
           category: string
           concierge: string
           concierge_id: string | null
@@ -876,6 +878,8 @@ export type Database = {
         }
         Insert: {
           amount_cents?: number | null
+          clickup_state?: Json | null
+          clickup_task_id?: string | null
           category?: string
           concierge?: string
           concierge_id?: string | null
@@ -896,6 +900,8 @@ export type Database = {
         }
         Update: {
           amount_cents?: number | null
+          clickup_state?: Json | null
+          clickup_task_id?: string | null
           category?: string
           concierge?: string
           concierge_id?: string | null

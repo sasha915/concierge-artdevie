@@ -214,9 +214,10 @@ function WatchBlock({ watch }: { watch: Watch }) {
     <h2 id="watch-title" className="eyebrow team-mention">À surveiller</h2>
     {total === 0 ? <p className="mt-4 text-[14px] text-muted-foreground">Rien à signaler pour le moment.</p>
       : <div className="mt-4 grid min-w-0 gap-6 lg:grid-cols-2">
-        <WatchGroup title="Alertes WhatsApp non parties" count={alerts.length}>
+        <WatchGroup title="Alertes WhatsApp et envois ClickUp en échec" count={alerts.length}>
           {alerts.map((a) => <li key={a.id} className="flex items-center gap-3 border-b border-border last:border-0">
             {a.request_id ? <Link to="/admin/demandes/$requestId" params={{ requestId: a.request_id }} className={`${watchLink} min-w-0 flex-1`}><WatchRow title={a.title} meta={`${a.kind}${a.member_name ? ` · ${a.member_name}` : ""} · ${formatShortDate(a.created_at.slice(0, 10))}`} signal={a.reason} /></Link>
+              : a.member_id ? <Link to="/admin/membres/$memberId" params={{ memberId: a.member_id }} className={`${watchLink} min-w-0 flex-1`}><WatchRow title={a.title} meta={`${a.kind}${a.member_name ? ` · ${a.member_name}` : ""} · ${formatShortDate(a.created_at.slice(0, 10))}`} signal={a.reason} /></Link>
               : <div className={`${watchLink} min-w-0 flex-1`}><WatchRow title={a.title} meta={a.kind} signal={a.reason} /></div>}
             <button type="button" disabled={resolving === a.id} onClick={() => void markAlertSeen(a.id)} className="shrink-0 rounded-full border border-border px-3 py-1 text-[12px] hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Traité</button>
           </li>)}
